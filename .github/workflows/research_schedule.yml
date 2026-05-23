@@ -1,0 +1,108 @@
+name: GitHub AI Research
+
+on:
+  schedule:
+    - cron: '0 7 * * *'   # daily 07:00 UTC — S-tier alert
+    - cron: '0 8 * * 1'   # weekly Monday 08:00 UTC — full digest
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Run mode'
+        required: false
+        default: 'weekly'
+        type: choice
+        options: [daily, weekly]
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # commit digest back to repo
+      issues: write     # open alert / digest issues
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements-research.txt
+
+      - run: pip install requests
+
+      - name: Set run mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 8 * * 1" ]; then
+            echo "mode=weekly" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=daily" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── DAILY ──────────────────────────────────────────────────────────────
+
+      - name: Daily — scan for new S-tier repos
+        if: steps.mode.outputs.mode == 'daily'
+        env:
+          RESEARCH_GITHUB_TOKEN: ${{ secrets.RESEARCH_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        run: python scripts/github_research/daily_alert.py --output /tmp/alert.json
+
+      - name: Daily — open issue if new S-tier found
+        if: steps.mode.outputs.mode == 'daily'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/github_research/create_issue_body.py \
+            --mode daily --input /tmp/alert.json --output /tmp/issue.md
+          if [ -s /tmp/issue.md ]; then
+            gh label create "research" --color "0075ca" --description "AI Research" 2>/dev/null || true
+            gh issue create \
+              --title "New S-Tier AI Repos — $(date +%Y-%m-%d)" \
+              --body-file /tmp/issue.md \
+              --label "research"
+          else
+            echo "No new S-tier repos today — skipping issue"
+          fi
+
+      # ── WEEKLY ─────────────────────────────────────────────────────────────
+
+      - name: Weekly — full research scan
+        if: steps.mode.outputs.mode == 'weekly'
+        env:
+          RESEARCH_GITHUB_TOKEN: ${{ secrets.RESEARCH_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          mkdir -p process/research
+          python scripts/github_research/main.py \
+            --min-stars 100 \
+            --max-per-topic 10 \
+            --output process/research/${DATE}_weekly.md
+          echo "REPORT=process/research/${DATE}_weekly.md" >> "$GITHUB_ENV"
+          echo "RUN_DATE=${DATE}" >> "$GITHUB_ENV"
+
+      - name: Weekly — commit digest to repo
+        if: steps.mode.outputs.mode == 'weekly'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add process/research/
+          git diff --staged --quiet || git commit -m "research: weekly AI digest ${{ env.RUN_DATE }} [skip ci]"
+          git push
+
+      - name: Weekly — open digest issue
+        if: steps.mode.outputs.mode == 'weekly'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/github_research/create_issue_body.py \
+            --mode weekly --input "${{ env.REPORT }}" --output /tmp/issue.md
+          gh label create "research" --color "0075ca" --description "AI Research" 2>/dev/null || true
+          gh issue create \
+            --title "Weekly AI Research Digest — ${{ env.RUN_DATE }}" \
+            --body-file /tmp/issue.md \
+            --label "research"
