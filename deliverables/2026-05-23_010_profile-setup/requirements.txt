@@ -1,0 +1,8 @@
+# Core
+anthropic>=0.30.0
+requests>=2.31.0
+
+# Publishing (install only what you need)
+tweepy>=4.14.0          # Twitter/X
+praw>=7.7.0             # Reddit
+# python-telegram-bot is NOT needed: Telegram uses raw requests in publisher.py
