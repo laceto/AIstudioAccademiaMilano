@@ -15,8 +15,7 @@ This repo is the operational backbone: agents, skills, pricing, learning loop, a
 ## Active Branch
 
 Create a **fresh branch from main** for every feature. Never push to main directly.  
-Naming convention: `claude/<slug>` (e.g. `claude/calendar-sync`, `claude/readme-review`).  
-The branch `claude/digital-communities-guide-a5lBV` is legacy — do not use it.
+Naming convention: `claude/<slug>` (e.g. `claude/calendar-sync`, `claude/new-feature`).
 
 ---
 
@@ -46,9 +45,10 @@ User Input
 [Francesca]  Delivery: GitHub push + audit log
 ```
 
-**Risk agents** (all actuarial background): Technical Auditor, Financial Controller,
-Operational Monitor, Reputation Guardian, Compliance Agent.  
-Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
+**Parallel agents:**
+- **Risk agents** (actuarial): Technical Auditor, Financial Controller, Operational Monitor, Reputation Guardian, Compliance Agent — see `agents/risk/`
+- **Valentina** (publishing): triggered by Francesca on new deliverable, generates platform content, publishes with confirmation gate — see `agents/valentina.md`
+- **Research Department**: Scout → Analyst → Curator → Reporter — see `agents/research/`
 
 ---
 
@@ -62,17 +62,26 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 | `scripts/credential_manager.py` | Unified auth store: OAuth tokens + API keys |
 | `scripts/embed_index.py` | Build semantic search index over all repo files |
 | `scripts/retrieve.py` | Query the index: `python -m scripts.retrieve "query"` |
-| `scripts/rag_chat.py` | RAG + GPT synthesis |
-| `scripts/github_research/main.py` | GitHub AI Research CLI (Scout->Analyst->Curator->Reporter) |
-| `process/intent_registry.yaml` | All known intents -> skills -> delivery options |
+| `scripts/github_research/main.py` | GitHub AI Research CLI (Scout→Analyst→Curator→Reporter) |
+| `process/intent_registry.yaml` | All known intents → skills → delivery options |
 | `process/audit/` | One YAML-fronted Markdown file per completed request |
-| `agents/README.md` | Agent role definitions + actuarial specs |
+| `process/profile_setup_checklist.md` | Per-platform signup URLs + status tracker (Valentina) |
+| `process/execution_roadmap_90_days.md` | 90-day community launch roadmap |
+| `agents/README.md` | All agent role definitions |
+| `agents/valentina.md` | Valentina: Profile Setup & Publishing Agent |
+| `agents/risk/README.md` | AI Risk Management Department (5 agents) |
 | `agents/research/README.md` | GitHub Research Department spec |
-| `templates/pdf/invoice_standard.py` | `InvoiceTemplate` -> valid PDF bytes via fpdf2 |
-| `templates/streamlit/chatbot.py` | `ChatbotTemplate(provider, model)` -> Streamlit app |
+| `templates/pdf/invoice_standard.py` | `InvoiceTemplate` → valid PDF bytes via fpdf2 |
+| `templates/streamlit/chatbot.py` | `ChatbotTemplate(provider, model)` → Streamlit app |
+| `ProjectRegistry.md` | Central registry of all deliverables and internal systems |
+| `projects/README.md` | Git submodule convention for future standalone repos |
+| `framework/ai_risk_management_team.md` | Risk team architecture |
+| `community/community_map.md` | Community funnel + interaction model |
+| `community/digital_platforms.md` | Platform matrix (purpose, automation, outputs) |
+| `deliverables/2026-05-23_008_algo-trading/` | SMA crossover bot, Alpaca paper trading |
+| `deliverables/2026-05-23_009_linkedin-post-generator/` | GitHub activity → LinkedIn post (Claude) |
+| `deliverables/2026-05-23_010_profile-setup/` | Valentina: bio + first post + publish pipeline |
 | `wiki/llm/` | Karpathy-style LLM education wiki (7 chapters + code) |
-| `deliverables/rag/streamlit_rag_app.py` | Interactive semantic search UI |
-| `deliverables/github-research/streamlit_research_app.py` | GitHub AI Research dashboard |
 
 ---
 
@@ -80,15 +89,18 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 
 ```json
 {
-  "static_landing_page":  "9.90",
-  "pdf_document":         "1.90",
-  "invoice_pdf":          "3.90",
-  "strategic_report":     "4.90",
-  "chatbot_app":          "19.90",
-  "email_delivery":       "0.50",
-  "rag_knowledge_base":   "29.90",
-  "calendar_integration": "14.90",
-  "unknown_product":      null
+  "static_landing_page":    "9.90",
+  "pdf_document":           "1.90",
+  "invoice_pdf":            "3.90",
+  "strategic_report":       "4.90",
+  "linkedin_post":          "4.90",
+  "chatbot_app":            "19.90",
+  "algo_trading_bot":       "24.90",
+  "email_delivery":         "0.50",
+  "rag_knowledge_base":     "29.90",
+  "calendar_integration":   "14.90",
+  "profile_setup_automation": "14.90",
+  "unknown_product":        null
 }
 ```
 
@@ -106,6 +118,8 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 - Apple Calendar: app-specific password only (generate at appleid.apple.com) — main Apple ID password never used
 - Twilio webhook: HMAC-SHA1 signature validation active in production
 - Google `credentials.json` and `token.json` kept local, never committed
+- Alpaca trading: `paper=True` hardcoded — never change without explicit Luigi approval
+- Valentina publishing: confirmation gate required before every auto-publish — Luigi approves all posts
 
 ---
 
@@ -158,9 +172,8 @@ Test files: `tests/test_issNNN_topic.py`
 ## RAG Knowledge Base
 
 ```bash
-python -m scripts.embed_index                         # build index (~30s local)
+python -m scripts.embed_index
 python -m scripts.retrieve "how does Marco price unknown products?"
-python -m scripts.rag_chat "explain the 6-agent pipeline"  # needs OPENAI_API_KEY
 streamlit run deliverables/rag/streamlit_rag_app.py
 ```
 
@@ -169,29 +182,12 @@ streamlit run deliverables/rag/streamlit_rag_app.py
 ## GitHub AI Research Department
 
 ```bash
-pip install -r requirements-research.txt
-export GITHUB_TOKEN=ghp_...     # optional, 60->5000 req/h
+export GITHUB_TOKEN=ghp_...     # optional, 60→5000 req/h
 python scripts/github_research/main.py --topics llm rag ai-agents --min-stars 200
 streamlit run deliverables/github-research/streamlit_research_app.py
 ```
 
-Agents: **Scout** (search) -> **Analyst** (score) -> **Curator** (dedup+categorise) -> **Reporter** (digest+dashboard)
-See `agents/research/README.md`.
-
----
-
-## LLM Wiki
-
-`wiki/llm/` — Karpathy-style, 7 chapters + runnable code examples:
-
-- `01_tokenization.md` — BPE, tiktoken, token cost per product
-- `02_embeddings.md` — lookup tables, cosine similarity, RAG connection
-- `03_attention.md` — Q/K/V, 20-line Python, complexity
-- `04_transformer.md` — full architecture, GELU, residuals
-- `05_training.md` — pretraining, RLHF, LoRA, RAG vs fine-tune
-- `06_inference.md` — temperature, top-k/p, streaming, KV cache
-- `07_studio_playbook.md` — model selection, token budgets, prompt engineering
-- `code/` — `bpe_minimal.py`, `nano_attention.py`, `sampling_demo.py`
+Scheduled: daily S-tier alert (07:00 UTC) + weekly digest (Mon 08:00 UTC) via `.github/workflows/research_schedule.yml`.
 
 ---
 
@@ -199,26 +195,28 @@ See `agents/research/README.md`.
 
 | ID | Date | Product | Price |
 |----|------|---------|-------|
-| 001 | 2026-05-23 | Bakery website (HTML/Tailwind + Vercel) | 9.90 |
-| 002 | 2026-05-23 | PDF "funziona" + Gmail delivery | 2.40 |
-| 003 | 2026-05-23 | Invoice PDF (INV-003 Mario Rossi) + Gmail delivery | 3.90 |
-| 004 | 2026-05-23 | Strategic report: AI startup street monetisation | 4.90 |
-| 005 | 2026-05-23 | Streamlit chatbot + OpenAI streaming | 19.90 |
-| 006 | 2026-05-23 | RAG system: embed all code + agents | 29.90 |
-| 007 | 2026-05-23 | WhatsApp/Telegram -> Apple/Outlook/Gmail calendar sync | 14.90 |
-| 008 | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) | 0.00 |
+| 001 | 2026-05-23 | Bakery website (HTML/Tailwind + Vercel) | €9.90 |
+| 002 | 2026-05-23 | PDF “funziona” + Gmail delivery | €2.40 |
+| 003 | 2026-05-23 | Invoice PDF (INV-003 Mario Rossi) + Gmail delivery | €3.90 |
+| 004 | 2026-05-23 | Strategic report: AI startup street monetisation | €4.90 |
+| 005 | 2026-05-23 | Streamlit chatbot + OpenAI streaming | €19.90 |
+| 006 | 2026-05-23 | RAG system: embed all code + agents | €29.90 |
+| 007 | 2026-05-23 | WhatsApp/Telegram → Apple/Outlook/Gmail calendar sync | €14.90 |
+| 008 | 2026-05-23 | Algo trading bot (SMA crossover, Alpaca paper) | €24.90 |
+| 009 | 2026-05-23 | LinkedIn post generator from GitHub activity | €4.90 |
+| 010 | 2026-05-23 | Profile setup & publishing automation (Valentina) | €14.90 |
 
 ---
 
-## Open Issues
+## Issues
 
 | ID | Priority | Title | Status |
 |----|----------|-------|--------|
-| ISS-002 | P1 | Build `process/intent_registry.yaml` | OPEN |
-| ISS-003 | P2 | Unified credential manager | OPEN |
-| ISS-004 | P2 | Build `templates/` library (InvoiceTemplate, ChatbotTemplate) | OPEN |
-| ISS-005 | P2 | Tiered thresholds in learning_loop.py | OPEN |
-| ISS-006 | P2 | Source citation for advisory outputs | OPEN |
-| ISS-007 | P3 | Provider-agnostic chatbot template | OPEN |
-| ISS-008 | P2 | RAG retrieval system | DELIVERED |
-| ISS-009 | P3 | Schedule GitHub Research runs (cron + digest commit) | OPEN |
+| ISS-002 | P1 | Build `process/intent_registry.yaml` | ✅ DELIVERED |
+| ISS-003 | P2 | Unified credential manager | ✅ DELIVERED |
+| ISS-004 | P2 | Build `templates/` library (InvoiceTemplate, ChatbotTemplate) | ✅ DELIVERED |
+| ISS-005 | P2 | Tiered thresholds in learning_loop.py | ✅ DELIVERED |
+| ISS-006 | P2 | Source citation for advisory outputs | ✅ DELIVERED |
+| ISS-007 | P3 | Provider-agnostic chatbot template | ✅ DELIVERED |
+| ISS-008 | P2 | RAG retrieval system | ✅ DELIVERED |
+| ISS-009 | P3 | Schedule GitHub Research runs (cron + digest commit) | ✅ DELIVERED |
