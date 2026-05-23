@@ -1,0 +1,50 @@
+{
+  "_comment": "Claude Code settings for AI Studio Accademia Milano. Hooks auto-updated by learning_loop.py.",
+
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 scripts/learning_loop.py --event session_end --audit-dir process/audit --settings config/global_settings.json 2>&1 | tee -a logs/learning_loop.log"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "gmail_api",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 scripts/check_oauth.py --provider gmail 2>&1"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__github__push_files",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 scripts/learning_loop.py --event delivery_complete --audit-dir process/audit --settings config/global_settings.json 2>&1 | tee -a logs/learning_loop.log"
+          }
+        ]
+      }
+    ]
+  },
+
+  "permissions": {
+    "allow": [
+      "Bash(python3 scripts/learning_loop.py:*)",
+      "Bash(python3 scripts/check_oauth.py:*)",
+      "Bash(git add process/audit/*)",
+      "Bash(git add config/global_settings.json)",
+      "Bash(git add .claude/settings.json)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}

@@ -1,0 +1,223 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "description": "AI Studio Accademia Milano — global learned settings. Auto-updated by learning_loop.py after each completed request. Do not edit manually.",
+    "last_updated": "2026-05-23",
+    "last_request_id": "002",
+    "total_requests_processed": 2
+  },
+
+  "skills": {
+    "html_tailwind_css": {
+      "description": "Static HTML pages styled with Tailwind CSS",
+      "intent_mappings": ["website_creation", "landing_page"],
+      "agent": "Chiara",
+      "first_seen": "2026-05-23",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 40
+    },
+    "alpine_js": {
+      "description": "Lightweight JS reactivity for static pages",
+      "intent_mappings": ["website_creation"],
+      "agent": "Chiara",
+      "first_seen": "2026-05-23",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "formspree_contact_form": {
+      "description": "No-backend contact form via Formspree",
+      "intent_mappings": ["contact_form"],
+      "agent": "Chiara",
+      "first_seen": "2026-05-23",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "vercel_static_deploy": {
+      "description": "Deploy static HTML/CSS/JS to Vercel",
+      "intent_mappings": ["website_creation", "landing_page"],
+      "agent": "Francesca",
+      "first_seen": "2026-05-23",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 8
+    },
+    "fpdf2_pdf_generation": {
+      "description": "PDF creation with fpdf2 Python library",
+      "intent_mappings": ["pdf_creation", "document_generation"],
+      "agent": "Chiara",
+      "first_seen": "2026-05-23",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 5
+    },
+    "gmail_api_oauth": {
+      "description": "Gmail OAuth 2.0 authentication for sending on behalf of user",
+      "intent_mappings": ["email_delivery"],
+      "agent": "Stacy",
+      "first_seen": "2026-05-23",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 8,
+      "requires_user_auth": true,
+      "auth_method": "oauth2",
+      "security_note": "Token used for session only, never stored"
+    },
+    "gmail_api_send": {
+      "description": "Send email with attachment via Gmail API",
+      "intent_mappings": ["email_delivery"],
+      "agent": "Francesca",
+      "first_seen": "2026-05-23",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 4
+    }
+  },
+
+  "agents": {
+    "Stacy": {
+      "roles": ["input_orchestrator", "qa_agent"],
+      "capabilities": [
+        "intent_extraction",
+        "entity_recognition",
+        "dependency_detection",
+        "oauth_prompt",
+        "qa_checklist",
+        "audit_log_writer"
+      ],
+      "task_stats": {
+        "website_creation": { "count": 1, "avg_sec": 12, "success_rate": 1.0 },
+        "pdf_creation_and_email": { "count": 1, "avg_sec": 13, "success_rate": 1.0 }
+      }
+    },
+    "Gianni": {
+      "roles": ["request_analyzer", "builder_agent"],
+      "capabilities": [
+        "stack_selection",
+        "dependency_mapping",
+        "complexity_scoring",
+        "deploy_target_selection"
+      ],
+      "task_stats": {
+        "website_creation": { "count": 1, "avg_sec": 5, "success_rate": 1.0 },
+        "pdf_creation_and_email": { "count": 1, "avg_sec": 3, "success_rate": 1.0 }
+      }
+    },
+    "Chiara": {
+      "roles": ["product_generator", "designer"],
+      "capabilities": [
+        "html_tailwind_generation",
+        "pdf_generation",
+        "email_preparation",
+        "ui_layout"
+      ],
+      "task_stats": {
+        "website_creation": { "count": 1, "avg_sec": 40, "success_rate": 1.0 },
+        "pdf_creation_and_email": { "count": 1, "avg_sec": 5, "success_rate": 1.0 }
+      }
+    },
+    "Marco": {
+      "roles": ["transaction_manager"],
+      "capabilities": [
+        "payment_processing",
+        "receipt_generation",
+        "price_calculation"
+      ],
+      "pricing": {
+        "static_landing_page": "€9.90",
+        "pdf_document": "€1.90"
+      },
+      "task_stats": {
+        "website_creation": { "count": 1, "avg_sec": 15, "success_rate": 1.0 },
+        "pdf_creation_and_email": { "count": 1, "avg_sec": 15, "success_rate": 1.0 }
+      }
+    },
+    "Francesca": {
+      "roles": ["delivery_agent"],
+      "capabilities": [
+        "vercel_deploy",
+        "gmail_send",
+        "qr_code_print",
+        "feedback_collection"
+      ],
+      "task_stats": {
+        "website_creation": { "count": 1, "avg_sec": 8, "success_rate": 1.0 },
+        "pdf_creation_and_email": { "count": 1, "avg_sec": 4, "success_rate": 1.0 }
+      }
+    }
+  },
+
+  "hooks": [
+    {
+      "id": "post_delivery_audit_log",
+      "event": "Stop",
+      "description": "After every session, write audit log and run learning loop",
+      "command": "python3 scripts/learning_loop.py --event session_end",
+      "added": "2026-05-23",
+      "times_fired": 2,
+      "risk_score": 1
+    },
+    {
+      "id": "oauth_dependency_check",
+      "event": "PreToolUse",
+      "matcher": "gmail_api",
+      "description": "Before any Gmail API call, verify OAuth token is active. Prompt user if not.",
+      "command": "python3 scripts/check_oauth.py --provider gmail",
+      "added": "2026-05-23",
+      "promoted_from_request": "002",
+      "times_fired": 1,
+      "risk_score": 2
+    }
+  ],
+
+  "mcp": {
+    "vercel_api_deploy": {
+      "description": "Vercel deployment API",
+      "endpoint": "https://api.vercel.com",
+      "auth": "bearer_token",
+      "write_access": true,
+      "avg_latency_sec": 8,
+      "first_seen": "2026-05-23",
+      "times_used": 1,
+      "failure_rate": 0.0
+    },
+    "gmail_api_v1": {
+      "description": "Gmail REST API v1 — send, read, manage messages",
+      "endpoint": "https://gmail.googleapis.com/gmail/v1",
+      "auth": "oauth2",
+      "write_access": true,
+      "avg_latency_sec": 4,
+      "first_seen": "2026-05-23",
+      "times_used": 1,
+      "failure_rate": 0.0,
+      "security_note": "Requires user OAuth consent. Session token only."
+    },
+    "mcp__github": {
+      "description": "GitHub MCP server — repos, PRs, branches, files",
+      "auth": "github_token",
+      "write_access": true,
+      "avg_latency_sec": 2,
+      "first_seen": "2026-05-23",
+      "times_used": 12,
+      "failure_rate": 0.0
+    }
+  },
+
+  "intent_to_skill_map": {
+    "website_creation": ["html_tailwind_css", "alpine_js", "formspree_contact_form", "vercel_static_deploy"],
+    "pdf_creation": ["fpdf2_pdf_generation"],
+    "email_delivery": ["gmail_api_oauth", "gmail_api_send"],
+    "contact_form": ["formspree_contact_form"]
+  },
+
+  "pattern_counters": {
+    "gmail_oauth_required": 1,
+    "vercel_deploy": 1,
+    "static_website": 1,
+    "pdf_generation": 1
+  },
+
+  "pattern_threshold": 3
+}
