@@ -19,6 +19,7 @@ See [`project-setup-rules.md`](project-setup-rules.md) for the full protocol.
 | 004 — AI Startup Street Monetization | `deliverables/2026-05-23_004_ai_startup_street_monetization.md` | Marco | active | 2026-05-23 |
 | 005 — Chatbot Template | `deliverables/2026-05-23_005_chatbot/` | Chiara | active | 2026-05-23 |
 | 007 — Calendar Sync | `deliverables/2026-05-23_007_calendar-sync/` | Chiara | active | 2026-05-23 |
+| 008 — Algo Trading Bot (SMA Crossover) | `deliverables/2026-05-23_008_algo-trading/` | Chiara + Marco | active | 2026-05-23 |
 | GitHub Research Department | `deliverables/github-research/` + `agents/research/` | Research Team | active | 2026-05-23 |
 | RAG System | `deliverables/rag/` | Chiara | active | 2026-05-23 |
 
@@ -40,5 +41,5 @@ See [`projects/README.md`](projects/README.md) for the submodule protocol.
 
 ## Notes
 
-- Deliverables 001–RAG and internal systems were created before the submodule convention was established. They live in the monorepo.
-- All new deliverable projects must follow the submodule protocol: create a repo named `AIstudio_Project_<timestamp>`, link via `git submodule add`, and register in this file.
+- All deliverables and internal systems live in the monorepo (pre-date the submodule convention).
+- All new deliverable projects must follow the submodule protocol: create a repo named `AIstudio_Project_<timestamp>`, link via `git submodule add`, and register here.
