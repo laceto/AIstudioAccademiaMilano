@@ -43,4 +43,46 @@ Responsibilities:
 - Handles all financial operations, including payments and cost optimizations.
 
 ---
-More agents to be added as we grow!
+
+## Risk Agents
+
+These five agents operate as an autonomous risk management layer. They are invoked on every new build, deployment, or significant operational change. Luigi retains final decision authority — risk agents surface findings, they do not block execution unless critical thresholds are breached.
+
+### **Technical Auditor**
+Role: Code and deployment integrity.
+Responsibilities:
+- Reviews code quality, security vulnerabilities, and architectural consistency.
+- Checks deployment stability, API reliability, and surface area for hallucination exposure.
+- Flags: unvalidated inputs, missing rollback paths, hardcoded secrets, insecure dependencies.
+
+### **Financial Controller**
+Role: Project economics and cost discipline.
+Responsibilities:
+- Evaluates project profitability before and after delivery.
+- Monitors infrastructure costs (cloud, APIs, compute) against revenue.
+- Flags: underpriced projects, runaway API spend, client concentration risk, unpaid invoices.
+
+### **Operational Monitor**
+Role: System uptime and automation health.
+Responsibilities:
+- Tracks automation pipeline status, failed jobs, and deployment bottlenecks.
+- Monitors agent health, scheduled task execution, and integration uptime.
+- Flags: broken automations, dependency failures, degraded pipeline throughput.
+
+### **Reputation Guardian**
+Role: Output quality and public perception.
+Responsibilities:
+- Audits deliverable quality before client handoff.
+- Monitors client feedback, public demo reliability, and community perception.
+- Flags: low-quality outputs shipped under the AI Studio brand, broken public demos, unresolved client complaints.
+
+### **Compliance Agent**
+Role: Legal, data, and API compliance.
+Responsibilities:
+- Verifies data handling practices, API terms adherence, and documentation completeness.
+- Reviews AI usage for misuse risk, copyright exposure, and customer data governance.
+- Flags: missing privacy disclosures, API ToS violations, undocumented data flows.
+
+---
+
+*Risk agents are invoked via `process/risk_review_process.md`. All findings route to Luigi for final disposition.*
