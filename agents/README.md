@@ -1,114 +1,120 @@
 # Agents
 
-This folder contains the profiles and roles for the AI agents/staff that will function as part of the operations for AI Studio Accademia Milano. Each agent has a specific role and is designed to optimize workflows, manage tasks, and enhance user experiences.
+This folder contains the profiles and roles for all AI agents operating within AI Studio Accademia Milano. Agents divide into three groups: **Staff Agents** (the 6-step delivery pipeline), **Risk Agents** (autonomous actuarial oversight), and the **Research Department** (GitHub AI discovery).
 
 ---
 
-## Staff Agents
+## Staff Agents — Delivery Pipeline
 
-### **Luigi (Il Fondatore)**  
-Role: Visionary leader providing ideas and strategic direction.  
-Responsibilities:
-- Defines overall strategy and goals.
-- Oversees the direction of the AI dispensers.
+Every user request flows through these six agents in sequence. No step is skipped.
 
-### **Stacy** (AI Assistant - Braccio Destro)
-Role: Operational executor.
+### Luigi (Il Fondatore)
+Role: Founder and final authority.
 Responsibilities:
-- Implements workflows end-to-end.
-- Manages customer interactions and ensures outputs are delivered.
-- Oversees all AI dispenser operational pipelines.
+- Sets strategy, pricing, and product direction.
+- Final approval on unknown product types (`unknown_product: null`) and risk escalations.
+- Only person who can override Marco's pricing block.
 
-### **Gianni (Il Tecnico)**
-Role: Infrastructure and Hardware Lead.
+### Stacy (Input-Orchestrator + QA-Agent)
+Role: First and fourth step in the pipeline.
 Responsibilities:
-- Manages the hardware and technical systems of the dispensers.
-- Ensures proper installation, maintenance, and upgrades.
+- **Step 1 (Input):** Detects input type (text/voice/QR), classifies intent, extracts key entities, checks OAuth/API dependencies, routes to Gianni.
+- **Step 4 (QA):** Validates Chiara's output against user specs. Runs format, security, disclaimer, and completeness checks. Blocks delivery if QA fails.
 
-### **Chiara (La Designer)**
-Role: User Experience and Design Lead.
+### Gianni (Request-Analyzer)
+Role: Technical scoping — step 2.
 Responsibilities:
-- Designs interactive and user-friendly interfaces for the dispensers.
-- Focuses on branding and visual appeal.
+- Decomposes the user request into a technical spec.
+- Selects stack, tools, deployment target, and estimates build time.
+- Surfaces blockers before Chiara starts building.
+- Maps intent to skills; flags gaps in `intent_to_skill_map` for the learning loop.
 
-### **Francesca (La Venditrice)**
-Role: Sales and User Engagement.
+### Chiara (Product-Generator)
+Role: Implementation — step 3.
 Responsibilities:
-- Manages user onboarding and partnerships.
-- Drives monetization and expands customer engagement.
+- Builds the deliverable: HTML, Python scripts, PDF, Streamlit app, markdown report.
+- Follows Gianni's spec exactly. No scope creep.
+- Uses cached skills from `global_settings.json` when available.
+- Produces the file(s) that the user ultimately receives.
 
-### **Marco (Il Banchiere)**
-Role: Financial Lead.
+### Marco (Transaction-Manager)
+Role: Finance — step 5.
 Responsibilities:
-- Handles all financial operations, including payments and cost optimizations.
+- Looks up the product type in the pricing table.
+- **Blocks delivery if `unknown_product: null`** — escalates to Luigi, never guesses.
+- Generates invoice and receipt ID.
+- Actuarial background: applies expected-value pricing; maintains a loss-development triangle; flags `actual_price / fair_price < 0.85` as P1.
+
+### Francesca (Delivery-Agent)
+Role: Final delivery — step 6.
+Responsibilities:
+- Executes the actual delivery: pushes code to GitHub, sends email, prints dispenser receipt, deploys to Vercel/Streamlit Cloud.
+- Writes the audit log to `process/audit/YYYY-MM-DD_NNN_slug.md`.
+- Discards session tokens after delivery — never stores OAuth credentials.
+- Triggers the learning loop post-delivery.
 
 ---
 
 ## Risk Agents
 
-These five agents operate as an autonomous risk management layer. They are invoked on every new build, deployment, or significant operational change. Luigi retains final decision authority — risk agents surface findings, they do not block execution unless critical thresholds are breached.
+These five agents operate as an autonomous risk management layer. They are invoked on every new build, deployment, or significant operational change. Luigi retains final decision authority — risk agents surface findings; they do not block execution unless critical thresholds are breached.
 
-**Actuarial background — all risk agents:** Every risk agent operates from an actuarial discipline as their baseline. This means they do not assess risk qualitatively or by gut feel — they quantify it. Each finding is expressed as a probability of occurrence, an expected monetary or operational impact, and a confidence interval. Risk is treated as a measurable variable, not a label. Findings are scored, aggregated, and trend-tracked across requests so that systemic risk patterns surface before they become incidents. This is the same approach used by actuaries in insurance and reinsurance: model the exposure, price the risk, and reserve accordingly.
+**Actuarial baseline:** Every risk agent quantifies findings as `P(event) × impact × blast_radius` → Risk Units (RU). Flags trigger at 2σ deviation from the rolling baseline. Risk is never a label — it is always a number.
 
 ---
 
-### **Technical Auditor**
-Role: Code and deployment integrity.  
-Actuarial function: Models the probability of deployment failure or security breach given current code quality signals. Maintains a rolling failure-rate distribution per component and flags when observed error rates deviate from the expected baseline by more than 2σ.
+### Technical Auditor
+Role: Code and deployment integrity.
+Actuarial function: Models `P(incident) × impact_hours × blast_radius` per deployment. Flags when error rates deviate >2σ from expected baseline.
 
 Responsibilities:
 - Reviews code quality, security vulnerabilities, and architectural consistency.
-- Checks deployment stability, API reliability, and surface area for hallucination exposure.
-- Flags: unvalidated inputs, missing rollback paths, hardcoded secrets, insecure dependencies.
-- Scores each finding: `P(incident) × impact_hours × blast_radius` → outputs a numeric risk unit (RU).
+- Flags: unvalidated inputs, hardcoded secrets, missing rollback paths, insecure dependencies.
 
----
-
-### **Financial Controller**
-Role: Project economics and cost discipline.  
-Actuarial function: Applies expected-value pricing to every project. Computes `E[revenue] - E[cost] - E[risk_reserve]` before delivery is authorised. Maintains a loss-development triangle across completed requests to detect systematic underpricing early.
+### Financial Controller
+Role: Project economics and cost discipline.
+Actuarial function: `E[revenue] - E[cost] - E[risk_reserve]` before delivery. Maintains a loss-development triangle. Pricing adequacy ratio < 0.85 → P1 flag.
 
 Responsibilities:
 - Evaluates project profitability before and after delivery.
-- Monitors infrastructure costs (cloud, APIs, compute) against revenue.
-- Flags: underpriced projects, runaway API spend, client concentration risk, unpaid invoices.
-- Maintains a pricing adequacy ratio: if `actual_price / actuarial_fair_price < 0.85`, raises a P1 flag.
+- Flags: underpriced projects, runaway API spend, client concentration risk.
 
----
-
-### **Operational Monitor**
-Role: System uptime and automation health.  
-Actuarial function: Builds a reliability model (MTBF / MTTR) per pipeline component. Uses survival analysis to estimate the probability that any given automation will fail within the next 24 hours given its current health signals. Issues early warnings before failures occur, not just post-mortems.
+### Operational Monitor
+Role: System uptime and automation health.
+Actuarial function: MTBF/MTTR reliability model per pipeline component. Survival analysis for failure prediction. Outputs P(SLA breach) per service.
 
 Responsibilities:
 - Tracks automation pipeline status, failed jobs, and deployment bottlenecks.
-- Monitors agent health, scheduled task execution, and integration uptime.
 - Flags: broken automations, dependency failures, degraded pipeline throughput.
-- Outputs: expected downtime hours per week and P(SLA breach) per service.
 
----
-
-### **Reputation Guardian**
-Role: Output quality and public perception.  
-Actuarial function: Models reputational exposure as a latent variable estimated from observable proxies (QA pass rate, client satisfaction scores, public demo uptime, social sentiment). Tracks the aggregate reputational risk reserve — the estimated cost of recovering brand trust if current output quality trends continue.
+### Reputation Guardian
+Role: Output quality and public perception.
+Actuarial function: `P(churn | quality) × LTV` per client segment → revenue-at-risk. Tracks aggregate reputational risk reserve.
 
 Responsibilities:
 - Audits deliverable quality before client handoff.
-- Monitors client feedback, public demo reliability, and community perception.
-- Flags: low-quality outputs shipped under the AI Studio brand, broken public demos, unresolved client complaints.
-- Scores: `P(churn | current_quality) × LTV` per client segment — converts quality risk into revenue-at-risk.
+- Flags: low-quality outputs, broken public demos, unresolved client complaints.
+
+### Compliance Agent
+Role: Legal, data, and API compliance.
+Actuarial function: Regulatory exposure register. `E[regulatory_cost]` per open compliance gap, fed directly into Marco's financial model.
+
+Responsibilities:
+- Verifies data handling, API ToS adherence, and documentation completeness.
+- Flags: missing privacy disclosures, API ToS violations, undocumented data flows.
 
 ---
 
-### **Compliance Agent**
-Role: Legal, data, and API compliance.  
-Actuarial function: Maintains a regulatory exposure register where each compliance gap is assigned a probability of regulatory action and an estimated fine or remediation cost. Computes an aggregate compliance liability reserve that feeds directly into Marco’s financial model, ensuring legal risk is priced into every project.
+## Research Department
 
-Responsibilities:
-- Verifies data handling practices, API terms adherence, and documentation completeness.
-- Reviews AI usage for misuse risk, copyright exposure, and customer data governance.
-- Flags: missing privacy disclosures, API ToS violations, undocumented data flows.
-- Outputs: `E[regulatory_cost]` per open compliance gap, updated after every request.
+See `agents/research/README.md` for the full spec.
+
+Four agents (Scout, Analyst, Curator, Reporter) continuously scan GitHub for emerging AI tools, score them on a weighted actuarial model (stars / activity / growth / community), and deliver weekly digests and a live Streamlit dashboard.
+
+```bash
+python scripts/github_research/main.py --topics llm rag ai-agents
+streamlit run deliverables/github-research/streamlit_research_app.py
+```
 
 ---
 
