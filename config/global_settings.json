@@ -1,116 +1,72 @@
 {
   "_meta": {
-    "version": "1.2",
+    "version": "1.3",
     "description": "AI Studio Accademia Milano — global learned settings. Auto-updated by learning_loop.py after each completed request.",
     "last_updated": "2026-05-23",
-    "last_request_id": "004",
-    "total_requests_processed": 4
+    "last_request_id": "005",
+    "total_requests_processed": 5
   },
 
   "skills": {
-    "html_tailwind_css": {
-      "description": "Static HTML pages styled with Tailwind CSS",
-      "intent_mappings": ["website_creation", "landing_page"],
+    "html_tailwind_css":          { "intent_mappings": ["website_creation"], "agent": "Chiara", "times_used": 1, "avg_duration_sec": 40 },
+    "alpine_js":                  { "intent_mappings": ["website_creation"], "agent": "Chiara", "times_used": 1, "avg_duration_sec": 0 },
+    "formspree_contact_form":     { "intent_mappings": ["contact_form"],     "agent": "Chiara", "times_used": 1, "avg_duration_sec": 0 },
+    "vercel_static_deploy":       { "intent_mappings": ["website_creation"], "agent": "Francesca", "times_used": 1, "avg_duration_sec": 8 },
+    "fpdf2_pdf_generation":       { "intent_mappings": ["pdf_creation", "invoice_generation"], "agent": "Chiara", "times_used": 2, "avg_duration_sec": 4 },
+    "invoice_template_pdf":       { "intent_mappings": ["invoice_generation"], "agent": "Chiara", "times_used": 1, "avg_duration_sec": 12 },
+    "gmail_api_oauth":            { "intent_mappings": ["email_delivery"], "agent": "Stacy", "times_used": 2, "requires_user_auth": true, "avg_duration_sec": 7 },
+    "gmail_api_send":             { "intent_mappings": ["email_delivery"], "agent": "Francesca", "times_used": 2, "avg_duration_sec": 4 },
+    "advisory_report_generation": { "intent_mappings": ["strategic_consultation"], "agent": "Chiara", "times_used": 1, "requires_risk_agents": true, "avg_duration_sec": 55 },
+    "risk_agent_invocation":      { "intent_mappings": ["strategic_consultation"], "agent": "Stacy", "times_used": 1, "avg_duration_sec": 5 },
+    "markdown_report_formatting": { "intent_mappings": ["strategic_consultation"], "agent": "Chiara", "times_used": 1, "avg_duration_sec": 0 },
+    "streamlit_app_generation": {
+      "description": "Full Streamlit Python app: chat UI, sidebar config, session state",
+      "intent_mappings": ["chatbot_creation", "interactive_app"],
       "agent": "Chiara",
       "first_seen": "2026-05-23",
       "times_used": 1,
       "success_rate": 1.0,
-      "avg_duration_sec": 40
+      "avg_duration_sec": 65,
+      "template_file": "templates/streamlit/chatbot_openai.py"
     },
-    "alpine_js": {
-      "description": "Lightweight JS reactivity for static pages",
-      "intent_mappings": ["website_creation"],
+    "openai_api_integration": {
+      "description": "OpenAI Python SDK: chat completions, streaming, model selection",
+      "intent_mappings": ["chatbot_creation", "ai_integration"],
       "agent": "Chiara",
       "first_seen": "2026-05-23",
       "times_used": 1,
       "success_rate": 1.0,
-      "avg_duration_sec": 0
-    },
-    "formspree_contact_form": {
-      "description": "No-backend contact form via Formspree",
-      "intent_mappings": ["contact_form"],
-      "agent": "Chiara",
-      "first_seen": "2026-05-23",
-      "times_used": 1,
-      "success_rate": 1.0,
-      "avg_duration_sec": 0
-    },
-    "vercel_static_deploy": {
-      "description": "Deploy static HTML/CSS/JS to Vercel",
-      "intent_mappings": ["website_creation", "landing_page"],
-      "agent": "Francesca",
-      "first_seen": "2026-05-23",
-      "times_used": 1,
-      "success_rate": 1.0,
-      "avg_duration_sec": 8
-    },
-    "fpdf2_pdf_generation": {
-      "description": "PDF creation with fpdf2 Python library",
-      "intent_mappings": ["pdf_creation", "document_generation", "invoice_generation"],
-      "agent": "Chiara",
-      "first_seen": "2026-05-23",
-      "times_used": 2,
-      "success_rate": 1.0,
-      "avg_duration_sec": 4
-    },
-    "invoice_template_pdf": {
-      "description": "Invoice PDF layout with line items, totals, client fields",
-      "intent_mappings": ["invoice_generation"],
-      "agent": "Chiara",
-      "first_seen": "2026-05-23",
-      "times_used": 1,
-      "success_rate": 1.0,
-      "avg_duration_sec": 12,
-      "template_file": "templates/pdf/invoice_standard.py"
-    },
-    "gmail_api_oauth": {
-      "description": "Gmail OAuth 2.0 authentication for sending on behalf of user",
-      "intent_mappings": ["email_delivery"],
-      "agent": "Stacy",
-      "first_seen": "2026-05-23",
-      "times_used": 2,
-      "success_rate": 1.0,
-      "avg_duration_sec": 7,
+      "avg_duration_sec": 0,
       "requires_user_auth": true,
-      "auth_method": "oauth2",
-      "security_note": "Token used for session only, never stored"
+      "auth_method": "api_key",
+      "security_note": "Key stored in Streamlit Secrets or env var — never in code"
     },
-    "gmail_api_send": {
-      "description": "Send email with attachment via Gmail API",
-      "intent_mappings": ["email_delivery"],
-      "agent": "Francesca",
-      "first_seen": "2026-05-23",
-      "times_used": 2,
-      "success_rate": 1.0,
-      "avg_duration_sec": 4
-    },
-    "advisory_report_generation": {
-      "description": "Structured strategic or advisory report in markdown, delivered as PDF",
-      "intent_mappings": ["strategic_consultation", "advisory"],
-      "agent": "Chiara",
-      "first_seen": "2026-05-23",
-      "times_used": 1,
-      "success_rate": 1.0,
-      "avg_duration_sec": 55,
-      "requires_risk_agents": true
-    },
-    "risk_agent_invocation": {
-      "description": "Parallel invocation of risk agents for advisory or high-stakes outputs",
-      "intent_mappings": ["strategic_consultation", "advisory", "high_risk"],
-      "agent": "Stacy",
-      "first_seen": "2026-05-23",
-      "times_used": 1,
-      "success_rate": 1.0,
-      "avg_duration_sec": 5
-    },
-    "markdown_report_formatting": {
-      "description": "Structured markdown with sections, tables, code blocks for PDF export",
-      "intent_mappings": ["strategic_consultation", "advisory", "report"],
+    "chat_history_management": {
+      "description": "st.session_state message list — persists chat across reruns",
+      "intent_mappings": ["chatbot_creation"],
       "agent": "Chiara",
       "first_seen": "2026-05-23",
       "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 0
+    },
+    "streamlit_secrets_handling": {
+      "description": "st.secrets for API keys: local secrets.toml + Streamlit Cloud UI",
+      "intent_mappings": ["chatbot_creation", "any_api_key_app"],
+      "agent": "Chiara",
+      "first_seen": "2026-05-23",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "streamlit_cloud_deploy": {
+      "description": "Deploy Streamlit app to Community Cloud from GitHub repo",
+      "intent_mappings": ["chatbot_creation", "interactive_app"],
+      "agent": "Francesca",
+      "first_seen": "2026-05-23",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 12
     }
   },
 
@@ -120,7 +76,8 @@
     "invoice_generation":     ["fpdf2_pdf_generation", "invoice_template_pdf", "gmail_api_send"],
     "email_delivery":         ["gmail_api_oauth", "gmail_api_send"],
     "contact_form":           ["formspree_contact_form"],
-    "strategic_consultation": ["advisory_report_generation", "risk_agent_invocation", "markdown_report_formatting"]
+    "strategic_consultation": ["advisory_report_generation", "risk_agent_invocation", "markdown_report_formatting"],
+    "chatbot_creation":       ["streamlit_app_generation", "openai_api_integration", "chat_history_management", "streamlit_secrets_handling", "streamlit_cloud_deploy"]
   },
 
   "pricing": {
@@ -128,110 +85,24 @@
     "pdf_document":        "€1.90",
     "invoice_pdf":         "€3.90",
     "strategic_report":    "€4.90",
+    "chatbot_app":         "€19.90",
     "email_delivery":      "€0.50",
     "unknown_product":     null
-  },
-
-  "agents": {
-    "Stacy": {
-      "roles": ["input_orchestrator", "qa_agent"],
-      "capabilities": ["intent_extraction", "entity_recognition", "dependency_detection", "oauth_prompt", "qa_checklist", "audit_log_writer", "risk_agent_trigger"],
-      "task_stats": {
-        "website_creation":       { "count": 1, "avg_sec": 12, "success_rate": 1.0 },
-        "pdf_creation_and_email": { "count": 1, "avg_sec": 13, "success_rate": 1.0 },
-        "invoice_generation":     { "count": 1, "avg_sec": 13, "success_rate": 1.0 },
-        "strategic_consultation": { "count": 1, "avg_sec": 12, "success_rate": 1.0 }
-      }
-    },
-    "Gianni": {
-      "roles": ["request_analyzer", "builder_agent"],
-      "capabilities": ["stack_selection", "dependency_mapping", "complexity_scoring", "deploy_target_selection", "no_build_routing"],
-      "task_stats": {
-        "website_creation":       { "count": 1, "avg_sec": 5, "success_rate": 1.0 },
-        "pdf_creation_and_email": { "count": 1, "avg_sec": 3, "success_rate": 1.0 },
-        "invoice_generation":     { "count": 1, "avg_sec": 3, "success_rate": 1.0 },
-        "strategic_consultation": { "count": 1, "avg_sec": 3, "success_rate": 1.0 }
-      }
-    },
-    "Chiara": {
-      "roles": ["product_generator", "designer"],
-      "capabilities": ["html_tailwind_generation", "pdf_generation", "invoice_pdf_generation", "advisory_report_generation", "email_preparation", "ui_layout"],
-      "task_stats": {
-        "website_creation":       { "count": 1, "avg_sec": 40, "success_rate": 1.0 },
-        "pdf_creation_and_email": { "count": 1, "avg_sec": 5,  "success_rate": 1.0 },
-        "invoice_generation":     { "count": 1, "avg_sec": 12, "success_rate": 1.0 },
-        "strategic_consultation": { "count": 1, "avg_sec": 55, "success_rate": 1.0 }
-      }
-    },
-    "Marco": {
-      "roles": ["transaction_manager"],
-      "capabilities": ["payment_processing", "receipt_generation", "price_calculation", "price_escalation_to_luigi"],
-      "pricing": {
-        "static_landing_page": "€9.90",
-        "pdf_document":        "€1.90",
-        "invoice_pdf":         "€3.90",
-        "strategic_report":    "€4.90",
-        "email_delivery":      "€0.50",
-        "unknown_product":     null
-      },
-      "task_stats": {
-        "website_creation":       { "count": 1, "avg_sec": 15, "success_rate": 1.0 },
-        "pdf_creation_and_email": { "count": 1, "avg_sec": 15, "success_rate": 1.0 },
-        "invoice_generation":     { "count": 1, "avg_sec": 15, "success_rate": 1.0 },
-        "strategic_consultation": { "count": 1, "avg_sec": 15, "success_rate": 1.0, "escalation": "price set by Luigi" }
-      }
-    },
-    "Francesca": {
-      "roles": ["delivery_agent"],
-      "capabilities": ["vercel_deploy", "gmail_send", "qr_code_print", "pdf_print", "feedback_collection"],
-      "task_stats": {
-        "website_creation":       { "count": 1, "avg_sec": 8, "success_rate": 1.0 },
-        "pdf_creation_and_email": { "count": 1, "avg_sec": 4, "success_rate": 1.0 },
-        "invoice_generation":     { "count": 1, "avg_sec": 4, "success_rate": 1.0 },
-        "strategic_consultation": { "count": 1, "avg_sec": 5, "success_rate": 1.0 }
-      }
-    },
-    "Technical Auditor": {
-      "roles": ["risk_agent"],
-      "background": "actuarial",
-      "task_stats": {
-        "strategic_consultation": { "count": 1, "avg_sec": 5, "risk_units": 2 }
-      }
-    },
-    "Reputation Guardian": {
-      "roles": ["risk_agent"],
-      "background": "actuarial",
-      "task_stats": {
-        "strategic_consultation": { "count": 1, "avg_sec": 5, "risk_units": 3 }
-      }
-    },
-    "Compliance Agent": {
-      "roles": ["risk_agent"],
-      "background": "actuarial",
-      "task_stats": {
-        "strategic_consultation": { "count": 1, "avg_sec": 4, "risk_units": 0 }
-      }
-    }
   },
 
   "hooks": [
     {
       "id": "post_delivery_audit_log",
       "event": "Stop",
-      "description": "After every session, write audit log and run learning loop",
       "command": "python3 scripts/learning_loop.py --event session_end",
-      "added": "2026-05-23",
-      "times_fired": 4,
+      "times_fired": 5,
       "risk_score": 1
     },
     {
       "id": "oauth_dependency_check",
       "event": "PreToolUse",
       "matcher": "gmail_api",
-      "description": "Before any Gmail API call, verify OAuth token is active.",
       "command": "python3 scripts/check_oauth.py --provider gmail",
-      "added": "2026-05-23",
-      "promoted_from_request": "002",
       "times_fired": 2,
       "risk_score": 2
     },
@@ -239,49 +110,48 @@
       "id": "risk_agent_auto_invoke",
       "event": "PreToolUse",
       "matcher": "advisory_report_generation",
-      "description": "Before any advisory output, invoke risk agents in parallel.",
       "command": "python3 scripts/invoke_risk_agents.py --agents technical_auditor,reputation_guardian,compliance_agent",
-      "added": "2026-05-23",
-      "promoted_from_request": "004",
       "times_fired": 1,
       "risk_score": 1
+    },
+    {
+      "id": "api_key_dependency_check",
+      "event": "PreToolUse",
+      "matcher": "openai_api_integration",
+      "description": "Before any OpenAI API call, verify key is available in secrets. Prompt user if not.",
+      "command": "python3 scripts/check_api_key.py --provider openai",
+      "added": "2026-05-23",
+      "promoted_from_request": "005",
+      "times_fired": 1,
+      "risk_score": 2
     }
   ],
 
   "mcp": {
-    "vercel_api_deploy": {
-      "endpoint": "https://api.vercel.com",
-      "auth": "bearer_token",
+    "vercel_api_deploy":   { "auth": "bearer_token", "write_access": true, "avg_latency_sec": 8,  "times_used": 1, "failure_rate": 0.0 },
+    "gmail_api_v1":        { "auth": "oauth2",       "write_access": true, "avg_latency_sec": 4,  "times_used": 2, "failure_rate": 0.0 },
+    "mcp__github":         { "auth": "github_token", "write_access": true, "avg_latency_sec": 2,  "times_used": 26, "failure_rate": 0.0 },
+    "streamlit_cloud_api": {
+      "description": "Streamlit Community Cloud deploy API",
+      "endpoint": "https://share.streamlit.io",
+      "auth": "github_oauth",
       "write_access": true,
-      "avg_latency_sec": 8,
+      "avg_latency_sec": 12,
+      "first_seen": "2026-05-23",
       "times_used": 1,
-      "failure_rate": 0.0
-    },
-    "gmail_api_v1": {
-      "endpoint": "https://gmail.googleapis.com/gmail/v1",
-      "auth": "oauth2",
-      "write_access": true,
-      "avg_latency_sec": 4,
-      "times_used": 2,
-      "failure_rate": 0.0,
-      "security_note": "Session token only — never stored."
-    },
-    "mcp__github": {
-      "auth": "github_token",
-      "write_access": true,
-      "avg_latency_sec": 2,
-      "times_used": 22,
       "failure_rate": 0.0
     }
   },
 
   "pattern_counters": {
-    "gmail_oauth_required":        2,
-    "gmail_api_send":              2,
-    "fpdf2_pdf_generation":        2,
-    "vercel_deploy":               1,
-    "advisory_report_generation":  1,
-    "risk_agent_invocation":       1
+    "gmail_oauth_required":       2,
+    "gmail_api_send":             2,
+    "fpdf2_pdf_generation":       2,
+    "vercel_deploy":              1,
+    "advisory_report_generation": 1,
+    "streamlit_app_generation":   1,
+    "openai_api_integration":     1,
+    "api_key_required":           1
   },
 
   "pattern_thresholds": {
@@ -292,49 +162,26 @@
   },
 
   "open_issues": [
-    {
-      "id": "ISS-001",
-      "priority": "P1",
-      "title": "Pre-populate pricing table before launch",
-      "status": "RESOLVED — Marco now blocks on unknown price",
-      "raised_on": "2026-05-23",
-      "resolved_on": "2026-05-23"
-    },
-    {
-      "id": "ISS-002",
-      "priority": "P1",
-      "title": "Build intent_registry.yaml so Gianni never resolves manually",
-      "status": "OPEN",
-      "raised_on": "2026-05-23"
-    },
+    { "id": "ISS-001", "priority": "P1", "title": "Pre-populate pricing table", "status": "RESOLVED", "resolved_on": "2026-05-23" },
+    { "id": "ISS-002", "priority": "P1", "title": "Build intent_registry.yaml", "status": "OPEN" },
     {
       "id": "ISS-003",
       "priority": "P2",
-      "title": "OAuth session caching or switch to service-account sender",
-      "status": "OPEN",
+      "title": "Unified credential manager (OAuth + API keys)",
+      "status": "OPEN — scope expanded from OAuth-only to all external credentials",
+      "note": "Gmail OAuth (req 002) and OpenAI API key (req 005) are the same problem. Build scripts/credential_manager.py to handle both.",
       "raised_on": "2026-05-23"
     },
+    { "id": "ISS-004", "priority": "P2", "title": "Build templates/ library", "status": "OPEN" },
+    { "id": "ISS-005", "priority": "P2", "title": "Tiered thresholds in learning_loop.py", "status": "OPEN" },
+    { "id": "ISS-006", "priority": "P2", "title": "Source citation for advisory outputs", "status": "OPEN" },
     {
-      "id": "ISS-004",
-      "priority": "P2",
-      "title": "Build templates/ library so Chiara stops rebuilding from scratch",
+      "id": "ISS-007",
+      "priority": "P3",
+      "title": "Chatbot template should be parameterised (any LLM provider, not just OpenAI)",
       "status": "OPEN",
+      "note": "Next chatbot request using Anthropic or Groq should reuse streamlit_app_generation with provider swap, not rebuild from scratch.",
       "raised_on": "2026-05-23"
-    },
-    {
-      "id": "ISS-005",
-      "priority": "P2",
-      "title": "Tiered pattern_thresholds — update learning_loop.py to use them",
-      "status": "OPEN",
-      "raised_on": "2026-05-23"
-    },
-    {
-      "id": "ISS-006",
-      "priority": "P2",
-      "title": "Advisory outputs need source citation mechanism",
-      "status": "OPEN",
-      "raised_on": "2026-05-23",
-      "from_request": "004"
     }
   ]
 }
