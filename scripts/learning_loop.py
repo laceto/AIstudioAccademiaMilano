@@ -8,7 +8,6 @@ and .claude/settings.json, then commits if risk_score < 3.
 
 import argparse
 import json
-import os
 import re
 import subprocess
 from datetime import datetime
@@ -16,6 +15,73 @@ from pathlib import Path
 
 import yaml  # pip install pyyaml
 
+
+# ── Tiered thresholds ────────────────────────────────────────────────────────
+
+_SECURITY_PATTERNS = ("_oauth", "_api_key", "_api_integration")
+_WRITE_PATTERNS = ("_deploy", "_send", "_push", "_write")
+
+
+def get_threshold_for_skill(skill_name: str) -> int:
+    """Return the pattern-promotion threshold for a skill based on its risk tier."""
+    for pat in _SECURITY_PATTERNS:
+        if pat in skill_name:
+            return 1
+    for pat in _WRITE_PATTERNS:
+        if pat in skill_name:
+            return 2
+    return 3
+
+
+# ── Advisory output validation ───────────────────────────────────────────────
+
+_DISCLAIMER_RE = re.compile(
+    r"(does not constitute regulated|AI knowledge and general business principles"
+    r"|not constitute.*?advice)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _has_disclaimer(text: str) -> bool:
+    return bool(_DISCLAIMER_RE.search(text))
+
+
+def validate_advisory_output(text: str, min_words: int = 0) -> bool:
+    """Validate that an advisory report has a disclaimer in the right position."""
+    if not text or not text.strip():
+        raise ValueError("Report is empty")
+
+    if not _has_disclaimer(text):
+        raise ValueError("Report missing disclaimer")
+
+    # Check placement: disclaimer must be in first or last 20% of lines
+    lines = text.splitlines()
+    disclaimer_idx = next(
+        (i for i, ln in enumerate(lines) if _has_disclaimer(ln)), None
+    )
+    if disclaimer_idx is not None:
+        position = disclaimer_idx / max(len(lines) - 1, 1)
+        if 0.20 < position < 0.80:
+            raise ValueError(
+                "Disclaimer placement: must appear at the top or bottom of the report"
+            )
+
+    # Content check: report must have substance beyond the disclaimer
+    content_lines = [ln for ln in lines if not _has_disclaimer(ln)]
+    content = " ".join(content_lines).strip()
+    if not content:
+        raise ValueError("Report has no content beyond the disclaimer")
+
+    word_count = len(content.split())
+    if word_count < min_words:
+        raise ValueError(
+            f"Report too short: {word_count} words, minimum {min_words}"
+        )
+
+    return True
+
+
+# ── Settings helpers ─────────────────────────────────────────────────────────
 
 def load_settings(settings_path: str) -> dict:
     with open(settings_path) as f:
@@ -28,13 +94,12 @@ def save_settings(settings: dict, settings_path: str) -> None:
     print(f"[learning_loop] Settings saved to {settings_path}")
 
 
-def latest_audit_log(audit_dir: str) -> Path | None:
+def latest_audit_log(audit_dir: str) -> Path:
     logs = sorted(Path(audit_dir).glob("*.md"))
     return logs[-1] if logs else None
 
 
 def parse_audit_log(log_path: Path) -> dict:
-    """Extract the YAML front-matter block from the audit log."""
     text = log_path.read_text()
     match = re.search(r"```yaml\n(.+?)```", text, re.DOTALL)
     if not match:
@@ -42,8 +107,9 @@ def parse_audit_log(log_path: Path) -> dict:
     return yaml.safe_load(match.group(1))
 
 
+# ── Learning functions ───────────────────────────────────────────────────────
+
 def update_skills(settings: dict, audit: dict) -> int:
-    """Add newly seen skills. Returns count of changes."""
     changes = 0
     today = datetime.now().strftime("%Y-%m-%d")
     for skill in audit.get("learning_flags", {}).get("new_skills", []):
@@ -60,13 +126,13 @@ def update_skills(settings: dict, audit: dict) -> int:
             print(f"[learning_loop] New skill: {skill}")
             changes += 1
         else:
-            s = settings["skills"][skill]
-            s["times_used"] = s.get("times_used", 0) + 1
+            settings["skills"][skill]["times_used"] = (
+                settings["skills"][skill].get("times_used", 0) + 1
+            )
     return changes
 
 
 def update_mcp(settings: dict, audit: dict) -> int:
-    """Register newly seen MCP tools. Returns count of changes."""
     changes = 0
     today = datetime.now().strftime("%Y-%m-%d")
     for tool in audit.get("learning_flags", {}).get("new_mcp", []):
@@ -87,7 +153,6 @@ def update_mcp(settings: dict, audit: dict) -> int:
 
 
 def update_agent_stats(settings: dict, audit: dict) -> int:
-    """Update per-agent task statistics. Returns count of changes."""
     changes = 0
     intent = audit.get("intent", "unknown")
     for agent_entry in audit.get("agents_invoked", []):
@@ -100,7 +165,9 @@ def update_agent_stats(settings: dict, audit: dict) -> int:
             changes += 1
         s = stats[intent]
         n = s["count"]
-        s["avg_sec"] = round((s["avg_sec"] * n + agent_entry.get("duration_sec", 0)) / (n + 1), 1)
+        s["avg_sec"] = round(
+            (s["avg_sec"] * n + agent_entry.get("duration_sec", 0)) / (n + 1), 1
+        )
         s["count"] = n + 1
         if agent_entry["status"] != "success":
             s["success_rate"] = round((s["success_rate"] * n) / (n + 1), 3)
@@ -108,13 +175,13 @@ def update_agent_stats(settings: dict, audit: dict) -> int:
 
 
 def check_pattern_hooks(settings: dict, audit: dict) -> int:
-    """Promote recurring patterns to hooks when threshold is reached. Returns count of changes."""
+    """Promote recurring skill patterns to hooks using tiered thresholds."""
     changes = 0
-    threshold = settings.get("pattern_threshold", 3)
     counters = settings.setdefault("pattern_counters", {})
 
     for skill in audit.get("skills_used", []):
         counters[skill] = counters.get(skill, 0) + 1
+        threshold = get_threshold_for_skill(skill)
         if counters[skill] == threshold:
             hook_id = f"auto_preload_{skill}"
             existing_ids = [h["id"] for h in settings.get("hooks", [])]
@@ -123,12 +190,14 @@ def check_pattern_hooks(settings: dict, audit: dict) -> int:
                     "id": hook_id,
                     "event": "PreToolUse",
                     "matcher": skill,
-                    "description": f"Auto-promoted: pre-load {skill} context after {threshold} uses",
+                    "description": (
+                        f"Auto-promoted: pre-load {skill} context after {threshold} uses"
+                    ),
                     "command": f"python3 scripts/preload_{skill}.py 2>&1",
                     "added": datetime.now().strftime("%Y-%m-%d"),
                     "promoted_from_pattern": True,
                     "times_fired": 0,
-                    "risk_score": 2,
+                    "risk_score": threshold,
                 }
                 settings.setdefault("hooks", []).append(new_hook)
                 print(f"[learning_loop] New hook promoted: {hook_id}")
@@ -149,7 +218,9 @@ def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--event", required=True, choices=["session_end", "delivery_complete"])
+    parser.add_argument(
+        "--event", required=True, choices=["session_end", "delivery_complete"]
+    )
     parser.add_argument("--audit-dir", default="process/audit")
     parser.add_argument("--settings", default="config/global_settings.json")
     args = parser.parse_args()
@@ -177,12 +248,15 @@ def main():
     )
 
     save_settings(settings, args.settings)
-    print(f"[learning_loop] {changes} changes detected. Risk score: {risk_score}")
+    print(f"[learning_loop] {changes} changes. Risk score: {risk_score}")
 
     if risk_score < 3:
         commit_changes(args.settings, args.audit_dir, audit["request_id"])
     else:
-        print(f"[learning_loop] Risk score {risk_score} >= 3. Awaiting Luigi approval before commit.")
+        print(
+            f"[learning_loop] Risk score {risk_score} >= 3. "
+            "Awaiting Luigi approval before commit."
+        )
 
 
 if __name__ == "__main__":
