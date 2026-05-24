@@ -1,102 +1,98 @@
-# Intent Registry — AI Studio Accademia Milano
-# Maps every known intent to the skills and delivery options used by Stacy/Gianni.
-# Must stay in sync with config/global_settings.json intent_to_skill_map.
-
 website_creation:
   skills:
-    - html_tailwind_css
-    - alpine_js
-    - formspree_contact_form
-    - vercel_static_deploy
+  - html_tailwind_css
+  - alpine_js
+  - formspree_contact_form
+  - vercel_static_deploy
   delivery_options:
-    - vercel_deploy
-    - github_pages
-    - zip_download
-
+  - vercel_deploy
+  - github_pages
+  - zip_download
 pdf_creation:
   skills:
-    - fpdf2_pdf_generation
+  - fpdf2_pdf_generation
   delivery_options:
-    - email_attachment
-    - direct_download
-
+  - email_attachment
+  - direct_download
 invoice_generation:
   skills:
-    - fpdf2_pdf_generation
-    - invoice_template_pdf
-    - gmail_api_send
+  - fpdf2_pdf_generation
+  - invoice_template_pdf
+  - gmail_api_send
   delivery_options:
-    - email_attachment
-    - direct_download
-
+  - email_attachment
+  - direct_download
 email_delivery:
   skills:
-    - gmail_api_oauth
-    - gmail_api_send
+  - gmail_api_oauth
+  - gmail_api_send
   delivery_options:
-    - gmail_send
-    - dispenser_confirmation
-
+  - gmail_send
+  - dispenser_confirmation
 contact_form:
   skills:
-    - formspree_contact_form
+  - formspree_contact_form
   delivery_options:
-    - embedded_in_website
-
+  - embedded_in_website
 strategic_consultation:
   skills:
-    - advisory_report_generation
-    - risk_agent_invocation
-    - markdown_report_formatting
+  - advisory_report_generation
+  - risk_agent_invocation
+  - markdown_report_formatting
   delivery_options:
-    - markdown_report
-    - pdf_report
-    - email_delivery
-
+  - markdown_report
+  - pdf_report
+  - email_delivery
 chatbot_creation:
   skills:
-    - streamlit_app_generation
-    - openai_api_integration
-    - chat_history_management
-    - streamlit_secrets_handling
-    - streamlit_cloud_deploy
+  - streamlit_app_generation
+  - openai_api_integration
+  - chat_history_management
+  - streamlit_secrets_handling
+  - streamlit_cloud_deploy
   delivery_options:
-    - streamlit_cloud_url
-    - github_repo
-
+  - streamlit_cloud_url
+  - github_repo
 knowledge_query:
   skills:
-    - file_crawler
-    - vector_embeddings
-    - semantic_retrieval
-    - rag_qa
-    - streamlit_app_generation
-    - streamlit_cloud_deploy
+  - file_crawler
+  - vector_embeddings
+  - semantic_retrieval
+  - rag_qa
+  - streamlit_app_generation
+  - streamlit_cloud_deploy
   delivery_options:
-    - streamlit_search_ui
-    - cli_query
-    - api_endpoint
-
+  - streamlit_search_ui
+  - cli_query
+  - api_endpoint
 calendar_integration:
   skills:
-    - event_extraction_llm
-    - telegram_bot_api
-    - twilio_whatsapp_api
-    - google_calendar_api
-    - microsoft_graph_api
-    - apple_caldav
+  - event_extraction_llm
+  - telegram_bot_api
+  - twilio_whatsapp_api
+  - google_calendar_api
+  - microsoft_graph_api
+  - apple_caldav
   delivery_options:
-    - telegram_bot
-    - whatsapp_webhook
-    - calendar_event_created
-
+  - telegram_bot
+  - whatsapp_webhook
+  - calendar_event_created
 weather_dashboard:
   skills:
-    - openweathermap_api_integration
-    - weather_data_display
-    - streamlit_app_generation
-    - streamlit_secrets_handling
+  - openweathermap_api_integration
+  - weather_data_display
+  - streamlit_app_generation
+  - streamlit_secrets_handling
   delivery_options:
-    - streamlit_local
-    - streamlit_cloud_url
-    - github_repo
+  - streamlit_local
+  - streamlit_cloud_url
+  - github_repo
+discord_bot:
+  skills:
+  - discord_bot_development
+  - discord_slash_commands
+  - discord_webhook_posting
+  - anthropic_api_integration
+  - openweathermap_api_integration
+  delivery_options:
+  - github_repo
