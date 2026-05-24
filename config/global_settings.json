@@ -1,10 +1,11 @@
 {
   "_meta": {
-    "version": "1.5",
+    "version": "1.6",
     "description": "AI Studio Accademia Milano \u2014 global learned settings.",
     "last_updated": "2026-05-24",
     "last_request_id": "013",
-    "total_requests_processed": 19
+    "total_requests_processed": 19,
+    "v1.6_changes": "Confirmed pricing agent_deploy_streamlit=\u20ac19.90 (Luigi approved); added skills huggingface_spaces_docker_deploy + langgraph_agent_streamlit_wrapper; wired agent_deploy_streamlit into intent_to_skill_map"
   },
   "skills": {
     "html_tailwind_css": {
@@ -469,9 +470,34 @@
       "intent_mappings": [
         "agent_deploy_streamlit"
       ],
-      "agent": "unknown",
+      "agent": "Chiara",
       "first_seen": "2026-05-24",
       "times_used": 4,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "huggingface_spaces_docker_deploy": {
+      "description": "Deploy a Streamlit/Gradio app to HF Spaces via Docker SDK: YAML frontmatter (sdk: docker, app_port), non-root uid 1000, --user pip install, OPENAI_API_KEY as Space secret",
+      "intent_mappings": [
+        "agent_deploy_streamlit"
+      ],
+      "agent": "Francesca",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0,
+      "requires_user_auth": true,
+      "auth_method": "huggingface_token",
+      "security_note": "Secrets injected as env vars by HF; never commit them to the Space repo"
+    },
+    "langgraph_agent_streamlit_wrapper": {
+      "description": "Generic ~120-line Streamlit shell over a LangGraph factory: sidebar agent picker, factory(symbol,...).invoke(_initial_state), render result['final_output']",
+      "intent_mappings": [
+        "agent_deploy_streamlit"
+      ],
+      "agent": "Chiara",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     }
@@ -531,6 +557,15 @@
       "weather_data_display",
       "streamlit_app_generation",
       "streamlit_secrets_handling"
+    ],
+    "agent_deploy_streamlit": [
+      "langgraph_agent_streamlit_wrapper",
+      "openai_api_integration",
+      "streamlit_app_generation",
+      "streamlit_secrets_handling",
+      "dockerfile_authoring",
+      "ta_lib_system_dependency_handling",
+      "huggingface_spaces_docker_deploy"
     ]
   },
   "pricing": {
@@ -543,6 +578,7 @@
     "rag_knowledge_base": "\u20ac29.90",
     "calendar_integration": "\u20ac14.90",
     "weather_dashboard": "\u20ac9.90",
+    "agent_deploy_streamlit": "\u20ac19.90",
     "unknown_product": null
   },
   "hooks": [

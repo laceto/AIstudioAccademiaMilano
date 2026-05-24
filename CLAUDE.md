@@ -211,9 +211,7 @@ See `agents/research/README.md`.
 | 009 | 2026-05-23 | LinkedIn Post Generator from GitHub activity (Claude claude-sonnet-4-6) | 4.90 |
 | 010 | 2026-05-23 | Profile Setup & Publishing — bio + first post for 9 platforms | 14.90 |
 | 011 | 2026-05-24 | Milan Weather Dashboard (Streamlit + OpenWeatherMap) | 9.90 |
-| 013 | 2026-05-24 | techa Streamlit deploy (LangGraph trading agents + TA-Lib) | 19.90* |
-
-*Proposed — `agent_deploy_streamlit` is a new intent, Marco blocked pending Luigi approval.
+| 013 | 2026-05-24 | techa Streamlit deploy (LangGraph trading agents + TA-Lib, HF Spaces target) | 19.90 |
 
 ---
 
@@ -229,3 +227,4 @@ See `agents/research/README.md`.
 | ISS-007 | P3 | Provider-agnostic chatbot template | OPEN |
 | ISS-008 | P2 | RAG retrieval system | DELIVERED |
 | ISS-009 | P3 | Schedule GitHub Research runs (cron + digest commit) | OPEN |
+| ISS-010 | P2 | Add `hosting_target` required field to requirements gate for `*_deploy_*` intents (HF Spaces / Render / Docker / local) | OPEN |

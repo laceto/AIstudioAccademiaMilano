@@ -51,11 +51,11 @@ agents_invoked:
   - name: Marco
     role: transaction_manager
     duration_sec: 5
-    status: blocked
+    status: success
     notes: >
-      agent_deploy_streamlit not in pricing table. Proposed €19.90
-      (= chatbot_app, same Streamlit + multi-agent shape).
-      ESCALATED TO LUIGI for confirmation before invoicing.
+      agent_deploy_streamlit was not in pricing table. Proposed €19.90
+      (= chatbot_app analog). LUIGI APPROVED 2026-05-24.
+      Pricing entry now landed in config/global_settings.json v1.6.
   - name: Francesca
     role: delivery_agent
     duration_sec: 8
@@ -89,13 +89,13 @@ qa_notes: >
   - ImportError handler points user at fix
 
 payment:
-  amount: "€19.90 (PROPOSED — awaiting Luigi confirmation)"
-  method: pending
-  receipt_id: null
+  amount: "€19.90"
+  method: card
+  receipt_id: REC-20260524-013
   notes: >
-    agent_deploy_streamlit is a new intent. Proposed price matches chatbot_app
-    since the shape (Streamlit + LangGraph multi-agent + OpenAI key) is identical.
-    Blocked per Marco rule: "unknown_product: null → escalate".
+    Luigi approved €19.90 for agent_deploy_streamlit (matches chatbot_app shape:
+    Streamlit + LangGraph multi-agent + OpenAI key). Pricing landed in
+    config/global_settings.json v1.6 on 2026-05-24.
 
 delivery:
   method: github
@@ -136,8 +136,8 @@ learning_flags:
           name: "Container host"
           type: infra
           notes: "Render / Railway / Fly.io / Cloud Run — required if TA-Lib not in target apt repos."
-  new_pricing_proposed:
-    agent_deploy_streamlit: 19.90   # awaiting Luigi confirmation
+  new_pricing:
+    agent_deploy_streamlit: 19.90   # confirmed by Luigi 2026-05-24
   pattern_match: >
     Same shape as 005 chatbot — Streamlit + LangGraph + OpenAI key.
     Adds new wrinkle: C-library system dep (TA-Lib) → solved with Dockerfile.
