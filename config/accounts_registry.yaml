@@ -156,8 +156,9 @@ mcp_connectors:
 
   - provider: Hugging Face
     type: npm_mcp
-    token_env: HF_TOKEN
+    token_env: HUGGINGFACE_API_KEY
     status: pending_credentials
+    notes: Free token from huggingface.co → Settings → Access Tokens (Read scope)
 
   - provider: n8n
     type: npm_mcp
