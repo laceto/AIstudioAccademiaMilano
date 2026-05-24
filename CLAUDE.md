@@ -57,6 +57,7 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 | File | Purpose |
 |------|--------|
 | `config/global_settings.json` | Single source of truth: skills, pricing, hooks, MCP, issues |
+| `pytest.ini` | `pythonpath = .` — makes `scripts/` importable in CI and locally |
 | `.claude/settings.json` | Hook commands: Stop, PreToolUse, PostToolUse |
 | `scripts/learning_loop.py` | Auto-updates settings after every request |
 | `scripts/credential_manager.py` | Unified auth store: OAuth tokens + API keys |
@@ -68,6 +69,7 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 | `process/audit/` | One YAML-fronted Markdown file per completed request |
 | `agents/README.md` | Agent role definitions + actuarial specs |
 | `agents/research/README.md` | GitHub Research Department spec |
+| `agents/input_gateway/README.md` | Input Gateway Team spec (Pablo, Sofia, Carlos) |
 | `templates/pdf/invoice_standard.py` | `InvoiceTemplate` -> valid PDF bytes via fpdf2 |
 | `templates/streamlit/chatbot.py` | `ChatbotTemplate(provider, model)` -> Streamlit app |
 | `wiki/llm/` | Karpathy-style LLM education wiki (7 chapters + code) |
@@ -80,16 +82,19 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 
 ```json
 {
-  "static_landing_page":  "9.90",
-  "pdf_document":         "1.90",
-  "invoice_pdf":          "3.90",
-  "strategic_report":     "4.90",
-  "chatbot_app":          "19.90",
-  "email_delivery":       "0.50",
-  "rag_knowledge_base":   "29.90",
-  "calendar_integration": "14.90",
-  "weather_dashboard":    "9.90",
-  "unknown_product":      null
+  "static_landing_page":     "9.90",
+  "premium_landing_page":    "29.90",
+  "commercial_landing_page": "45.90",
+  "pdf_document":            "1.90",
+  "invoice_pdf":             "3.90",
+  "strategic_report":        "4.90",
+  "chatbot_app":             "19.90",
+  "email_delivery":          "0.50",
+  "rag_knowledge_base":      "29.90",
+  "calendar_integration":    "14.90",
+  "weather_dashboard":       "9.90",
+  "agent_deploy_streamlit":  "19.90",
+  "unknown_product":         null
 }
 ```
 
@@ -112,8 +117,21 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 
 ## Learning Loop
 
-After every completed request, `scripts/learning_loop.py` runs automatically:
+After every completed request, `scripts/learning_loop.py` runs automatically via the `Stop` hook in `.claude/settings.json`:
 
+```
+python scripts/learning_loop.py \
+  --event session_end \
+  --audit-dir process/audit \
+  --settings config/global_settings.json \
+  --claude-dir C:\Users\l_ace\.claude
+```
+
+**`--claude-dir` is mandatory.** It wires the loop to the global Claude installation:
+- Writes `project_state.md` to `C:\Users\l_ace\.claude\projects\...\memory\`
+- Promotes mature skills as `SKILL.md` stubs to `C:\Users\l_ace\.claude\skills\`
+
+Steps:
 1. Reads latest audit log in `process/audit/`
 2. Updates `config/global_settings.json`: new skills, MCP tools, pattern counters
 3. Promotes recurring patterns to hooks using **tiered thresholds**:
@@ -232,3 +250,7 @@ See `agents/research/README.md`.
 | ISS-011 | P1 | Acquire dispenser credentials before go-live: Stripe API key, Twilio (SID + token + WhatsApp sender), Telegram bot token (@BotFather), Luigi's admin chat_id, public HTTPS URL, Italian VAT/Stripe Tax setup | OPEN |
 | ISS-012 | P2 | Implement `LLMClassifier` for free-text dispenser requests (gpt-4o-mini / claude-haiku, escalate via Telegram if confidence < 0.8 — Marco rule) | OPEN |
 | ISS-013 | P3 | Implement `SatispayProvider` + `PayPalProvider` (stubs in deliverable 014) | OPEN |
+| ISS-018 | P1 | Pablo: `gateway/pipeline_adapter.py` + FastAPI `/submit` + HMAC middleware — Input Gateway Track 0 | OPEN |
+| ISS-019 | P1 | Sofia: `gateway/streamlit_app.py` wired to PipelineAdapter — Input Gateway Track 1 | OPEN |
+| ISS-020 | P1 | Carlos: `gateway/bot_telegram.py` + `bot_whatsapp.py` wired to PipelineAdapter — Input Gateway Track 2 | OPEN |
+| ISS-021 | P2 | Deploy Input Gateway: all three channels live (Streamlit Cloud + Cloud Run + Telegram/Twilio webhooks) | OPEN |

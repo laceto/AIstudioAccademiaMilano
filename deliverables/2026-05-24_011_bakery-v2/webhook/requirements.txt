@@ -1,0 +1,8 @@
+Flask>=3.0.0
+gunicorn>=21.2.0
+# Gmail + Calendar SDKs come from the skills bundles in deliverables 002 / 007:
+google-auth>=2.27.0
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.120.0
+# Optional error tracking (enable by setting SENTRY_DSN):
+sentry-sdk[flask]>=2.0.0

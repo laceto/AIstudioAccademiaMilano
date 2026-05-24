@@ -47,6 +47,10 @@ A parallel layer of 5 **Risk Agents** (Technical Auditor, Financial Controller, 
 | 005 | Streamlit chatbot + OpenAI streaming | €19.90 | `deliverables/2026-05-23_005_chatbot/` |
 | 006 | RAG system: semantic search over all code | €29.90 | `deliverables/rag/` |
 | 007 | WhatsApp/Telegram → Calendar sync (Google, Outlook, Apple) | €14.90 | `deliverables/2026-05-23_007_calendar-sync/` |
+| 008 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) | €0.00 (internal) | `deliverables/github-research/` |
+| 009 | Streamlit RAG app deployed to Streamlit Cloud | €29.90 | `deliverables/rag/` |
+| 010 | Google Cloud Run deployment for laceto/rss_feed | €19.90 | `laceto/rss_feed` repo |
+| 011 | Bakery V2 + V2 Team + Decap CMS + order webhook → `templates/web/` extraction | €0.00 (R&D) | `deliverables/2026-05-24_011_bakery-v2/` |
 
 ---
 
@@ -72,9 +76,9 @@ streamlit run deliverables/github-research/streamlit_research_app.py
 See `agents/research/README.md` for the full department spec.
 
 ### LLM Education Wiki
-Karpathy-style, 7 chapters + runnable code:
+Karpathy-style, 8 chapters + runnable code:
 ```
-wiki/llm/01_tokenization.md  through  07_studio_playbook.md
+wiki/llm/01_tokenization.md  through  08_reasoning_models.md
 wiki/llm/code/  —  bpe_minimal.py, nano_attention.py, sampling_demo.py
 ```
 
@@ -88,7 +92,7 @@ config/          global_settings.json — single source of truth for skills, pri
 deliverables/    One folder per completed request
 process/         Pipeline spec, audit logs, learning loop, risk review process
 scripts/         learning_loop.py, embed_index.py, retrieve.py, github_research/
-templates/       Reusable PDF and Streamlit templates
+templates/       Reusable template factory: pdf/ (InvoiceTemplate), streamlit/ (ChatbotTemplate), web/ (LandingPage, OrderWebhook)
 tests/           TDD test suites (pytest)
 wiki/llm/        Karpathy-style LLM education wiki
 ```
@@ -100,6 +104,8 @@ wiki/llm/        Karpathy-style LLM education wiki
 | Product | Price |
 |---------|-------|
 | Static landing page | €9.90 |
+| Premium landing page | €29.90 |
+| Commercial landing page | €45.90 |
 | PDF document | €1.90 |
 | Invoice PDF | €3.90 |
 | Strategic report | €4.90 |

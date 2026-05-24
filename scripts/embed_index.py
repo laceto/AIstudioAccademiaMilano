@@ -28,6 +28,7 @@ INCLUDE_GLOBS = [
     "deliverables/**/*.md",
     "deliverables/**/*.py",
     "tests/**/*.py",
+    "wiki/**/*.md",
 ]
 
 EXCLUDE_PARTS = {"__pycache__", ".git", "data"}

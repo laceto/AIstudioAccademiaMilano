@@ -33,7 +33,16 @@ action="https://formspree.io/f/xpzgkrjb"
 
 ### 3. (Optional) Replace the hero image
 
-The hero section references `bakery.jpg`. Replace it with your own photo or any public image URL.
+The hero section references `bakery-placeholder.svg` — an honest "Foto da sostituire" placeholder. Replace it with your own photo (any name) and update the `src` in `index.html`.
+
+---
+
+## Warranty fix (2026-05-24, request 011, ISS-016)
+
+Two defects from the original delivery were fixed at no charge by the V2 Team's recommendation:
+
+1. **Placeholder image**: `bakery.jpg` (which never existed and produced a broken-image icon) was replaced with a local `bakery-placeholder.svg` that visibly reads "Foto da sostituire con vetrina reale". Visitors now see an honest placeholder instead of a broken icon.
+2. **Form sentinel**: a small JS guard in `index.html` intercepts form submissions when the `action` URL still contains the literal `YOUR_FORM_ID` and shows a visible "Modulo non ancora configurato" message instead of letting the POST silently 404 at Formspree. Once you replace `YOUR_FORM_ID` with a real ID, the guard is a no-op and the form submits normally.
 
 ---
 

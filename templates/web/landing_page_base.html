@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<!--
+  templates/web/landing_page_base.html
+  Reusable landing-page shell extracted from request 011 (Forno di Marta v2).
+  Replace every {{ token }} below before deploy.
+
+  Owner: Core Architect (V2 Team)
+  First user: deliverables/2026-05-24_011_bakery-v2/site/index.html
+  Why this exists: every premium / commercial landing page needs the same
+  metadata floor (JSON-LD, OG/Twitter cards, sitemap, robots, accessible
+  landmarks, optional observability). Re-rolling that floor per request is
+  the regret the Core Architect flagged in critique_of_001.md.
+-->
+<html lang="{{ LANG }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ TITLE }}</title>
+  <meta name="description" content="{{ DESCRIPTION }}">
+  <link rel="canonical" href="{{ CANONICAL_URL }}">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ SITE_NAME }}">
+  <meta property="og:title" content="{{ TITLE }}">
+  <meta property="og:description" content="{{ DESCRIPTION }}">
+  <meta property="og:image" content="{{ OG_IMAGE_URL }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:url" content="{{ CANONICAL_URL }}">
+  <meta property="og:locale" content="{{ OG_LOCALE }}">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ TITLE }}">
+  <meta name="twitter:description" content="{{ DESCRIPTION }}">
+  <meta name="twitter:image" content="{{ OG_IMAGE_URL }}">
+
+  <!-- JSON-LD slot. Replace with the schema.org type that matches the business
+       (LocalBusiness, Bakery, Restaurant, Store, ProfessionalService, etc.) -->
+  <script type="application/ld+json">
+  {{ JSON_LD_BLOCK }}
+  </script>
+
+  <link rel="icon" href="{{ FAVICON_URL }}">
+
+  <style>
+    /* Minimal accessible base. Replace or extend per brand. */
+    :root { color-scheme: light; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; background: #fafaf9; }
+    h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
+    a:focus-visible, button:focus-visible, input:focus-visible {
+      outline: 3px solid #1d4ed8; outline-offset: 2px;
+    }
+    .skip-link { position: absolute; left: -9999px; top: 0; background: #000; color: #fff; padding: .75rem 1rem; z-index: 100; }
+    .skip-link:focus { left: 0; }
+    .container { max-width: 64rem; margin: 0 auto; padding: 0 1.5rem; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+
+  <!--
+    Optional observability slots. Uncomment and fill before going live.
+
+    <script defer data-domain="{{ PLAUSIBLE_DOMAIN }}" src="https://plausible.io/js/script.js"></script>
+
+    <script src="https://browser.sentry-cdn.com/7.x/bundle.min.js" crossorigin="anonymous"></script>
+    <script>
+      if (window.Sentry) Sentry.init({ dsn: '{{ SENTRY_DSN }}', tracesSampleRate: 0.1 });
+    </script>
+  -->
+</head>
+<body>
+  <a class="skip-link" href="#main">{{ SKIP_LINK_TEXT }}</a>
+
+  <header role="banner">
+    <!-- Hero / brand block -->
+    {{ HEADER_BLOCK }}
+  </header>
+
+  <nav aria-label="{{ NAV_LABEL }}">
+    {{ NAV_BLOCK }}
+  </nav>
+
+  <main id="main">
+    {{ MAIN_BLOCKS }}
+  </main>
+
+  <footer role="contentinfo">
+    {{ FOOTER_BLOCK }}
+  </footer>
+
+  <!-- Add any page-level JS at the bottom; keep critical paint above the fold. -->
+  {{ EXTRA_SCRIPTS }}
+</body>
+</html>
