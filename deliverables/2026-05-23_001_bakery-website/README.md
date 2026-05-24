@@ -33,28 +33,13 @@ action="https://formspree.io/f/xpzgkrjb"
 
 ### 3. (Optional) Replace the hero image
 
-The hero section references `bakery.jpg`. Replace it with your own photo or any public image URL.
+The hero section references `bakery-placeholder.svg` — an honest "Foto da sostituire" placeholder. Replace it with your own photo (any name) and update the `src` in `index.html`.
 
 ---
 
-## Deploy
+## Warranty fix (2026-05-24, request 011, ISS-016)
 
-### GitHub Pages (free)
-1. Push this folder to a GitHub repo
-2. Settings → Pages → Source: main branch → `/` (root)
-3. Your site is live at `https://<username>.github.io/<repo>/`
+Two defects from the original delivery were fixed at no charge by the V2 Team's recommendation:
 
-### Vercel (free, recommended)
-```bash
-npx vercel
-```
-Or drag-and-drop the folder at [vercel.com](https://vercel.com).
-
-### Local preview
-Open `index.html` directly in your browser — no server needed.
-
----
-
-## No API Keys Needed for the site itself
-
-The site is 100% static HTML + Tailwind CDN. The only external dependency is Formspree for the contact form.
+1. **Placeholder image**: `bakery.jpg` (which never existed and produced a broken-image icon) was replaced with a local `bakery-placeholder.svg` that visibly reads "Foto da sostituire con vetrina reale". Visitors now see an honest placeholder instead of a broken icon.
+2. **Form sentinel**: a small JS guard in `index.html` intercepts form su

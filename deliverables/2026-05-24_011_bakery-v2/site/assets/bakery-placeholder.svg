@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" width="640" height="480" role="img" aria-label="Forno di Marta placeholder">
+  <rect width="640" height="480" fill="#fdecd2"/>
+  <g fill="#c2410c" opacity="0.85">
+    <circle cx="200" cy="250" r="70"/>
+    <ellipse cx="350" cy="270" rx="100" ry="50"/>
+    <rect x="430" y="220" width="120" height="80" rx="10"/>
+  </g>
+  <text x="320" y="420" font-family="Inter, sans-serif" font-size="22" text-anchor="middle" fill="#9a3412">Foto da sostituire con vetrina reale</text>
+</svg>

@@ -1,0 +1,8 @@
+# Editable by Marta from /admin/. Used by the build step to fill JSON-LD and footer.
+address_street: "TBD"
+address_postal: "TBD"
+phone: "TBD"
+email: "TBD"
+founding_year: 1987  # to be verified with Marta
+hours_weekday: "07:00–19:30"
+hours_weekend: "08:00–13:00"

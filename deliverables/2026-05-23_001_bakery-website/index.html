@@ -24,7 +24,7 @@
   <!-- About -->
   <section class="max-w-4xl mx-auto py-16 px-6">
     <div class="grid md:grid-cols-2 gap-12 items-center">
-      <img src="bakery.jpg" class="rounded-xl shadow-lg w-full object-cover h-72" alt="Il forno di Marta">
+      <img src="./bakery-placeholder.svg" class="rounded-xl shadow-lg w-full object-cover h-72 bg-amber-100" alt="Forno di Marta — segnaposto, in attesa di foto reale">
       <div>
         <h2 class="text-3xl font-bold mb-4">Chi siamo</h2>
         <p class="text-stone-600 leading-relaxed mb-4">
@@ -45,7 +45,7 @@
     <div class="max-w-lg mx-auto text-center">
       <h2 class="text-3xl font-bold mb-2">Contattaci</h2>
       <p class="text-stone-500 mb-8">Scrivici per ordini, prenotazioni o semplicemente per un saluto.</p>
-      <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" class="space-y-4 text-left">
+      <form id="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST" class="space-y-4 text-left">
         <div>
           <label class="block text-sm font-medium text-stone-700 mb-1" for="name">Nome</label>
           <input id="name" name="name" type="text" placeholder="Il tuo nome" required
@@ -65,14 +65,33 @@
           class="w-full bg-orange-700 text-white px-8 py-3 rounded-lg font-medium hover:bg-orange-800 transition-colors">
           Invia messaggio
         </button>
+        <div id="contact-status" role="status" aria-live="polite" class="hidden mt-4 p-4 rounded-lg text-sm"></div>
       </form>
     </div>
   </section>
 
   <footer class="bg-stone-800 text-stone-400 text-center py-6 text-sm">
     <p>&copy; 2026 Forno di Marta &mdash; Milano</p>
-    <p class="mt-1 text-xs text-stone-500">Sostituisci <code>bakery.jpg</code> con una foto reale e <code>YOUR_FORM_ID</code> con il tuo ID Formspree.</p>
+    <p class="mt-1 text-xs text-stone-500">Per attivare il modulo contatti, sostituisci <code>YOUR_FORM_ID</code> in <code>index.html</code> con il tuo ID Formspree e rimpiazza <code>bakery-placeholder.svg</code> con una foto reale.</p>
   </footer>
+
+  <script>
+    // Warranty fix (request 011 ISS-016, 2026-05-24): silently broken form is louder than no form.
+    // When the Formspree action still contains the literal "YOUR_FORM_ID", intercept submit and
+    // show a visible "modulo non ancora configurato" message instead of letting the POST 404.
+    (function () {
+      var form = document.getElementById('contact-form');
+      if (!form) return;
+      form.addEventListener('submit', function (e) {
+        if (form.action.indexOf('YOUR_FORM_ID') !== -1) {
+          e.preventDefault();
+          var s = document.getElementById('contact-status');
+          s.textContent = 'Modulo non ancora configurato. Per ora puoi scrivere direttamente al titolare.';
+          s.className = 'mt-4 p-4 rounded-lg text-sm bg-red-100 text-red-800';
+        }
+      });
+    })();
+  </script>
 
 </body>
 </html>

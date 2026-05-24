@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c2410c"/>
+      <stop offset="100%" stop-color="#9a3412"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <text x="80" y="200" font-family="Georgia, serif" font-size="48" fill="#fed7aa" letter-spacing="6">FORNO DI</text>
+  <text x="80" y="380" font-family="Georgia, serif" font-size="160" font-weight="700" fill="#ffffff">Marta</text>
+  <text x="80" y="470" font-family="Inter, sans-serif" font-size="36" fill="#fed7aa">Pane e dolci artigianali · Milano</text>
+  <text x="80" y="560" font-family="Inter, sans-serif" font-size="24" fill="#fbbf24">forno-di-marta.vercel.app</text>
+  <text x="1080" y="120" font-size="120" text-anchor="end">🥐</text>
+</svg>
