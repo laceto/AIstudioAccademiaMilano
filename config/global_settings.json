@@ -1,10 +1,12 @@
 {
   "_meta": {
-    "version": "1.5",
-    "description": "AI Studio Accademia Milano â€” global learned settings.",
+    "version": "1.7",
+    "description": "AI Studio Accademia Milano \u2014 global learned settings.",
     "last_updated": "2026-05-24",
-    "last_request_id": "011",
-    "total_requests_processed": 35
+    "last_request_id": "016",
+    "total_requests_processed": 17,
+    "v1.7_changes": "Added agent_deploy_streamlit pricing (\u20ac19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
+    "last_processed_audit_log": "2026-05-24_016_iss005-idempotency.md"
   },
   "skills": {
     "html_tailwind_css": {
@@ -152,20 +154,9 @@
         "calendar_integration"
       ],
       "agent": "Francesca",
-      "times_used": 4,
+      "times_used": 3,
       "success_rate": 1.0,
       "avg_duration_sec": 12
-    },
-    "streamlit_cloud_local_wheel_deploy": {
-      "intent_mappings": [
-        "chatbot_creation",
-        "deploy_existing_app"
-      ],
-      "agent": "Chiara",
-      "times_used": 1,
-      "success_rate": 1.0,
-      "avg_duration_sec": 100,
-      "notes": "Install private/local wheels via HTTPS URL in requirements.txt when package not on PyPI"
     },
     "vector_embeddings": {
       "intent_mappings": [
@@ -210,7 +201,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 22,
+      "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 3,
       "requires_user_auth": true,
@@ -221,7 +212,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 22,
+      "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 5,
       "requires_user_auth": true,
@@ -232,7 +223,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 22,
+      "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 4,
       "requires_user_auth": true,
@@ -243,7 +234,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 22,
+      "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 2,
       "requires_user_auth": true,
@@ -254,7 +245,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 22,
+      "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -263,118 +254,289 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 22,
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "openweathermap_api_integration": {
+      "intent_mappings": [
+        "weather_dashboard"
+      ],
+      "agent": "Chiara",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0,
+      "requires_user_auth": true,
+      "auth_method": "api_key",
+      "security_note": "Key in env var or st.secrets only"
+    },
+    "weather_data_display": {
+      "intent_mappings": [
+        "weather_dashboard"
+      ],
+      "agent": "Chiara",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "discord_bot_development": {
+      "description": "Auto-discovered from request 012",
+      "intent_mappings": [
+        "discord_bot"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "discord_slash_commands": {
+      "description": "Auto-discovered from request 012",
+      "intent_mappings": [
+        "discord_bot"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "discord_webhook_posting": {
+      "description": "Auto-discovered from request 012",
+      "intent_mappings": [
+        "discord_bot"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "anthropic_api_integration": {
+      "description": "Auto-discovered from request 012",
+      "intent_mappings": [
+        "discord_bot"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "alpaca_paper_trading": {
+      "description": "Auto-discovered from request 008",
+      "intent_mappings": [
+        "algo_trading"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "sma_crossover_strategy": {
+      "description": "Auto-discovered from request 008",
+      "intent_mappings": [
+        "algo_trading"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "plotly_charting": {
+      "description": "Auto-discovered from request 008",
+      "intent_mappings": [
+        "algo_trading"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "pandas_data_analysis": {
+      "description": "Auto-discovered from request 008",
+      "intent_mappings": [
+        "algo_trading"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "github_rest_api": {
+      "description": "Auto-discovered from request 009",
+      "intent_mappings": [
+        "linkedin_post_generator"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "linkedin_voice_generation": {
+      "description": "Auto-discovered from request 009",
+      "intent_mappings": [
+        "linkedin_post_generator"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "cli_tool_generation": {
+      "description": "Auto-discovered from request 009",
+      "intent_mappings": [
+        "linkedin_post_generator"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "multi_platform_bio_generation": {
+      "description": "Auto-discovered from request 010",
+      "intent_mappings": [
+        "profile_setup"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "twitter_x_api_publishing": {
+      "description": "Auto-discovered from request 010",
+      "intent_mappings": [
+        "profile_setup"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "telegram_bot_publishing": {
+      "description": "Auto-discovered from request 010",
+      "intent_mappings": [
+        "profile_setup"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "reddit_praw_publishing": {
+      "description": "Auto-discovered from request 010",
+      "intent_mappings": [
+        "profile_setup"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "stripe_checkout_integration": {
+      "description": "Auto-discovered from request 014",
+      "intent_mappings": [
+        "internal_infra_build"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "payment_provider_abstraction": {
+      "description": "Auto-discovered from request 014",
+      "intent_mappings": [
+        "internal_infra_build"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "file_backed_queue": {
+      "description": "Auto-discovered from request 014",
+      "intent_mappings": [
+        "internal_infra_build"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "ta_lib_system_dependency": {
+      "description": "Install or deploy a Python package that depends on TA-Lib's C library (techa, pandas-ta with C backend). Picks an apt/brew/source-build strategy per host.",
+      "intent_mappings": [
+        "agent_deploy_streamlit"
+      ],
+      "agent": "Chiara",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "dockerfile_authoring": {
+      "description": "Write a production-ready Dockerfile for a Python web app \u2014 small, secure, multi-host (HF Spaces / Cloud Run / Render / Railway / Fly).",
+      "intent_mappings": [
+        "agent_deploy_streamlit"
+      ],
+      "agent": "Chiara",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "huggingface_spaces_docker_deploy": {
+      "description": "Deploy a Streamlit/Gradio app to HF Spaces via Docker SDK: YAML frontmatter (sdk: docker, app_port), non-root uid 1000, --user pip install, OPENAI_API_KEY as Space secret.",
+      "intent_mappings": [
+        "agent_deploy_streamlit"
+      ],
+      "agent": "Francesca",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0,
+      "requires_user_auth": true,
+      "auth_method": "huggingface_token",
+      "security_note": "Secrets injected as env vars by HF; never commit them to the Space repo"
+    },
+    "langgraph_agent_streamlit_wrapper": {
+      "description": "Generic ~120-line Streamlit shell over a LangGraph factory: sidebar agent picker, factory(symbol,...).invoke(_initial_state), render result['final_output'].",
+      "intent_mappings": [
+        "agent_deploy_streamlit"
+      ],
+      "agent": "Chiara",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
     "google_cloud_run_deploy": {
+      "description": "Deploy a Dockerised Streamlit app to Cloud Run via `gcloud run deploy --source .`. Container must honour $PORT; session affinity required for WebSockets; OPENAI_API_KEY via Secret Manager (--set-secrets); memory bumped to 1Gi for TA-Lib + LangGraph runtime.",
       "intent_mappings": [
-        "chatbot_creation",
-        "deploy_existing_app_new_platform"
+        "agent_deploy_streamlit"
       ],
       "agent": "Francesca",
-      "times_used": 2,
+      "first_seen": "2026-05-24",
+      "times_used": 1,
       "success_rate": 1.0,
-      "avg_duration_sec": 12
-    },
-    "artifact_registry_docker": {
-      "intent_mappings": [
-        "chatbot_creation",
-        "deploy_existing_app_new_platform"
-      ],
-      "agent": "Chiara",
-      "times_used": 2,
-      "success_rate": 1.0,
-      "avg_duration_sec": 5
-    },
-    "google_secret_manager": {
-      "intent_mappings": [
-        "chatbot_creation",
-        "deploy_existing_app_new_platform"
-      ],
-      "agent": "Chiara",
-      "times_used": 2,
-      "success_rate": 1.0,
-      "avg_duration_sec": 2,
+      "avg_duration_sec": 0,
       "requires_user_auth": true,
-      "auth_method": "gcloud_iam",
-      "security_note": "Secrets stored in GCP Secret Manager, never in code or env files"
-    },
-    "cloud_build_submit": {
-      "intent_mappings": [
-        "chatbot_creation",
-        "deploy_existing_app_new_platform"
-      ],
-      "agent": "Chiara",
-      "times_used": 2,
-      "success_rate": 1.0,
-      "avg_duration_sec": 90
-    },
-    "dockerfile_authoring": {
-      "intent_mappings": [
-        "chatbot_creation",
-        "deploy_existing_app_new_platform"
-      ],
-      "agent": "Chiara",
-      "times_used": 2,
-      "success_rate": 1.0,
-      "avg_duration_sec": 30,
-      "notes": "Docker pip install skips HTTPS wheel URLs in requirements.txt â€” guard with flag or separate reqs file"
-    },
-    "reusable_template_extraction": {
-      "description": "Auto-discovered from request 011",
-      "intent_mappings": [
-        "delivery_improvement"
-      ],
-      "agent": "unknown",
-      "first_seen": "2026-05-24",
-      "times_used": 4,
-      "success_rate": 0.0,
-      "avg_duration_sec": 0
-    },
-    "decap_cms_config": {
-      "description": "Auto-discovered from request 011",
-      "intent_mappings": [
-        "delivery_improvement"
-      ],
-      "agent": "unknown",
-      "first_seen": "2026-05-24",
-      "times_used": 4,
-      "success_rate": 0.0,
-      "avg_duration_sec": 0
-    },
-    "json_ld_localbusiness": {
-      "description": "Auto-discovered from request 011",
-      "intent_mappings": [
-        "delivery_improvement"
-      ],
-      "agent": "unknown",
-      "first_seen": "2026-05-24",
-      "times_used": 4,
-      "success_rate": 0.0,
-      "avg_duration_sec": 0
-    },
-    "open_graph_metadata": {
-      "description": "Auto-discovered from request 011",
-      "intent_mappings": [
-        "delivery_improvement"
-      ],
-      "agent": "unknown",
-      "first_seen": "2026-05-24",
-      "times_used": 4,
-      "success_rate": 0.0,
-      "avg_duration_sec": 0
-    },
-    "v2_critique_authoring": {
-      "description": "Auto-discovered from request 011",
-      "intent_mappings": [
-        "delivery_improvement"
-      ],
-      "agent": "unknown",
-      "first_seen": "2026-05-24",
-      "times_used": 4,
-      "success_rate": 0.0,
-      "avg_duration_sec": 0
+      "auth_method": "gcloud_application_default",
+      "security_note": "OPENAI_API_KEY in Secret Manager, never baked into image layers"
     }
   },
   "intent_to_skill_map": {
@@ -426,20 +588,36 @@
       "google_calendar_api",
       "microsoft_graph_api",
       "apple_caldav"
+    ],
+    "weather_dashboard": [
+      "openweathermap_api_integration",
+      "weather_data_display",
+      "streamlit_app_generation",
+      "streamlit_secrets_handling"
+    ],
+    "agent_deploy_streamlit": [
+      "langgraph_agent_streamlit_wrapper",
+      "openai_api_integration",
+      "streamlit_app_generation",
+      "streamlit_secrets_handling",
+      "dockerfile_authoring",
+      "ta_lib_system_dependency",
+      "huggingface_spaces_docker_deploy",
+      "google_cloud_run_deploy"
     ]
   },
   "pricing": {
-    "static_landing_page": "â‚¬9.90",
-    "pdf_document": "â‚¬1.90",
-    "invoice_pdf": "â‚¬3.90",
-    "strategic_report": "â‚¬4.90",
-    "chatbot_app": "â‚¬19.90",
-    "email_delivery": "â‚¬0.50",
-    "rag_knowledge_base": "â‚¬29.90",
-    "calendar_integration": "â‚¬14.90",
-    "unknown_product": null,
-    "premium_landing_page": "€29.90",
-    "commercial_landing_page": "€45.90"
+    "static_landing_page": "\u20ac9.90",
+    "pdf_document": "\u20ac1.90",
+    "invoice_pdf": "\u20ac3.90",
+    "strategic_report": "\u20ac4.90",
+    "chatbot_app": "\u20ac19.90",
+    "email_delivery": "\u20ac0.50",
+    "rag_knowledge_base": "\u20ac29.90",
+    "calendar_integration": "\u20ac14.90",
+    "weather_dashboard": "\u20ac9.90",
+    "agent_deploy_streamlit": "\u20ac19.90",
+    "unknown_product": null
   },
   "hooks": [
     {
@@ -490,176 +668,33 @@
       "risk_score": 2
     },
     {
-      "id": "auto_preload_event_extraction_llm",
+      "id": "auto_preload_anthropic_api_integration",
       "event": "PreToolUse",
-      "matcher": "event_extraction_llm",
-      "description": "Auto-promoted: pre-load event_extraction_llm context after 3 uses",
-      "command": "python3 scripts/preload_event_extraction_llm.py 2>&1",
+      "matcher": "anthropic_api_integration",
+      "description": "Auto-promoted: pre-load anthropic_api_integration context after 1 uses",
+      "command": "python3 scripts/preload_anthropic_api_integration.py 2>&1",
       "added": "2026-05-24",
       "promoted_from_pattern": true,
       "times_fired": 0,
-      "risk_score": 3
+      "risk_score": 1
     },
     {
-      "id": "auto_preload_telegram_bot_api",
+      "id": "auto_preload_openweathermap_api_integration",
       "event": "PreToolUse",
-      "matcher": "telegram_bot_api",
-      "description": "Auto-promoted: pre-load telegram_bot_api context after 3 uses",
-      "command": "python3 scripts/preload_telegram_bot_api.py 2>&1",
+      "matcher": "openweathermap_api_integration",
+      "description": "Auto-promoted: pre-load openweathermap_api_integration context after 1 uses",
+      "command": "python3 scripts/preload_openweathermap_api_integration.py 2>&1",
       "added": "2026-05-24",
       "promoted_from_pattern": true,
       "times_fired": 0,
-      "risk_score": 3
+      "risk_score": 1
     },
     {
-      "id": "auto_preload_twilio_whatsapp_api",
+      "id": "auto_preload_streamlit_secrets_handling",
       "event": "PreToolUse",
-      "matcher": "twilio_whatsapp_api",
-      "description": "Auto-promoted: pre-load twilio_whatsapp_api context after 3 uses",
-      "command": "python3 scripts/preload_twilio_whatsapp_api.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 3
-    },
-    {
-      "id": "auto_preload_google_calendar_api",
-      "event": "PreToolUse",
-      "matcher": "google_calendar_api",
-      "description": "Auto-promoted: pre-load google_calendar_api context after 3 uses",
-      "command": "python3 scripts/preload_google_calendar_api.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 3
-    },
-    {
-      "id": "auto_preload_microsoft_graph_api",
-      "event": "PreToolUse",
-      "matcher": "microsoft_graph_api",
-      "description": "Auto-promoted: pre-load microsoft_graph_api context after 3 uses",
-      "command": "python3 scripts/preload_microsoft_graph_api.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 3
-    },
-    {
-      "id": "auto_preload_apple_caldav",
-      "event": "PreToolUse",
-      "matcher": "apple_caldav",
-      "description": "Auto-promoted: pre-load apple_caldav context after 3 uses",
-      "command": "python3 scripts/preload_apple_caldav.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 3
-    },
-    {
-      "id": "auto_preload_gmail_api_send",
-      "event": "PreToolUse",
-      "matcher": "gmail_api_send",
-      "description": "Auto-promoted: pre-load gmail_api_send context after 2 uses",
-      "command": "python3 scripts/preload_gmail_api_send.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 2
-    },
-    {
-      "id": "auto_preload_cloud_run_deploy",
-      "event": "PreToolUse",
-      "matcher": "cloud_run_deploy",
-      "description": "Auto-promoted: pre-load cloud_run_deploy context after 2 uses",
-      "command": "python3 scripts/preload_cloud_run_deploy.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 2
-    },
-    {
-      "id": "auto_preload_html_semantic_markup",
-      "event": "PreToolUse",
-      "matcher": "html_semantic_markup",
-      "description": "Auto-promoted: pre-load html_semantic_markup context after 3 uses",
-      "command": "python3 scripts/preload_html_semantic_markup.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 3
-    },
-    {
-      "id": "auto_preload_json_ld_localbusiness",
-      "event": "PreToolUse",
-      "matcher": "json_ld_localbusiness",
-      "description": "Auto-promoted: pre-load json_ld_localbusiness context after 3 uses",
-      "command": "python3 scripts/preload_json_ld_localbusiness.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 3
-    },
-    {
-      "id": "auto_preload_open_graph_metadata",
-      "event": "PreToolUse",
-      "matcher": "open_graph_metadata",
-      "description": "Auto-promoted: pre-load open_graph_metadata context after 3 uses",
-      "command": "python3 scripts/preload_open_graph_metadata.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 3
-    },
-    {
-      "id": "auto_preload_decap_cms_config",
-      "event": "PreToolUse",
-      "matcher": "decap_cms_config",
-      "description": "Auto-promoted: pre-load decap_cms_config context after 3 uses",
-      "command": "python3 scripts/preload_decap_cms_config.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 3
-    },
-    {
-      "id": "auto_preload_tailwind_extract_to_static_css",
-      "event": "PreToolUse",
-      "matcher": "tailwind_extract_to_static_css",
-      "description": "Auto-promoted: pre-load tailwind_extract_to_static_css context after 3 uses",
-      "command": "python3 scripts/preload_tailwind_extract_to_static_css.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 3
-    },
-    {
-      "id": "auto_preload_flask_webhook",
-      "event": "PreToolUse",
-      "matcher": "flask_webhook",
-      "description": "Auto-promoted: pre-load flask_webhook context after 3 uses",
-      "command": "python3 scripts/preload_flask_webhook.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 3
-    },
-    {
-      "id": "auto_preload_reusable_template_extraction",
-      "event": "PreToolUse",
-      "matcher": "reusable_template_extraction",
-      "description": "Auto-promoted: pre-load reusable_template_extraction context after 3 uses",
-      "command": "python3 scripts/preload_reusable_template_extraction.py 2>&1",
-      "added": "2026-05-24",
-      "promoted_from_pattern": true,
-      "times_fired": 0,
-      "risk_score": 3
-    },
-    {
-      "id": "auto_preload_pytest_injectable_dependencies",
-      "event": "PreToolUse",
-      "matcher": "pytest_injectable_dependencies",
-      "description": "Auto-promoted: pre-load pytest_injectable_dependencies context after 3 uses",
-      "command": "python3 scripts/preload_pytest_injectable_dependencies.py 2>&1",
+      "matcher": "streamlit_secrets_handling",
+      "description": "Auto-promoted: pre-load streamlit_secrets_handling context after 3 uses",
+      "command": "python3 scripts/preload_streamlit_secrets_handling.py 2>&1",
       "added": "2026-05-24",
       "promoted_from_pattern": true,
       "times_fired": 0,
@@ -780,129 +815,42 @@
       "title": "RAG retrieval system",
       "status": "DELIVERED",
       "resolved_on": "2026-05-23"
-    },
-    {
-      "id": "ISS-013",
-      "priority": "P1",
-      "title": "Set up AI Studio company email address",
-      "status": "OPEN",
-      "owner": "Luigi + Claude",
-      "notes": "Decision: Namecheap registrar + Cloudflare DNS + Zoho Mail free plan. Domain: aistudiomilano.ai (.io as fallback)."
-    },
-    {
-      "id": "ISS-013a",
-      "priority": "P1",
-      "title": "Register aistudiomilano.ai + aistudiomilano.io on Namecheap",
-      "status": "OPEN",
-      "owner": "Luigi",
-      "notes": "~â‚¬82/yr total. namecheap.com. Blocks ISS-013b."
-    },
-    {
-      "id": "ISS-013b",
-      "priority": "P1",
-      "title": "Create Cloudflare account and add both domains",
-      "status": "OPEN",
-      "owner": "Luigi",
-      "notes": "Free plan. cloudflare.com. Blocked by ISS-013a."
-    },
-    {
-      "id": "ISS-013c",
-      "priority": "P1",
-      "title": "Point Namecheap nameservers to Cloudflare",
-      "status": "OPEN",
-      "owner": "Luigi",
-      "notes": "Set ns1.cloudflare.com + ns2.cloudflare.com on both domains in Namecheap. Propagation up to 24h. Blocked by ISS-013b."
-    },
-    {
-      "id": "ISS-013d",
-      "priority": "P1",
-      "title": "Wire Cloudflare API token + update accounts_registry.yaml",
-      "status": "OPEN",
-      "owner": "Claude",
-      "notes": "Generate Cloudflare token (Zone:DNS:Edit), add to credential manager, update accounts_registry.yaml, set up email routing luigi@aistudiomilano.ai â†’ luigi.vinegar@gmail.com. Blocked by ISS-013c."
-    },
-    {
-      "id": "ISS-014",
-      "priority": "P2",
-      "title": "Productionise V2 Team (auto-trigger on Stacy QA defect-shipped flag or Marco pricing adequacy < 0.85)",
-      "status": "OPEN"
-    },
-    {
-      "id": "ISS-015",
-      "priority": "P1",
-      "title": "Set prices for premium_landing_page and commercial_landing_page SKUs (team recommends EUR 24.90 / 39.90)",
-      "status": "DECIDED",
-      "resolution": "Luigi 2026-05-24: premium €29.90, commercial €45.90 (above DA floor of €24.90; DA structured veto overridden) Subsequently 011 reframed as internal R&D 2026-05-24 — INV-011 voided, no buyer invoice; SKUs remain registered for future use."
-    },
-    {
-      "id": "ISS-016",
-      "priority": "P3",
-      "title": "Free warranty fix to request 001 (replace YOUR_FORM_ID literal + bakery.jpg placeholder)",
-      "status": "DELIVERED",
-      "resolution": "2026-05-24: placeholder image swapped to bakery-placeholder.svg + JS sentinel guards YOUR_FORM_ID. In-place patch on deliverables/2026-05-23_001_bakery-website/. No charge."
     }
   ],
   "agents": {
-    "Stacy": {
-      "roles": [],
-      "capabilities": [],
-      "task_stats": {
-        "calendar_integration": {
-          "count": 42,
-          "avg_sec": 6.5,
-          "success_rate": 0.0
-        },
-        "chatbot_creation": {
-          "count": 2,
-          "avg_sec": 39.5,
-          "success_rate": 0.0
-        },
-        "delivery_improvement": {
-          "count": 8,
-          "avg_sec": 12.0,
-          "success_rate": 0.0
-        }
-      }
-    },
-    "Marco": {
-      "roles": [],
-      "capabilities": [],
-      "task_stats": {
-        "calendar_integration": {
-          "count": 21,
-          "avg_sec": 4.0,
-          "success_rate": 1.0
-        },
-        "chatbot_creation": {
-          "count": 1,
-          "avg_sec": 45.0,
-          "success_rate": 0.0
-        },
-        "delivery_improvement": {
-          "count": 4,
-          "avg_sec": 12.0,
-          "success_rate": 0.0
-        }
-      }
-    },
     "Gianni": {
       "roles": [],
       "capabilities": [],
       "task_stats": {
-        "calendar_integration": {
-          "count": 21,
-          "avg_sec": 18.0,
+        "discord_bot": {
+          "count": 1,
+          "avg_sec": 3.0,
           "success_rate": 1.0
         },
-        "chatbot_creation": {
+        "algo_trading": {
           "count": 1,
-          "avg_sec": 78.0,
-          "success_rate": 0.0
+          "avg_sec": 3.0,
+          "success_rate": 1.0
         },
-        "delivery_improvement": {
-          "count": 4,
-          "avg_sec": 15.0,
-          "success_rate": 0.0
+        "linkedin_post_generator": {
+          "count": 1,
+          "avg_sec": 2.0,
+          "success_rate": 1.0
+        },
+        "profile_setup": {
+          "count": 1,
+          "avg_sec": 3.0,
+          "success_rate": 1.0
+        },
+        "internal_infra_build": {
+          "count": 1,
+          "avg_sec": 8.0,
+          "success_rate": 1.0
+        },
+        "internal_bugfix": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -910,20 +858,107 @@
       "roles": [],
       "capabilities": [],
       "task_stats": {
-        "calendar_integration": {
-          "count": 21,
-          "avg_sec": 120.0,
+        "discord_bot": {
+          "count": 1,
+          "avg_sec": 60.0,
           "success_rate": 1.0
         },
-        "chatbot_creation": {
+        "algo_trading": {
           "count": 1,
-          "avg_sec": 193.0,
-          "success_rate": 0.0
+          "avg_sec": 90.0,
+          "success_rate": 1.0
         },
-        "delivery_improvement": {
-          "count": 4,
+        "linkedin_post_generator": {
+          "count": 1,
+          "avg_sec": 55.0,
+          "success_rate": 1.0
+        },
+        "profile_setup": {
+          "count": 1,
+          "avg_sec": 80.0,
+          "success_rate": 1.0
+        },
+        "internal_infra_build": {
+          "count": 1,
           "avg_sec": 240.0,
-          "success_rate": 0.0
+          "success_rate": 1.0
+        },
+        "internal_bugfix": {
+          "count": 1,
+          "avg_sec": 120.0,
+          "success_rate": 1.0
+        }
+      }
+    },
+    "Stacy": {
+      "roles": [],
+      "capabilities": [],
+      "task_stats": {
+        "discord_bot": {
+          "count": 1,
+          "avg_sec": 8.0,
+          "success_rate": 1.0
+        },
+        "algo_trading": {
+          "count": 1,
+          "avg_sec": 10.0,
+          "success_rate": 1.0
+        },
+        "linkedin_post_generator": {
+          "count": 1,
+          "avg_sec": 8.0,
+          "success_rate": 1.0
+        },
+        "profile_setup": {
+          "count": 1,
+          "avg_sec": 10.0,
+          "success_rate": 1.0
+        },
+        "internal_infra_build": {
+          "count": 2,
+          "avg_sec": 8.5,
+          "success_rate": 1.0
+        },
+        "internal_bugfix": {
+          "count": 1,
+          "avg_sec": 10.0,
+          "success_rate": 1.0
+        }
+      }
+    },
+    "Marco": {
+      "roles": [],
+      "capabilities": [],
+      "task_stats": {
+        "discord_bot": {
+          "count": 1,
+          "avg_sec": 5.0,
+          "success_rate": 1.0
+        },
+        "algo_trading": {
+          "count": 1,
+          "avg_sec": 5.0,
+          "success_rate": 1.0
+        },
+        "linkedin_post_generator": {
+          "count": 1,
+          "avg_sec": 4.0,
+          "success_rate": 1.0
+        },
+        "profile_setup": {
+          "count": 1,
+          "avg_sec": 5.0,
+          "success_rate": 1.0
+        },
+        "internal_infra_build": {
+          "count": 1,
+          "avg_sec": 1.0,
+          "success_rate": 1.0
+        },
+        "internal_bugfix": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -931,497 +966,90 @@
       "roles": [],
       "capabilities": [],
       "task_stats": {
-        "calendar_integration": {
-          "count": 21,
-          "avg_sec": 4.0,
+        "discord_bot": {
+          "count": 1,
+          "avg_sec": 10.0,
           "success_rate": 1.0
         },
-        "chatbot_creation": {
+        "algo_trading": {
           "count": 1,
-          "avg_sec": 12.0,
-          "success_rate": 0.0
-        },
-        "delivery_improvement": {
-          "count": 4,
           "avg_sec": 8.0,
           "success_rate": 1.0
-        }
-      }
-    },
-    "Quality Reliability Lead": {
-      "roles": [],
-      "capabilities": [],
-      "task_stats": {
-        "delivery_improvement": {
-          "count": 4,
-          "avg_sec": 22.0,
+        },
+        "linkedin_post_generator": {
+          "count": 1,
+          "avg_sec": 8.0,
+          "success_rate": 1.0
+        },
+        "profile_setup": {
+          "count": 1,
+          "avg_sec": 8.0,
+          "success_rate": 1.0
+        },
+        "internal_infra_build": {
+          "count": 1,
+          "avg_sec": 5.0,
+          "success_rate": 1.0
+        },
+        "internal_bugfix": {
+          "count": 1,
+          "avg_sec": 0.0,
           "success_rate": 0.0
         }
       }
     },
-    "Core Architect": {
+    "Valentina": {
       "roles": [],
       "capabilities": [],
       "task_stats": {
-        "delivery_improvement": {
-          "count": 4,
-          "avg_sec": 28.0,
-          "success_rate": 0.0
+        "profile_setup": {
+          "count": 1,
+          "avg_sec": 5.0,
+          "success_rate": 1.0
         }
       }
     },
-    "API Product Designer": {
+    "Lorenzo": {
       "roles": [],
       "capabilities": [],
       "task_stats": {
-        "delivery_improvement": {
-          "count": 4,
-          "avg_sec": 24.0,
+        "internal_bugfix": {
+          "count": 1,
+          "avg_sec": 0.0,
           "success_rate": 0.0
         }
       }
-    },
-    "Devil's Advocate": {
-      "roles": [],
-      "capabilities": [],
-      "task_stats": {
-        "delivery_improvement": {
-          "count": 4,
-          "avg_sec": 18.0,
-          "success_rate": 0.0
-        }
-      }
-    }
-  },
-  "env_vars": {
-    "ANTHROPIC_API_KEY": {
-      "provider": "Anthropic",
-      "used_by": [
-        "D005",
-        "D009",
-        "D010",
-        "pipeline"
-      ],
-      "required": true
-    },
-    "OPENAI_API_KEY": {
-      "provider": "OpenAI",
-      "used_by": [
-        "D005",
-        "D007",
-        "RAG"
-      ],
-      "required": false
-    },
-    "GITHUB_TOKEN": {
-      "provider": "GitHub",
-      "used_by": [
-        "D009",
-        "research"
-      ],
-      "required": false
-    },
-    "RESEARCH_GITHUB_TOKEN": {
-      "provider": "GitHub",
-      "used_by": [
-        "research"
-      ],
-      "required": false
-    },
-    "GOOGLE_CREDENTIALS_JSON": {
-      "provider": "Google",
-      "used_by": [
-        "D002",
-        "D003",
-        "D007"
-      ],
-      "required": false
-    },
-    "GOOGLE_TOKEN_JSON": {
-      "provider": "Google",
-      "used_by": [
-        "D002",
-        "D003",
-        "D007"
-      ],
-      "required": false
-    },
-    "TELEGRAM_BOT_TOKEN": {
-      "provider": "Telegram",
-      "used_by": [
-        "D007",
-        "D010"
-      ],
-      "required": false
-    },
-    "TELEGRAM_CHANNEL_ID": {
-      "provider": "Telegram",
-      "used_by": [
-        "D007",
-        "D010"
-      ],
-      "required": false
-    },
-    "TWITTER_API_KEY": {
-      "provider": "Twitter/X",
-      "used_by": [
-        "D010"
-      ],
-      "required": false
-    },
-    "TWITTER_API_SECRET": {
-      "provider": "Twitter/X",
-      "used_by": [
-        "D010"
-      ],
-      "required": false
-    },
-    "TWITTER_ACCESS_TOKEN": {
-      "provider": "Twitter/X",
-      "used_by": [
-        "D010"
-      ],
-      "required": false
-    },
-    "TWITTER_ACCESS_SECRET": {
-      "provider": "Twitter/X",
-      "used_by": [
-        "D010"
-      ],
-      "required": false
-    },
-    "DISCORD_WEBHOOK_URL": {
-      "provider": "Discord",
-      "used_by": [
-        "D010"
-      ],
-      "required": false
-    },
-    "REDDIT_CLIENT_ID": {
-      "provider": "Reddit",
-      "used_by": [
-        "D010"
-      ],
-      "required": false
-    },
-    "REDDIT_CLIENT_SECRET": {
-      "provider": "Reddit",
-      "used_by": [
-        "D010"
-      ],
-      "required": false
-    },
-    "REDDIT_USERNAME": {
-      "provider": "Reddit",
-      "used_by": [
-        "D010"
-      ],
-      "required": false
-    },
-    "REDDIT_PASSWORD": {
-      "provider": "Reddit",
-      "used_by": [
-        "D010"
-      ],
-      "required": false
-    },
-    "META_ACCESS_TOKEN": {
-      "provider": "Meta",
-      "used_by": [
-        "D007"
-      ],
-      "required": false
-    },
-    "META_VERIFY_TOKEN": {
-      "provider": "Meta",
-      "used_by": [
-        "D007"
-      ],
-      "required": false
-    },
-    "TWILIO_ACCOUNT_SID": {
-      "provider": "Twilio",
-      "used_by": [
-        "D007"
-      ],
-      "required": false
-    },
-    "TWILIO_AUTH_TOKEN": {
-      "provider": "Twilio",
-      "used_by": [
-        "D007"
-      ],
-      "required": false
-    },
-    "ALPACA_API_KEY": {
-      "provider": "Alpaca",
-      "used_by": [
-        "D008"
-      ],
-      "required": false
-    },
-    "ALPACA_SECRET_KEY": {
-      "provider": "Alpaca",
-      "used_by": [
-        "D008"
-      ],
-      "required": false
-    },
-    "MS_CLIENT_ID": {
-      "provider": "Microsoft",
-      "used_by": [
-        "D007"
-      ],
-      "required": false
-    },
-    "MS_TENANT_ID": {
-      "provider": "Microsoft",
-      "used_by": [
-        "D007"
-      ],
-      "required": false
-    },
-    "APPLE_ICLOUD_USERNAME": {
-      "provider": "Apple",
-      "used_by": [
-        "D007"
-      ],
-      "required": false
-    },
-    "APPLE_APP_PASSWORD": {
-      "provider": "Apple",
-      "used_by": [
-        "D007"
-      ],
-      "required": false
-    },
-    "HF_TOKEN": {
-      "provider": "HuggingFace",
-      "used_by": [],
-      "required": false,
-      "note": "huggingface.co/settings/tokens â€” write role"
-    },
-    "HUGGINGFACE_REPO": {
-      "provider": "HuggingFace",
-      "used_by": [],
-      "required": false,
-      "note": "format: username/repo-name"
     }
   },
   "pattern_counters": {
-    "event_extraction_llm": 21,
-    "telegram_bot_api": 21,
-    "twilio_whatsapp_api": 21,
-    "google_calendar_api": 25,
-    "microsoft_graph_api": 21,
-    "apple_caldav": 21,
-    "google_cloud_run_deploy": 1,
-    "artifact_registry_docker": 1,
-    "google_secret_manager": 1,
-    "cloud_build_submit": 1,
+    "discord_bot_development": 1,
+    "discord_slash_commands": 1,
+    "discord_webhook_posting": 2,
+    "anthropic_api_integration": 3,
+    "openweathermap_api_integration": 1,
+    "alpaca_paper_trading": 1,
+    "sma_crossover_strategy": 1,
+    "streamlit_app_generation": 2,
+    "plotly_charting": 1,
+    "pandas_data_analysis": 1,
+    "streamlit_secrets_handling": 3,
+    "github_rest_api": 1,
+    "linkedin_voice_generation": 1,
+    "cli_tool_generation": 2,
+    "multi_platform_bio_generation": 1,
+    "twitter_x_api_publishing": 1,
+    "telegram_bot_publishing": 1,
+    "reddit_praw_publishing": 1,
+    "stripe_checkout_integration": 1,
+    "twilio_whatsapp_api": 1,
+    "telegram_bot_api": 1,
     "dockerfile_authoring": 1,
-    "html_semantic_markup": 4,
-    "json_ld_localbusiness": 4,
-    "open_graph_metadata": 4,
-    "decap_cms_config": 4,
-    "tailwind_extract_to_static_css": 4,
-    "flask_webhook": 4,
-    "reusable_template_extraction": 4,
-    "pytest_injectable_dependencies": 4,
-    "gmail_api_send": 4,
-    "cloud_run_deploy": 4
-  },
-  "template_candidates": {
-    "fpdf2_pdf_generation": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "pdf_creation",
-        "invoice_generation"
-      ],
-      "status": "pending"
-    },
-    "gmail_api_oauth": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "email_delivery"
-      ],
-      "status": "pending"
-    },
-    "gmail_api_send": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "email_delivery"
-      ],
-      "status": "pending"
-    },
-    "streamlit_app_generation": {
-      "flagged_date": "2026-05-24",
-      "times_used": 3,
-      "intent_mappings": [
-        "chatbot_creation",
-        "interactive_app",
-        "knowledge_query",
-        "calendar_integration"
-      ],
-      "status": "pending"
-    },
-    "openai_api_integration": {
-      "flagged_date": "2026-05-24",
-      "times_used": 3,
-      "intent_mappings": [
-        "chatbot_creation",
-        "ai_integration",
-        "knowledge_query",
-        "calendar_integration"
-      ],
-      "status": "pending"
-    },
-    "streamlit_cloud_deploy": {
-      "flagged_date": "2026-05-24",
-      "times_used": 4,
-      "intent_mappings": [
-        "chatbot_creation",
-        "interactive_app",
-        "knowledge_query",
-        "calendar_integration"
-      ],
-      "status": "pending"
-    },
-    "google_calendar_api": {
-      "flagged_date": "2026-05-24",
-      "times_used": 22,
-      "intent_mappings": [
-        "calendar_integration"
-      ],
-      "status": "pending"
-    },
-    "microsoft_graph_api": {
-      "flagged_date": "2026-05-24",
-      "times_used": 22,
-      "intent_mappings": [
-        "calendar_integration"
-      ],
-      "status": "pending"
-    },
-    "apple_caldav": {
-      "flagged_date": "2026-05-24",
-      "times_used": 22,
-      "intent_mappings": [
-        "calendar_integration"
-      ],
-      "status": "pending"
-    },
-    "event_extraction_llm": {
-      "flagged_date": "2026-05-24",
-      "times_used": 22,
-      "intent_mappings": [
-        "calendar_integration"
-      ],
-      "status": "pending"
-    },
-    "telegram_bot_api": {
-      "flagged_date": "2026-05-24",
-      "times_used": 22,
-      "intent_mappings": [
-        "calendar_integration"
-      ],
-      "status": "pending"
-    },
-    "twilio_whatsapp_api": {
-      "flagged_date": "2026-05-24",
-      "times_used": 22,
-      "intent_mappings": [
-        "calendar_integration"
-      ],
-      "status": "pending"
-    },
-    "google_cloud_run_deploy": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "chatbot_creation",
-        "deploy_existing_app_new_platform"
-      ],
-      "status": "pending"
-    },
-    "artifact_registry_docker": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "chatbot_creation",
-        "deploy_existing_app_new_platform"
-      ],
-      "status": "pending"
-    },
-    "google_secret_manager": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "chatbot_creation",
-        "deploy_existing_app_new_platform"
-      ],
-      "status": "pending"
-    },
-    "cloud_build_submit": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "chatbot_creation",
-        "deploy_existing_app_new_platform"
-      ],
-      "status": "pending"
-    },
-    "dockerfile_authoring": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "chatbot_creation",
-        "deploy_existing_app_new_platform"
-      ],
-      "status": "pending"
-    },
-    "reusable_template_extraction": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "delivery_improvement"
-      ],
-      "status": "pending"
-    },
-    "decap_cms_config": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "delivery_improvement"
-      ],
-      "status": "pending"
-    },
-    "json_ld_localbusiness": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "delivery_improvement"
-      ],
-      "status": "pending"
-    },
-    "open_graph_metadata": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "delivery_improvement"
-      ],
-      "status": "pending"
-    },
-    "v2_critique_authoring": {
-      "flagged_date": "2026-05-24",
-      "times_used": 2,
-      "intent_mappings": [
-        "delivery_improvement"
-      ],
-      "status": "pending"
-    }
+    "huggingface_spaces_docker_deploy": 1,
+    "payment_provider_abstraction": 1,
+    "file_backed_queue": 1,
+    "pytest_tdd": 1,
+    "python_subprocess_mocking": 1,
+    "git_diff_cached_quiet": 1,
+    "argparse_force_flag": 1
   }
 }

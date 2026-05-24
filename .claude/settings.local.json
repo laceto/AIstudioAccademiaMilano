@@ -8,7 +8,8 @@
       "Bash(python scripts/learning_loop.py --event session_end --audit-dir process/audit --settings config/global_settings.json --claude-dir \"C:\\\\Users\\\\l_ace\\\\.claude\")",
       "Bash(gh run *)",
       "Bash(gh issue *)",
-      "Bash(gh label *)"
+      "Bash(gh label *)",
+      "Bash(python -m pytest tests/test_gateway_pablo.py tests/test_gateway_sofia.py tests/test_gateway_carlos.py -v)"
     ]
   }
 }

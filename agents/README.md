@@ -118,6 +118,29 @@ streamlit run deliverables/github-research/streamlit_research_app.py
 
 ---
 
+## Specialist Agents
+
+These agents run outside the 6-agent delivery pipeline. They are invoked directly by Luigi or by Stacy when an intent is tagged as infra, social, or ops.
+
+### IT Staff
+Role: IT infrastructure and accounts management.
+Authority: **Advisory only — Luigi has the final word on every action.**
+
+Responsibilities:
+- Maintains `config/accounts_registry.yaml`: all domains, DNS, email, hosting, and credential env-var locations.
+- Guides domain registration, DNS configuration (Cloudflare), and email setup (Zoho Mail).
+- Wires API tokens: adds providers to `scripts/credential_manager.py`, documents in `config/global_settings.json`.
+- Tracks domain and token expiry; escalates to Lorenzo for P1 issue creation 30 days before renewal.
+- Presents every write action in a structured confirmation block; executes only after Luigi's explicit approval.
+
+See `agents/it_staff.md` for full spec, confirmation protocol, and platform coverage.
+
+### Valentina
+Role: Platform profiles, bio generation, and multi-platform publishing.
+See `agents/valentina.md`.
+
+---
+
 ## V2 Team — Delivery Improvement Squad
 
 See `agents/v2_team/README.md` for the full spec.
@@ -130,6 +153,20 @@ Four specialists run a second pass over an already-delivered product when (a) Lu
 - **Devil's Advocate** — hidden costs, unverified assumptions, structured price-tier veto
 
 First use: request 011 (Forno di Marta v2) — see `deliverables/2026-05-24_011_bakery-v2/critique_of_001.md`.
+
+---
+
+## Input Gateway Team
+
+See `agents/input_gateway/README.md` for the full spec.
+
+Three specialists build the user-facing input channels that feed the 6-agent pipeline. All three channels normalize input through a shared `PipelineAdapter` before touching Stacy.
+
+- **Pablo** — Platform Engineer: `PipelineAdapter`, FastAPI `/submit` endpoint, HMAC middleware
+- **Sofia** — Frontend/UX: Streamlit form with live pipeline status
+- **Carlos** — Bot/Integration: Telegram bot + WhatsApp webhook
+
+Build order: Pablo first, then Sofia and Carlos in parallel. Issues: ISS-018 / ISS-019 / ISS-020 / ISS-021.
 
 ---
 

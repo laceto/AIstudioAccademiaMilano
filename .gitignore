@@ -1,9 +1,11 @@
 # Secrets & credentials
 .env
 .env.*
+*.env
 !.env.example
 credentials.json
 token.json
+secrets.toml
 *.pem
 *.key
 
@@ -11,24 +13,35 @@ token.json
 __pycache__/
 *.py[cod]
 *.pyo
-.venv/
-venv/
-env/
+*.pyd
+.Python
 *.egg-info/
 dist/
 build/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
 
 # Data & indexes (binary artifacts — use Actions cache instead)
 data/vectorstore/
 data/index/
+*.faiss
+*.pkl
 data/*.npy
 
 # Logs
 logs/
 *.log
+
+# Test artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # OS
 .DS_Store
@@ -40,6 +53,13 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Output directories (generated content)
+output/
+deliverables/**/output/
+
+# Claude Code
 ONBOARDING.md
 Usersl_ace.claude/
-output/

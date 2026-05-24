@@ -1,0 +1,276 @@
+products:
+  email_automation:
+    label: Email Automation (Gmail)
+    required:
+    - id: google_account
+      name: Google Account
+      type: account
+      signup_url: https://accounts.google.com/signup
+      notes: Standard Gmail account
+    - id: google_cloud_project
+      name: Google Cloud Project
+      type: cloud_project
+      setup_url: https://console.cloud.google.com/
+      notes: Enable Gmail API, create OAuth 2.0 credentials, download credentials.json
+    - id: gmail_api_credentials
+      name: credentials.json
+      type: file
+      notes: OAuth 2.0 client secret file from Google Cloud Console → APIs & Services
+        → Credentials
+    optional:
+    - id: openai_api_key
+      name: OpenAI API Key
+      type: api_key
+      signup_url: https://platform.openai.com/api-keys
+      notes: Required only if using AI-generated email content
+  calendar_assistant:
+    label: Calendar Assistant
+    required:
+    - id: google_account
+      name: Google Account
+      type: account
+      signup_url: https://accounts.google.com/signup
+      notes: Standard Gmail/Google account
+    - id: google_cloud_project
+      name: Google Cloud Project
+      type: cloud_project
+      setup_url: https://console.cloud.google.com/
+      notes: Enable Google Calendar API, create OAuth 2.0 credentials
+    - id: google_calendar_credentials
+      name: credentials.json
+      type: file
+      notes: OAuth 2.0 client secret file — same project can cover Gmail + Calendar
+    optional:
+    - id: apple_app_password
+      name: Apple App-Specific Password
+      type: password
+      setup_url: https://appleid.apple.com
+      notes: Required only for Apple Calendar sync. Never use main Apple ID password.
+    - id: microsoft_azure_app
+      name: Microsoft Azure App Registration
+      type: cloud_project
+      setup_url: https://portal.azure.com/
+      notes: Required only for Outlook/Microsoft Calendar sync
+  whatsapp_bot:
+    label: WhatsApp / Telegram Bot
+    required:
+    - id: twilio_account
+      name: Twilio Account
+      type: account
+      signup_url: https://www.twilio.com/try-twilio
+      notes: 'For WhatsApp: request WhatsApp Business API sandbox access after signup'
+    - id: twilio_account_sid
+      name: TWILIO_ACCOUNT_SID
+      type: api_key
+      notes: Found in Twilio Console → Account Info
+    - id: twilio_auth_token
+      name: TWILIO_AUTH_TOKEN
+      type: api_key
+      notes: Found in Twilio Console → Account Info
+    optional:
+    - id: telegram_bot_token
+      name: TELEGRAM_BOT_TOKEN
+      type: api_key
+      notes: 'Alternative: create Telegram bot via @BotFather, costs nothing'
+    - id: openai_api_key
+      name: OpenAI API Key
+      type: api_key
+      signup_url: https://platform.openai.com/api-keys
+      notes: Required if bot uses AI responses
+  social_media_manager:
+    label: Social Media Manager / Publisher
+    required:
+    - id: anthropic_api_key
+      name: ANTHROPIC_API_KEY
+      type: api_key
+      signup_url: https://console.anthropic.com/settings/keys
+      notes: For AI-generated content (Claude claude-sonnet-4-6)
+    optional:
+    - id: twitter_api_keys
+      name: Twitter/X API Keys (4 values)
+      type: api_key
+      signup_url: https://developer.twitter.com/en/portal/dashboard
+      notes: API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET — requires Twitter Developer
+        account (free tier available)
+    - id: telegram_bot_token
+      name: TELEGRAM_BOT_TOKEN + TELEGRAM_CHANNEL_ID
+      type: api_key
+      notes: Create bot via @BotFather, add to channel as admin
+    - id: discord_webhook
+      name: DISCORD_WEBHOOK_URL
+      type: api_key
+      notes: Server Settings → Integrations → Webhooks → New Webhook
+    - id: reddit_credentials
+      name: Reddit API Credentials (5 values)
+      type: api_key
+      signup_url: https://www.reddit.com/prefs/apps
+      notes: client_id, client_secret, username, password, user_agent
+  algo_trading:
+    label: Algo Trading Bot (Alpaca)
+    required:
+    - id: alpaca_paper_account
+      name: Alpaca Paper Trading Account
+      type: account
+      signup_url: https://app.alpaca.markets/signup
+      notes: Free account. Start with Paper Trading — no real money needed to test
+    - id: alpaca_api_key
+      name: ALPACA_API_KEY
+      type: api_key
+      notes: Found in Alpaca Dashboard → API Keys → Generate New Key
+    - id: alpaca_secret_key
+      name: ALPACA_SECRET_KEY
+      type: api_key
+      notes: Shown only once at generation — copy immediately
+    optional:
+    - id: alpaca_live_account
+      name: Alpaca Live Trading Account
+      type: account
+      notes: ONLY after testing with paper trading. Requires identity verification.
+        paper=True must be changed to paper=False — requires explicit approval.
+  linkedin_post_generator:
+    label: LinkedIn Post Generator from GitHub
+    required:
+    - id: anthropic_api_key
+      name: ANTHROPIC_API_KEY
+      type: api_key
+      signup_url: https://console.anthropic.com/settings/keys
+      notes: For Claude claude-sonnet-4-6 post generation
+    optional:
+    - id: github_token
+      name: GITHUB_TOKEN
+      type: api_key
+      signup_url: https://github.com/settings/tokens
+      notes: Only needed for private repos or to avoid rate limiting on public repos
+  profile_setup:
+    label: Profile Setup & Publishing Automation
+    required:
+    - id: anthropic_api_key
+      name: ANTHROPIC_API_KEY
+      type: api_key
+      signup_url: https://console.anthropic.com/settings/keys
+      notes: For bio and first-post generation
+    optional:
+    - id: twitter_api_keys
+      name: Twitter/X API Keys (4 values)
+      type: api_key
+      signup_url: https://developer.twitter.com/en/portal/dashboard
+      notes: For automated Twitter/X publishing
+    - id: telegram_bot_token
+      name: TELEGRAM_BOT_TOKEN + TELEGRAM_CHANNEL_ID
+      type: api_key
+      notes: For automated Telegram publishing
+    - id: discord_webhook
+      name: DISCORD_WEBHOOK_URL
+      type: api_key
+      notes: For automated Discord publishing
+    - id: reddit_credentials
+      name: Reddit API Credentials (5 values)
+      type: api_key
+      signup_url: https://www.reddit.com/prefs/apps
+      notes: For automated Reddit posting
+    manual_only:
+    - id: linkedin_manual
+      name: LinkedIn
+      notes: No public API for posting — must paste manually
+    - id: instagram_manual
+      name: Instagram
+      notes: No public API for personal accounts — must post manually
+    - id: product_hunt_manual
+      name: Product Hunt
+      notes: Manual submission via producthunt.com
+  ai_assistant:
+    label: AI Assistant / Chatbot
+    required:
+    - id: anthropic_api_key
+      name: ANTHROPIC_API_KEY
+      type: api_key
+      signup_url: https://console.anthropic.com/settings/keys
+      notes: Primary AI provider (Claude)
+    optional:
+    - id: openai_api_key
+      name: OpenAI API Key
+      type: api_key
+      signup_url: https://platform.openai.com/api-keys
+      notes: Alternative or fallback AI provider
+    - id: telegram_bot_token
+      name: TELEGRAM_BOT_TOKEN
+      type: api_key
+      notes: If deploying as Telegram bot
+    - id: discord_bot_token
+      name: DISCORD_BOT_TOKEN
+      type: api_key
+      signup_url: https://discord.com/developers/applications
+      notes: If deploying as Discord bot
+  data_dashboard:
+    label: Data Dashboard / Analytics
+    required: []
+    optional:
+    - id: anthropic_api_key
+      name: ANTHROPIC_API_KEY
+      type: api_key
+      signup_url: https://console.anthropic.com/settings/keys
+      notes: Only if dashboard includes AI-generated summaries
+    - id: google_sheets_credentials
+      name: Google Sheets credentials.json
+      type: file
+      notes: Only if reading from Google Sheets — same OAuth flow as Gmail
+    - id: database_url
+      name: DATABASE_URL
+      type: env_var
+      notes: PostgreSQL/MySQL/SQLite — depends on data source
+  weather_dashboard:
+    label: Weather Dashboard
+    required:
+    - id: openweathermap_api_key
+      name: OPENWEATHERMAP_API_KEY
+      type: api_key
+      signup_url: https://openweathermap.org/api
+      notes: 'Free tier: 60 calls/min, 1M calls/month. Key activates ~10min after
+        signup.'
+    optional:
+    - id: streamlit_secrets
+      name: Streamlit Secrets (.streamlit/secrets.toml)
+      type: config
+      notes: For Streamlit Cloud deploy — add key to .streamlit/secrets.toml instead
+        of env var
+  discord_bot:
+    label: Discord Bot (Interactive)
+    required:
+    - id: discord_bot_token
+      name: DISCORD_BOT_TOKEN
+      type: api_key
+      signup_url: https://discord.com/developers/applications
+      notes: New Application → Bot → Reset Token. Enable Message Content Intent.
+    - id: anthropic_api_key
+      name: ANTHROPIC_API_KEY
+      type: api_key
+      signup_url: https://console.anthropic.com/settings/keys
+      notes: For Claude-powered AI chat and /ask command.
+    optional:
+    - id: openweathermap_api_key
+      name: OPENWEATHERMAP_API_KEY
+      type: api_key
+      signup_url: https://openweathermap.org/api
+      notes: Free tier. Required only for /weather command.
+    - id: discord_webhook_url
+      name: DISCORD_WEBHOOK_URL
+      type: api_key
+      notes: Server Settings → Integrations → Webhooks. Required only for announcer.
+  internal_infra_build:
+    label: Internal infrastructure build (no customer invoice)
+    pricing: 0.0
+    required: []
+pricing:
+  email_automation: 14.9
+  calendar_assistant: 9.9
+  whatsapp_bot: 19.9
+  social_media_manager: 14.9
+  algo_trading: 24.9
+  linkedin_post_generator: 4.9
+  profile_setup: 14.9
+  ai_assistant: 14.9
+  data_dashboard: 9.9
+  weather_dashboard: 9.9
+  unknown_product: null
+  discord_bot: 19.9
+  internal_infra_build: 0.0

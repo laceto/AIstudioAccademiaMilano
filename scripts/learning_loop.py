@@ -87,9 +87,36 @@ def validate_advisory_output(text: str, min_words: int = 0) -> bool:
 
 # ── Settings helpers ─────────────────────────────────────────────────────────
 
+# Mojibake patterns that corrupt JSON parsing, applied in order.
+# Rule: fix garbled em-dash variants BEFORE replacing curly quotes, because
+# garbled em-dashes can contain curly-quote bytes as part of the garbage.
+_MOJIBAKE_BYTES = [
+    # â€" where the trailing byte was already replaced with ASCII "
+    (b"\xc3\xa2\xe2\x82\xac\"", b" \xe2\x80\x94 "),
+    # â€" followed by UTF-8 left/right curly quote
+    (b"\xc3\xa2\xe2\x82\xac\xe2\x80\x9c", b" \xe2\x80\x94 "),
+    (b"\xc3\xa2\xe2\x82\xac\xe2\x80\x9d", b" \xe2\x80\x94 "),
+    # â€" followed by cp1252 right-quote byte 0x94
+    (b"\xc3\xa2\xe2\x82\xac\x94", b" \xe2\x80\x94 "),
+    # Curly/smart quotes used as JSON structural delimiters
+    (b"\xe2\x80\x9c", b"\""),  # U+201C left double quotation mark
+    (b"\xe2\x80\x9d", b"\""),  # U+201D right double quotation mark
+]
+
+
+def _sanitize_json_bytes(raw: bytes) -> bytes:
+    for bad, good in _MOJIBAKE_BYTES:
+        raw = raw.replace(bad, good)
+    return raw
+
+
 def load_settings(settings_path: str) -> dict:
-    with open(settings_path, encoding="utf-8") as f:
-        return json.load(f)
+    raw = Path(settings_path).read_bytes()
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        fixed = _sanitize_json_bytes(raw)
+        return json.loads(fixed.decode("utf-8", errors="replace"))
 
 
 def save_settings(settings: dict, settings_path: str) -> None:
@@ -127,8 +154,7 @@ def parse_audit_log(log_path: Path) -> dict:
 def update_skills(settings: dict, audit: dict) -> int:
     changes = 0
     today = datetime.now().strftime("%Y-%m-%d")
-    flags = audit.get("learning_flags") or {}
-    for skill in flags.get("new_skills") or []:
+    for skill in audit.get("learning_flags", {}).get("new_skills", []) or []:
         if skill not in settings["skills"]:
             settings["skills"][skill] = {
                 "description": f"Auto-discovered from request {audit['request_id']}",
@@ -151,8 +177,7 @@ def update_skills(settings: dict, audit: dict) -> int:
 def update_mcp(settings: dict, audit: dict) -> int:
     changes = 0
     today = datetime.now().strftime("%Y-%m-%d")
-    flags = audit.get("learning_flags") or {}
-    for tool in flags.get("new_mcp") or []:
+    for tool in audit.get("learning_flags", {}).get("new_mcp", []) or []:
         if tool not in settings["mcp"]:
             settings["mcp"][tool] = {
                 "description": f"Auto-discovered from request {audit['request_id']}",
@@ -172,7 +197,7 @@ def update_mcp(settings: dict, audit: dict) -> int:
 def update_agent_stats(settings: dict, audit: dict) -> int:
     changes = 0
     intent = audit.get("intent", "unknown")
-    for agent_entry in audit.get("agents_invoked") or []:
+    for agent_entry in audit.get("agents_invoked", []):
         name = agent_entry.get("name", "unknown")
         if name not in settings.setdefault("agents", {}):
             settings["agents"][name] = {"roles": [], "capabilities": [], "task_stats": {}}
@@ -362,11 +387,120 @@ def check_template_candidates(settings: dict, templates_dir: str = "templates") 
     return changes
 
 
+def update_studio_wiki(audit: dict, settings: dict) -> int:
+    """Append a new row to wiki/studio/01_deliverables.md after a successful delivery."""
+    if not audit:
+        return 0
+    if audit.get("outcome") != "success":
+        return 0
+
+    request_id = audit.get("request_id", "")
+    date = audit.get("date", datetime.now().strftime("%Y-%m-%d"))
+    intent = audit.get("intent", "unknown")
+    price_raw = audit.get("price", None)
+    path = audit.get("deliverable_path", "")
+
+    if not request_id or not price_raw:
+        return 0
+
+    price = f"€{price_raw}" if not str(price_raw).startswith("€") else str(price_raw)
+    skills = audit.get("skills_used", [])
+    stack = ", ".join(skills[:3]) if skills else intent
+
+    wiki_path = Path(__file__).parent.parent / "wiki" / "studio" / "01_deliverables.md"
+    if not wiki_path.exists():
+        return 0
+
+    content = wiki_path.read_text(encoding="utf-8")
+
+    # Deduplicate — skip if request_id already in the table
+    if f"| {request_id} |" in content:
+        return 0
+
+    new_row = f"| {request_id} | {date} | {intent} | {stack} | {price} | `{path}` |"
+
+    # Insert before the Revenue Summary section
+    marker = "\n## Revenue Summary"
+    if marker in content:
+        content = content.replace(marker, f"\n{new_row}{marker}")
+    else:
+        content = content.rstrip() + f"\n{new_row}\n"
+
+    # Update "Last updated" header line
+    content = re.sub(
+        r"Last updated: \d{4}-\d{2}-\d{2}",
+        f"Last updated: {datetime.now().strftime('%Y-%m-%d')}",
+        content,
+    )
+
+    wiki_path.write_text(content, encoding="utf-8")
+    print(f"[learning_loop] Studio wiki updated: request {request_id} appended.")
+    return 1
+
+
 def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
-    files = [settings_path, ".claude/settings.json"]
+    files = [settings_path, ".claude/settings.json", "wiki/studio/01_deliverables.md"]
+def update_requirements_registry(registry_path: str, audit: dict) -> int:
+    """Add new product types from audit learning_flags to requirements_registry.yaml."""
+    changes = 0
+    new_types = audit.get("learning_flags", {}).get("new_product_types", {})
+    if not new_types:
+        return 0
+    with open(registry_path) as f:
+        registry = yaml.safe_load(f)
+    new_pricing = audit.get("learning_flags", {}).get("new_pricing", {})
+    for product_type, spec in new_types.items():
+        if product_type not in registry.get("products", {}):
+            registry.setdefault("products", {})[product_type] = spec
+            if product_type in new_pricing:
+                registry.setdefault("pricing", {})[product_type] = new_pricing[product_type]
+            print(f"[learning_loop] New product type in requirements registry: {product_type}")
+            changes += 1
+    if changes:
+        with open(registry_path, "w") as f:
+            yaml.dump(registry, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+    return changes
+
+
+def update_intent_registry(intent_registry_path: str, audit: dict) -> int:
+    """Add new intents from audit learning_flags to process/intent_registry.yaml."""
+    changes = 0
+    new_intents = audit.get("learning_flags", {}).get("new_intents", [])
+    if not new_intents:
+        return 0
+    with open(intent_registry_path) as f:
+        registry = yaml.safe_load(f) or {}
+    for intent in new_intents:
+        if intent not in registry:
+            registry[intent] = {
+                "skills": audit.get("skills_used", []),
+                "delivery_options": ["github_repo"],
+            }
+            print(f"[learning_loop] New intent registered: {intent}")
+            changes += 1
+    if changes:
+        with open(intent_registry_path, "w") as f:
+            yaml.dump(registry, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+    return changes
+
+
+def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
+    files = [
+        settings_path,
+        ".claude/settings.json",
+        "config/requirements_registry.yaml",
+        "process/intent_registry.yaml",
+        "CLAUDE.md",
+    ]
     for f in files:
         subprocess.run(["git", "add", f], check=False)
     subprocess.run(["git", "add", audit_dir], check=False)
+    # Don't commit a no-op: if nothing is actually staged-different, bail.
+    # `git diff --cached --quiet` exits 0 when there's no diff, 1 when there is.
+    diff = subprocess.run(["git", "diff", "--cached", "--quiet"], check=False)
+    if diff.returncode == 0:
+        print("[learning_loop] No staged changes — skipping commit.")
+        return
     msg = f"learn: update global settings from request {request_id}"
     subprocess.run(["git", "commit", "-m", msg], check=False)
     subprocess.run(["git", "push"], check=False)
@@ -439,6 +573,13 @@ def main():
                         help="Path to ~/.claude — writes project_state.md to memory/")
     parser.add_argument("--no-commit", action="store_true",
                         help="Skip git commit/push (used by CI)")
+    parser.add_argument("--requirements-registry", default="config/requirements_registry.yaml")
+    parser.add_argument("--intent-registry", default="process/intent_registry.yaml")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Reprocess the latest audit log even if it was already marked processed.",
+    )
     args = parser.parse_args()
 
     log_path = latest_audit_log(args.audit_dir)
@@ -446,9 +587,22 @@ def main():
         print("[learning_loop] No audit logs found. Nothing to learn.")
         return
 
+    settings = load_settings(args.settings)
+
+    # Idempotency: don't reprocess the same audit log on every Stop event.
+    # Several mutators (update_agent_stats avg, check_pattern_hooks counters)
+    # touch settings without bumping the `changes` counter, which made every
+    # rerun look like new work and produced duplicate `learn:` commits.
+    last_processed = settings.get("_meta", {}).get("last_processed_audit_log")
+    if last_processed == log_path.name and not args.force:
+        print(
+            f"[learning_loop] {log_path.name} already processed "
+            f"(set _meta.last_processed_audit_log). Pass --force to override."
+        )
+        return
+
     print(f"[learning_loop] Processing: {log_path.name}")
     audit = parse_audit_log(log_path)
-    settings = load_settings(args.settings)
 
     risk_score = audit.get("learning_flags", {}).get("risk_score", 1)
     skills_dir = Path.home() / ".claude" / "skills"
@@ -459,9 +613,13 @@ def main():
     changes += check_pattern_hooks(settings, audit)
     changes += promote_skills_to_files(settings, skills_dir)
     changes += check_template_candidates(settings)
+    changes += update_studio_wiki(audit, settings)
+    changes += update_requirements_registry(args.requirements_registry, audit)
+    changes += update_intent_registry(args.intent_registry, audit)
 
     settings["_meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
     settings["_meta"]["last_request_id"] = audit["request_id"]
+    settings["_meta"]["last_processed_audit_log"] = log_path.name
     settings["_meta"]["total_requests_processed"] = (
         settings["_meta"].get("total_requests_processed", 0) + 1
     )

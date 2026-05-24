@@ -15,6 +15,9 @@ SUPPORTED_PROVIDERS = {
     "twilio_auth_token",
     "telegram_bot_token",
     "github_token",
+    "cloudflare_api_token",
+    "zoho_api_key",
+    "namecheap_api_key",
 }
 
 
