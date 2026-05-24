@@ -1,7 +1,17 @@
 {
-  "_comment": "Claude Code settings for AI Studio Accademia Milano. Hooks auto-updated by learning_loop.py.",
+  "_comment": "Claude Code settings for AI Studio Accademia Milano. Hooks auto-updated by learning_loop.py and post_delivery_update.py.",
 
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m scripts.rag.inject_context"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -38,11 +48,17 @@
 
   "permissions": {
     "allow": [
+      "Bash(python -m scripts.rag.inject_context:*)",
+      "Bash(python -m scripts.rag.embed_repo:*)",
+      "Bash(python -m scripts.rag.retrieve_repo:*)",
+      "Bash(python -m scripts.rag.synthesize:*)",
       "Bash(python3 scripts/learning_loop.py:*)",
+      "Bash(python3 scripts/post_delivery_update.py:*)",
       "Bash(python3 scripts/check_oauth.py:*)",
       "Bash(git add process/audit/*)",
       "Bash(git add config/global_settings.json)",
       "Bash(git add .claude/settings.json)",
+      "Bash(git add CLAUDE.md)",
       "Bash(git commit:*)",
       "Bash(git push:*)"
     ]

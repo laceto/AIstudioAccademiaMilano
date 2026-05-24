@@ -3,7 +3,14 @@
     "allow": [
       "Bash(Get-ChildItem *)",
       "Bash(git *)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh issue *)",
+      "Bash(gh api *)",
+      "Bash(python scripts/digital_presence_pipeline.py --help)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\agents\\\\rag\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\scripts\\\\rag\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\data\\\\vectorstore\\\\repo\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\data\\\\synthesis_results\")"
     ]
   }
 }

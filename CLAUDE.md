@@ -57,6 +57,7 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 | File | Purpose |
 |------|--------|
 | `config/global_settings.json` | Single source of truth: skills, pricing, hooks, MCP, issues |
+| `config/accounts_registry.yaml` | All platform accounts: URL, status, credential readiness — owned by Valentina |
 | `.claude/settings.json` | Hook commands: Stop, PreToolUse, PostToolUse |
 | `scripts/learning_loop.py` | Auto-updates settings after every request |
 | `scripts/credential_manager.py` | Unified auth store: OAuth tokens + API keys |
@@ -111,7 +112,15 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 
 ## Learning Loop
 
-After every completed request, `scripts/learning_loop.py` runs automatically:
+After every completed request, two scripts run automatically:
+
+**`scripts/post_delivery_update.py`** — triggered by the git `post-commit` hook:
+1. Detects new `deliverables/YYYY-MM-DD_NNN_slug/` folders without audit logs
+2. Creates stub audit logs in `process/audit/`
+3. Updates `config/global_settings.json` meta + new skills
+4. Patches the Delivered Requests table in this file
+
+**`scripts/learning_loop.py`** — triggered by the Claude Code `Stop` hook:
 
 1. Reads latest audit log in `process/audit/`
 2. Updates `config/global_settings.json`: new skills, MCP tools, pattern counters
@@ -206,7 +215,9 @@ See `agents/research/README.md`.
 | 005 | 2026-05-23 | Streamlit chatbot + OpenAI streaming | 19.90 |
 | 006 | 2026-05-23 | RAG system: embed all code + agents | 29.90 |
 | 007 | 2026-05-23 | WhatsApp/Telegram -> Apple/Outlook/Gmail calendar sync | 14.90 |
-| 008 | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) | 0.00 |
+| 008 | 2026-05-23 | Algo Trading Bot (SMA crossover, Alpaca paper, Streamlit dashboard) | 0.00 |
+| 009 | 2026-05-23 | LinkedIn post generator from GitHub activity (Claude voice) | 0.00 |
+| 010 | 2026-05-23 | Valentina agent — profile setup & multi-platform publishing pipeline | 0.00 |
 
 ---
 
