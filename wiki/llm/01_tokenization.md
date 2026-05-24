@@ -37,15 +37,36 @@ print(len(tokens))  # 6 tokens for 4 words
 
 Notice: `"Accademia"` → 2 tokens, `"Milano"` → 2 tokens. Italian proper nouns are rare in training data.
 
+## Tokenizer Landscape (2025)
+
+| Tokenizer | Vocab size | Used by | Python library |
+|-----------|-----------|---------|----------------|
+| `cl100k_base` | 100,277 | GPT-4, Claude (approx) | `tiktoken` |
+| `o200k_base` | 200,000 | GPT-4o, o1, o3 | `tiktoken` |
+| LLaMA 3 BPE | 128,000 | LLaMA 3, Mistral | `transformers` |
+| Gemma 2 | 256,000 | Gemma 2, PaliGemma | `transformers` |
+
+Claude uses its own BPE (not public). `cl100k_base` is a close approximation for budgeting.
+
+```python
+# HuggingFace tokenizer for any open model
+from transformers import AutoTokenizer
+tok = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B")
+tokens = tok.encode("AI Studio Accademia Milano")
+print(len(tokens))
+```
+
 ## Rule of Thumb
-~1 token per 4 chars in English. 2-3× more for other languages.
+~1 token per 4 chars in English. 2-3× more for other languages.  
+Code: roughly 1 token per 3 chars. JSON: very expensive (brackets, quotes all count).
 
 ## Studio Token Budget
 
-| Product | Typical tokens | gpt-4o-mini cost |
-|---------|---------------|------------------|
-| Strategic report prompt | ~2,000 in + ~1,000 out | $0.0009 |
-| Invoice generation | ~500 in + ~200 out | $0.0002 |
-| RAG query (5 chunks) | ~3,000 in + ~500 out | $0.0009 |
+| Product | Typical tokens | claude-haiku-4-5 cost | gpt-4o-mini cost |
+|---------|---------------|----------------------|------------------|
+| Strategic report | ~2,000 in + ~1,000 out | $0.00028 | $0.0009 |
+| Invoice generation | ~500 in + ~200 out | $0.00007 | $0.0002 |
+| RAG query (5 chunks) | ~3,000 in + ~500 out | $0.00038 | $0.0009 |
+| LinkedIn post (D009) | ~800 in + ~300 out | $0.00011 | $0.0003 |
 
 *Next: [02 — Embeddings](02_embeddings.md)*

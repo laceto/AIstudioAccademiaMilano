@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forno di Marta — Pane e dolci artigianali a Milano</title>
+  <meta name="description" content="Forno di Marta a Milano: pane fresco, croissant e torte artigianali. Ordina online torte su misura con ritiro programmato.">
+  <link rel="canonical" href="https://forno-di-marta.vercel.app/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Forno di Marta">
+  <meta property="og:title" content="Forno di Marta — Pane e dolci artigianali a Milano">
+  <meta property="og:description" content="Pane fresco ogni giorno, croissant e torte artigianali. Ordina online con ritiro programmato.">
+  <meta property="og:image" content="https://forno-di-marta.vercel.app/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:url" content="https://forno-di-marta.vercel.app/">
+  <meta property="og:locale" content="it_IT">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Forno di Marta">
+  <meta name="twitter:description" content="Pane e dolci artigianali a Milano. Ordina online.">
+  <meta name="twitter:image" content="https://forno-di-marta.vercel.app/og.png">
+
+  <!-- JSON-LD: LocalBusiness (Bakery). Fields marked TBD must be filled by Marta. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Bakery",
+    "name": "Forno di Marta",
+    "image": "https://forno-di-marta.vercel.app/og.png",
+    "url": "https://forno-di-marta.vercel.app/",
+    "telephone": "TBD",
+    "priceRange": "€€",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "TBD",
+      "addressLocality": "Milano",
+      "postalCode": "TBD",
+      "addressCountry": "IT"
+    },
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Tuesday","Wednesday","Thursday","Friday","Saturday"],
+        "opens": "07:00",
+        "closes": "19:30"
+      }
+    ],
+    "servesCuisine": ["Italian", "Bakery"]
+  }
+  </script>
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='56'%3E%F0%9F%A5%90%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:        #fdf8f1;
+      --bg-warm:   #fdecd2;
+      --bg-deep:   #c2410c;
+      --text:      #292524;
+      --text-soft: #57534e;
+      --line:      #fed7aa;
+      --accent:    #c2410c;
+      --accent-hi: #9a3412;
+      --focus:     #1d4ed8;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+    h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.2; margin: 0 0 .5em; }
+    a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+    .skip-link {
+      position: absolute; left: -9999px; top: 0;
+      background: #000; color: #fff; padding: .75rem 1rem; z-index: 100;
+    }
+    .skip-link:focus { left: 0; }
+    .container { max-width: 64rem; margin: 0 auto; padding: 0 1.5rem; }
+
+    header.site-header {
+      background: var(--bg-deep);
+      color: #fff;
+      padding: 5rem 1.5rem 4rem;
+      text-align: center;
+    }
+    header.site-header h1 { font-size: clamp(2.5rem, 5vw, 4rem); color: #fff; }
+    header.site-header p { color: #fed7aa; font-size: 1.25rem; margin: .25rem 0 1.5rem; }
+    .badge {
+      display: inline-block; padding: .25rem .75rem; border-radius: 999px;
+      background: rgba(255,255,255,.15); font-size: .8rem; letter-spacing: .05em;
+    }
+
+    nav.primary {
+      background: #fff; border-bottom: 1px solid var(--line);
+      position: sticky; top: 0; z-index: 10;
+    }
+    nav.primary ul {
+      display: flex; gap: 1.5rem; justify-content: center;
+      list-style: none; margin: 0; padding: .75rem 1rem;
+    }
+    nav.primary a { color: var(--text); text-decoration: none; font-weight: 500; }
+    nav.primary a:hover { color: var(--accent); }
+
+    section { padding: 4rem 1.5rem; }
+    section h2 { font-size: 2rem; }
+
+    .about { background: var(--bg); }
+    .about-grid { display: grid; gap: 2rem; align-items: center; grid-template-columns: 1fr; }
+    @media (min-width: 768px) { .about-grid { grid-template-columns: 1fr 1fr; } }
+    .about img {
+      width: 100%; height: auto; border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08); aspect-ratio: 4 / 3; object-fit: cover; background: var(--bg-warm);
+    }
+
+    .menu { background: var(--bg-warm); }
+    .menu-grid {
+      display: grid; gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .menu-item {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .menu-item h3 { font-family: 'Inter', sans-serif; font-size: 1.05rem; font-weight: 600; margin: 0 0 .25rem; }
+    .menu-item .price { color: var(--accent); font-weight: 600; }
+    .menu-item p { color: var(--text-soft); margin: .5rem 0 0; font-size: .95rem; }
+    .menu-cms-note {
+      font-size: .85rem; color: var(--text-soft); margin-top: 1.5rem; text-align: center;
+    }
+
+    .order { background: #fff; border-top: 1px solid var(--line); }
+    .order-form {
+      max-width: 36rem; margin: 0 auto;
+      display: grid; gap: 1rem;
+    }
+    .order-form label { font-weight: 500; font-size: .95rem; display: block; margin-bottom: .25rem; }
+    .order-form .hint { color: var(--text-soft); font-size: .85rem; display: block; margin-top: .25rem; }
+    .order-form input, .order-form select, .order-form textarea {
+      width: 100%; padding: .75rem;
+      border: 1px solid var(--line); border-radius: 8px;
+      font: inherit; background: #fff;
+    }
+    .order-form .row { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+    @media (min-width: 600px) { .order-form .row { grid-template-columns: 1fr 1fr; } }
+    .order-form button {
+      background: var(--accent); color: #fff; border: 0; padding: .9rem 1.5rem;
+      border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .order-form button:hover { background: var(--accent-hi); }
+    .order-form button[disabled] { opacity: .6; cursor: not-allowed; }
+    .order-status {
+      margin-top: 1rem; padding: 1rem; border-radius: 8px; display: none;
+    }
+    .order-status.ok    { display: block; background: #d1fae5; color: #064e3b; }
+    .order-status.err   { display: block; background: #fee2e2; color: #7f1d1d; }
+
+    footer.site-footer {
+      background: #1c1917; color: #d6d3d1; padding: 2.5rem 1.5rem;
+      text-align: center; font-size: .9rem;
+    }
+    footer.site-footer a { color: #fed7aa; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+
+  <!--
+    Plausible analytics (uncomment after Marta confirms she wants tracking).
+    <script defer data-domain="forno-di-marta.vercel.app" src="https://plausible.io/js/script.js"></script>
+  -->
+
+  <!--
+    Sentry browser SDK (uncomment after creating a Sentry project for the bakery).
+    <script src="https://browser.sentry-cdn.com/7.x/bundle.min.js" crossorigin="anonymous"></script>
+    <script>
+      if (window.Sentry) Sentry.init({ dsn: 'PASTE_DSN_HERE', tracesSampleRate: 0.1 });
+    </script>
+  -->
+</head>
+<body>
+  <a class="skip-link" href="#main">Salta al contenuto</a>
+
+  <header class="site-header" role="banner">
+    <span class="badge">Dal 1987 (da verificare con Marta)</span>
+    <h1>Forno di Marta</h1>
+    <p>Pane e dolci artigianali nel cuore di Milano</p>
+  </header>
+
+  <nav class="primary" aria-label="Navigazione principale">
+    <ul>
+      <li><a href="#chi-siamo">Chi siamo</a></li>
+      <li><a href="#menu">Menu</a></li>
+      <li><a href="#ordina">Ordina</a></li>
+      <li><a href="#contatti">Contatti</a></li>
+    </ul>
+  </nav>
+
+  <main id="main">
+    <section id="chi-siamo" class="about container" aria-labelledby="about-h">
+      <div class="about-grid">
+        <img src="./assets/bakery-placeholder.svg"
+             alt="Interno del Forno di Marta, vetrina con pane e dolci appena sfornati."
+             width="640" height="480">
+        <div>
+          <h2 id="about-h">Chi siamo</h2>
+          <p>Siamo una piccola bakery artigianale nel cuore di Milano. Ogni giorno sforniamo pane fresco, croissant e torte fatte a mano con ingredienti selezionati e ricette di famiglia.</p>
+          <p>La nostra passione per la panificazione tradizionale si unisce all'amore per la qualit&agrave; e per i nostri clienti.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu" class="menu" aria-labelledby="menu-h">
+      <div class="container">
+        <h2 id="menu-h" style="text-align:center;">Menu di oggi</h2>
+        <p style="text-align:center; color: var(--text-soft); margin: -.5rem 0 2rem;">Aggiornato da Marta tramite il pannello CMS.</p>
+        <!-- Menu items below are placeholders. Decap CMS reads from /content/menu.md and re-renders at build. -->
+        <div class="menu-grid" id="menu-list">
+          <article class="menu-item">
+            <h3>Pane casereccio</h3>
+            <div class="price">€4,50 / kg</div>
+            <p>Lievito madre, farina tipo 1, cottura lenta in forno a legna.</p>
+          </article>
+          <article class="menu-item">
+            <h3>Croissant burro francese</h3>
+            <div class="price">€1,80</div>
+            <p>Sfogliatura a 27 strati, lievitazione 18 ore.</p>
+          </article>
+          <article class="menu-item">
+            <h3>Torta della nonna</h3>
+            <div class="price">€22,00 (intera)</div>
+            <p>Ricetta di famiglia. Disponibile su prenotazione con 24 ore di anticipo.</p>
+          </article>
+          <article class="menu-item">
+            <h3>Cake design su misura</h3>
+            <div class="price">a partire da €45,00</div>
+            <p>Su prenotazione. Compila il modulo qui sotto.</p>
+          </article>
+        </div>
+        <p class="menu-cms-note">Marta modifica questo menu da <a href="/admin/">/admin/</a> (Decap CMS, gratis).</p>
+      </div>
+    </section>
+
+    <section id="ordina" class="order" aria-labelledby="order-h">
+      <div class="container">
+        <h2 id="order-h" style="text-align:center;">Ordina una torta</h2>
+        <p style="text-align:center; color: var(--text-soft); margin: -.5rem 0 2rem;">Riceverai conferma via email. L'evento viene aggiunto al calendario di Marta.</p>
+
+        <form id="order-form" class="order-form" novalidate>
+          <div>
+            <label for="f-product">Prodotto</label>
+            <select id="f-product" name="product" required>
+              <option value="">-- Scegli --</option>
+              <option>Pane casereccio</option>
+              <option>Croissant (dozzina)</option>
+              <option>Torta della nonna</option>
+              <option>Cake design su misura</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="f-quantity">Quantit&agrave;</label>
+              <input id="f-quantity" name="quantity" type="number" min="1" max="50" value="1" required>
+            </div>
+            <div>
+              <label for="f-pickup">Data e ora di ritiro</label>
+              <input id="f-pickup" name="pickup_at" type="datetime-local" required>
+              <span class="hint">Minimo 24 ore di anticipo.</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="f-name">Nome</label>
+              <input id="f-name" name="name" type="text" autocomplete="name" required>
+            </div>
+            <div>
+              <label for="f-email">Email</label>
+              <input id="f-email" name="email" type="email" autocomplete="email" required>
+            </div>
+          </div>
+
+          <div>
+            <label for="f-phone">Telefono (opzionale)</label>
+            <input id="f-phone" name="phone" type="tel" autocomplete="tel">
+          </div>
+
+          <div>
+            <label for="f-notes">Note (allergie, decorazioni, ecc.)</label>
+            <textarea id="f-notes" name="notes" rows="3"></textarea>
+          </div>
+
+          <button type="submit" id="f-submit">Invia ordine</button>
+          <div id="order-status" class="order-status" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="contatti" class="container" aria-labelledby="contact-h">
+      <h2 id="contact-h" style="text-align:center;">Contatti</h2>
+      <p style="text-align:center;">
+        <strong>Indirizzo:</strong> da confermare con Marta &middot;
+        <strong>Telefono:</strong> da confermare &middot;
+        <strong>Email:</strong> da confermare
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <p>&copy; 2026 Forno di Marta &middot; Sito realizzato da <a href="https://github.com/laceto/AIstudioAccademiaMilano">AI Studio Accademia Milano</a></p>
+    <p><a href="/admin/">Pannello CMS</a> &middot; <a href="/sitemap.xml">Sitemap</a></p>
+  </footer>
+
+  <script>
+    // Lightweight client. The order webhook lives at /api/order — see webhook/order_handler.py
+    (function () {
+      var form = document.getElementById('order-form');
+      var btn  = document.getElementById('f-submit');
+      var out  = document.getElementById('order-status');
+      if (!form) return;
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        out.className = 'order-status'; out.textContent = '';
+
+        var data = Object.fromEntries(new FormData(form).entries());
+        data.quantity = parseInt(data.quantity, 10);
+
+        // Minimal client-side validation; server is the source of truth.
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.email || '')) {
+          out.className = 'order-status err';
+          out.textContent = 'Email non valida.';
+          return;
+        }
+        if (new Date(data.pickup_at) < new Date(Date.now() + 24 * 3600 * 1000)) {
+          out.className = 'order-status err';
+          out.textContent = 'Il ritiro deve essere almeno 24 ore dopo.';
+          return;
+        }
+
+        btn.disabled = true; btn.textContent = 'Invio...';
+
+        fetch('/api/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+          .then(function (res) {
+            if (res.ok) {
+              out.className = 'order-status ok';
+              out.textContent = 'Ordine ricevuto! Riceverai conferma via email a breve. ID: ' + res.body.order_id;
+              form.reset();
+              if (window.plausible) window.plausible('order_placed');
+            } else {
+              out.className = 'order-status err';
+              out.textContent = 'Errore: ' + (res.body.error || 'sconosciuto');
+              if (window.Sentry) Sentry.captureMessage('order_submit_failed: ' + (res.body.error || ''));
+            }
+          })
+          .catch(function (err) {
+            out.className = 'order-status err';
+            out.textContent = 'Errore di rete. Riprova.';
+            if (window.Sentry) Sentry.captureException(err);
+          })
+          .finally(function () { btn.disabled = false; btn.textContent = 'Invia ordine'; });
+      });
+    })();
+  </script>
+</body>
+</html>

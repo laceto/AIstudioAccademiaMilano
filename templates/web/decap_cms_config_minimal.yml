@@ -1,0 +1,47 @@
+# templates/web/decap_cms_config_minimal.yml
+# Minimal Decap CMS config — single content collection + single info file.
+# Extracted from request 011 (Forno di Marta v2) per Core Architect recommendation.
+# Docs: https://decapcms.org/docs/configuration-options/
+#
+# To use:
+#   1. Copy to <site>/admin/config.yml
+#   2. Replace {{ REPO }}, {{ COLLECTION }}, {{ ITEM_LABEL }}, {{ FIELDS }}, etc.
+#   3. Ensure <site>/admin/index.html loads the Decap shell.
+#   4. Configure the backend OAuth (Netlify, github-actions proxy, or self-host decap-server).
+
+backend:
+  name: github
+  repo: "{{ REPO }}"           # e.g. owner/repo
+  branch: main
+  base_url: https://api.netlify.com    # or self-hosted OAuth proxy
+
+media_folder: "{{ MEDIA_FOLDER }}"     # e.g. site/assets/uploads
+public_folder: "/assets/uploads"
+
+locale: "{{ LOCALE }}"        # e.g. en, it
+
+collections:
+  - name: "{{ COLLECTION }}"   # e.g. menu, posts, products
+    label: "{{ COLLECTION_LABEL }}"
+    label_singular: "{{ ITEM_LABEL }}"
+    folder: "{{ CONTENT_FOLDER }}"     # e.g. site/content/menu
+    create: true
+    delete: true
+    slug: "{{slug}}"
+    fields:
+      - { name: title,       label: Title,       widget: string }
+      - { name: description, label: Description, widget: text }
+      - { name: order,       label: Sort order,  widget: number, default: 100, value_type: int, min: 0 }
+      - { name: available,   label: Visible,     widget: boolean, default: true }
+      # Add domain-specific fields below.
+
+  - name: info
+    label: Business info
+    files:
+      - name: business
+        label: Business details
+        file: "{{ INFO_FILE }}"        # e.g. site/content/business.yml
+        fields:
+          - { name: phone,   label: Phone,   widget: string }
+          - { name: email,   label: Email,   widget: string }
+          - { name: address, label: Address, widget: text }

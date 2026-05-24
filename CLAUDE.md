@@ -57,6 +57,7 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 | File | Purpose |
 |------|--------|
 | `config/global_settings.json` | Single source of truth: skills, pricing, hooks, MCP, issues |
+| `pytest.ini` | `pythonpath = .` — makes `scripts/` importable in CI and locally |
 | `.claude/settings.json` | Hook commands: Stop, PreToolUse, PostToolUse |
 | `scripts/learning_loop.py` | Auto-updates settings after every request |
 | `scripts/credential_manager.py` | Unified auth store: OAuth tokens + API keys |
@@ -78,17 +79,19 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 
 ## Pricing Rules
 
-```json
+```jsonc
 {
-  "static_landing_page":  "9.90",
-  "pdf_document":         "1.90",
-  "invoice_pdf":          "3.90",
-  "strategic_report":     "4.90",
-  "chatbot_app":          "19.90",
-  "email_delivery":       "0.50",
-  "rag_knowledge_base":   "29.90",
-  "calendar_integration": "14.90",
-  "unknown_product":      null
+  "static_landing_page":     "9.90",
+  "premium_landing_page":    "29.90",  // Luigi 2026-05-24, request 011 (above DA floor of EUR 24.90)
+  "commercial_landing_page": "45.90",  // Luigi 2026-05-24, request 011 (above APD ceiling of EUR 39.90)
+  "pdf_document":            "1.90",
+  "invoice_pdf":             "3.90",
+  "strategic_report":        "4.90",
+  "chatbot_app":             "19.90",
+  "email_delivery":          "0.50",
+  "rag_knowledge_base":      "29.90",
+  "calendar_integration":    "14.90",
+  "unknown_product":         null
 }
 ```
 
@@ -111,8 +114,21 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 
 ## Learning Loop
 
-After every completed request, `scripts/learning_loop.py` runs automatically:
+After every completed request, `scripts/learning_loop.py` runs automatically via the `Stop` hook in `.claude/settings.json`:
 
+```
+python scripts/learning_loop.py \
+  --event session_end \
+  --audit-dir process/audit \
+  --settings config/global_settings.json \
+  --claude-dir C:\Users\l_ace\.claude
+```
+
+**`--claude-dir` is mandatory.** It wires the loop to the global Claude installation:
+- Writes `project_state.md` to `C:\Users\l_ace\.claude\projects\...\memory\`
+- Promotes mature skills as `SKILL.md` stubs to `C:\Users\l_ace\.claude\skills\`
+
+Steps:
 1. Reads latest audit log in `process/audit/`
 2. Updates `config/global_settings.json`: new skills, MCP tools, pattern counters
 3. Promotes recurring patterns to hooks using **tiered thresholds**:
@@ -207,6 +223,11 @@ See `agents/research/README.md`.
 | 006 | 2026-05-23 | RAG system: embed all code + agents | 29.90 |
 | 007 | 2026-05-23 | WhatsApp/Telegram -> Apple/Outlook/Gmail calendar sync | 14.90 |
 | 008 | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) | 0.00 |
+| 009 | 2026-05-24 | Streamlit RAG app deployed to Streamlit Cloud | 29.90 |
+| 010 | 2026-05-24 | Google Cloud Run deployment (Dockerfile + deploy.sh) for laceto/rss_feed | 19.90 |
+| 009 | 2026-05-24 | Streamlit RAG Chatbot Cloud Deploy (laceto/rss_feed) | 19.90 |
+| 011 | 2026-05-24 | Bakery v2 — V2 Team (QRL, Core Architect, APD, Devil's Advocate) + commercial one-pager + Decap CMS + order webhook (Gmail + Calendar). Reframed as internal R&D; basis for `templates/web/` reusables (`order_webhook.py`, `landing_page_base.html`, `decap_cms_config_minimal.yml`). INV-011 voided. | 0.00 (R&D) |
+| 011a | 2026-05-24 | ISS-016 warranty fix on request 001: placeholder image + form sentinel, in-place patch on `deliverables/2026-05-23_001_bakery-website/` | 0.00 (no charge — courtesy) |
 
 ---
 
@@ -222,3 +243,16 @@ See `agents/research/README.md`.
 | ISS-007 | P3 | Provider-agnostic chatbot template | OPEN |
 | ISS-008 | P2 | RAG retrieval system | DELIVERED |
 | ISS-009 | P3 | Schedule GitHub Research runs (cron + digest commit) | OPEN |
+| ISS-010 | P0 | Register Partita IVA — blocks banking, invoicing, and legal revenue collection | OPEN |
+| ISS-011 | P0 | Open Qonto (EUR/IT) + Wise Business (USD) accounts — requires ISS-010 | OPEN |
+| ISS-012 | P2 | Marco: bank reconciliation webhook (Qonto API → audit log margin tracking) | OPEN |
+| ISS-013 | P1 | Set up AI Studio company email (Namecheap + Cloudflare + Zoho) | OPEN |
+| ISS-013a | P1 | Register aistudiomilano.ai + .io on Namecheap — Luigi | OPEN |
+| ISS-013b | P1 | Create Cloudflare account + add both domains — Luigi | OPEN |
+| ISS-013c | P1 | Point Namecheap nameservers to Cloudflare — Luigi | OPEN |
+| ISS-013d | P1 | Wire Cloudflare API token + update accounts_registry — Claude | OPEN |
+| ISS-014 | P2 | Productionise V2 Team (auto-trigger on Stacy QA defect-shipped flag or Marco pricing adequacy < 0.85) — see `agents/v2_team/README.md` | OPEN |
+| ISS-015 | P1 | Set prices for `premium_landing_page` and `commercial_landing_page` SKUs — Luigi 2026-05-24: €29.90 / €45.90 (DA veto overridden) | DECIDED |
+| ISS-016 | P3 | Free warranty fix to request 001: replaced `bakery.jpg` with `bakery-placeholder.svg` + added JS sentinel that catches the unfilled `YOUR_FORM_ID` and shows a visible "modulo non configurato" message instead of a silent 404 — DA recommendation, no charge to buyer | DELIVERED |
+rices for `premium_landing_page` and `commercial_landing_page` SKUs — Luigi 2026-05-24: €29.90 / €45.90 (DA veto overridden) | DECIDED |
+| ISS-016 | P3 | Free warranty fix to request 001: replaced `bakery.jpg` with `bakery-placeholder.svg` + added JS sentinel that catches the unfilled `YOUR_FORM_ID` and shows a visible "modulo non configurato" message instead of a silent 404 — DA recommendation, no charge to buyer | DELIVERED |

@@ -118,4 +118,19 @@ streamlit run deliverables/github-research/streamlit_research_app.py
 
 ---
 
+## V2 Team — Delivery Improvement Squad
+
+See `agents/v2_team/README.md` for the full spec.
+
+Four specialists run a second pass over an already-delivered product when (a) Luigi explicitly asks, (b) Stacy QA flagged a shipped defect, (c) Marco's pricing-adequacy ratio fell below 0.85, or (d) Reputation Guardian RU exceeded 5. They produce a converged critique, hand a re-spec back to Gianni, and a new audit log opens.
+
+- **Quality Reliability Lead** — SLOs, observability, accessibility, tests
+- **Core Architect** — stack regrets, coupling, reusables to extract
+- **API Product Designer** — surface area, conversion paths, schema, cross-product integration
+- **Devil's Advocate** — hidden costs, unverified assumptions, structured price-tier veto
+
+First use: request 011 (Forno di Marta v2) — see `deliverables/2026-05-24_011_bakery-v2/critique_of_001.md`.
+
+---
+
 *Risk agents are invoked via `process/risk_review_process.md`. All findings route to Luigi for final disposition.*

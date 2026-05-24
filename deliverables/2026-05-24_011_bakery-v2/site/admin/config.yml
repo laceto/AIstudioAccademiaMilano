@@ -1,0 +1,43 @@
+# Decap CMS configuration for Forno di Marta
+# Docs: https://decapcms.org/docs/configuration-options/
+
+backend:
+  name: github
+  repo: laceto/AIstudioAccademiaMilano   # change to the deployed repo
+  branch: main
+  base_url: https://api.netlify.com       # OAuth proxy; or self-host with decap-server
+
+media_folder: "deliverables/2026-05-24_011_bakery-v2/site/assets/uploads"
+public_folder: "/assets/uploads"
+
+locale: it
+
+collections:
+  - name: menu
+    label: Menu
+    label_singular: Voce di menu
+    folder: deliverables/2026-05-24_011_bakery-v2/site/content/menu
+    create: true
+    delete: true
+    slug: "{{slug}}"
+    fields:
+      - { name: title,       label: Nome,       widget: string }
+      - { name: price,       label: Prezzo,     widget: string, hint: "es. €4,50 / kg" }
+      - { name: description, label: Descrizione, widget: text }
+      - { name: order,       label: Ordine in pagina, widget: number, default: 100, value_type: int, min: 0 }
+      - { name: available,   label: Disponibile oggi, widget: boolean, default: true }
+
+  - name: info
+    label: Informazioni bakery
+    files:
+      - name: business
+        label: Dati attività
+        file: deliverables/2026-05-24_011_bakery-v2/site/content/business.yml
+        fields:
+          - { name: address_street,   label: Indirizzo,   widget: string }
+          - { name: address_postal,   label: CAP,         widget: string }
+          - { name: phone,            label: Telefono,    widget: string }
+          - { name: email,            label: Email,       widget: string }
+          - { name: founding_year,    label: Anno fondazione, widget: number, value_type: int }
+          - { name: hours_weekday,    label: Orari feriali, widget: string, default: "07:00–19:30" }
+          - { name: hours_weekend,    label: Orari festivi, widget: string }
