@@ -156,4 +156,18 @@ First use: request 011 (Forno di Marta v2) — see `deliverables/2026-05-24_011_
 
 ---
 
+## Input Gateway Team
+
+See `agents/input_gateway/README.md` for the full spec.
+
+Three specialists build the user-facing input channels that feed the 6-agent pipeline. All three channels normalize input through a shared `PipelineAdapter` before touching Stacy.
+
+- **Pablo** — Platform Engineer: `PipelineAdapter`, FastAPI `/submit` endpoint, HMAC middleware
+- **Sofia** — Frontend/UX: Streamlit form with live pipeline status
+- **Carlos** — Bot/Integration: Telegram bot + WhatsApp webhook
+
+Build order: Pablo first, then Sofia and Carlos in parallel. Issues: ISS-018 / ISS-019 / ISS-020 / ISS-021.
+
+---
+
 *Risk agents are invoked via `process/risk_review_process.md`. All findings route to Luigi for final disposition.*

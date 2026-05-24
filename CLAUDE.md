@@ -253,3 +253,7 @@ See `agents/research/README.md`.
 | ISS-014 | P2 | Productionise V2 Team (auto-trigger on Stacy QA defect-shipped flag or Marco pricing adequacy < 0.85) — see `agents/v2_team/README.md` | OPEN |
 | ISS-015 | P1 | Set prices for `premium_landing_page` and `commercial_landing_page` SKUs — Luigi 2026-05-24: €29.90 / €45.90 (DA veto overridden) | DECIDED |
 | ISS-016 | P3 | Warranty fix on request 001: placeholder image + JS form sentinel | DELIVERED |
+| ISS-018 | P1 | Pablo: `gateway/pipeline_adapter.py` + FastAPI `/submit` + HMAC middleware — Input Gateway Track 0 | OPEN |
+| ISS-019 | P1 | Sofia: `gateway/streamlit_app.py` wired to PipelineAdapter — Input Gateway Track 1 | OPEN |
+| ISS-020 | P1 | Carlos: `gateway/bot_telegram.py` + `bot_whatsapp.py` wired to PipelineAdapter — Input Gateway Track 2 | OPEN |
+| ISS-021 | P2 | Deploy Input Gateway: all three channels live (Streamlit Cloud + Cloud Run + Telegram/Twilio webhooks) | OPEN |
