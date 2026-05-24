@@ -454,7 +454,7 @@
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
-    "ta_lib_system_dependency_handling": {
+    "ta_lib_system_dependency": {
       "description": "Auto-discovered from request 013",
       "intent_mappings": [
         "agent_deploy_streamlit"
@@ -578,7 +578,7 @@
       "streamlit_app_generation",
       "streamlit_secrets_handling",
       "dockerfile_authoring",
-      "ta_lib_system_dependency_handling",
+      "ta_lib_system_dependency",
       "huggingface_spaces_docker_deploy",
       "google_cloud_run_deploy"
     ]
@@ -722,11 +722,11 @@
       "risk_score": 3
     },
     {
-      "id": "auto_preload_ta_lib_system_dependency_handling",
+      "id": "auto_preload_ta_lib_system_dependency",
       "event": "PreToolUse",
-      "matcher": "ta_lib_system_dependency_handling",
-      "description": "Auto-promoted: pre-load ta_lib_system_dependency_handling context after 3 uses",
-      "command": "python3 scripts/preload_ta_lib_system_dependency_handling.py 2>&1",
+      "matcher": "ta_lib_system_dependency",
+      "description": "Auto-promoted: pre-load ta_lib_system_dependency context after 3 uses",
+      "command": "python3 scripts/preload_ta_lib_system_dependency.py 2>&1",
       "added": "2026-05-24",
       "promoted_from_pattern": true,
       "times_fired": 0,
@@ -1061,7 +1061,7 @@
     "langgraph_agent_integration": 10,
     "openai_api_integration": 10,
     "dockerfile_authoring": 10,
-    "ta_lib_system_dependency_handling": 10,
+    "ta_lib_system_dependency": 10,
     "huggingface_spaces_docker_deploy": 4,
     "google_cloud_run_deploy": 4
   }

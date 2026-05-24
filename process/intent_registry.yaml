@@ -133,6 +133,6 @@ agent_deploy_streamlit:
   - openai_api_integration
   - streamlit_secrets_handling
   - dockerfile_authoring
-  - ta_lib_system_dependency_handling
+  - ta_lib_system_dependency
   delivery_options:
   - github_repo

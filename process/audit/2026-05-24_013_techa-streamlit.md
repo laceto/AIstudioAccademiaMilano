@@ -71,7 +71,7 @@ skills_used:
   - openai_api_integration
   - streamlit_secrets_handling
   - dockerfile_authoring
-  - ta_lib_system_dependency_handling
+  - ta_lib_system_dependency
   - huggingface_spaces_docker_deploy
   - google_cloud_run_deploy
 
@@ -115,7 +115,7 @@ outcome: success
 learning_flags:
   new_skills:
     - langgraph_agent_integration
-    - ta_lib_system_dependency_handling
+    - ta_lib_system_dependency
     - dockerfile_authoring
     - huggingface_spaces_docker_deploy
     - google_cloud_run_deploy
@@ -234,7 +234,7 @@ Proposed: **€19.90** (matches `chatbot_app` — same Streamlit + LangGraph + O
 | Change | Why |
 |---|---|
 | `agent_deploy_streamlit` added to intents | First time deploying a 3rd-party agent repo as Streamlit |
-| `ta_lib_system_dependency_handling` skill | New: C-library deps need Dockerfile path |
+| `ta_lib_system_dependency` skill | New: C-library deps need Dockerfile path |
 | `dockerfile_authoring` skill | First Dockerfile in deliverables/ |
 | `langgraph_agent_integration` skill | First wrapper over an external LangGraph factory |
 | Pricing **proposed** €19.90 — blocked for Luigi | Marco's `unknown_product: null` rule fired correctly |
