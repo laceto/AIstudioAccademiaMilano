@@ -4,7 +4,7 @@
     "description": "AI Studio Accademia Milano â€” global learned settings.",
     "last_updated": "2026-05-24",
     "last_request_id": "011",
-    "total_requests_processed": 40
+    "total_requests_processed": 41
   },
   "skills": {
     "html_tailwind_css": {
@@ -328,7 +328,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 9,
+      "times_used": 10,
       "success_rate": 0.0,
       "avg_duration_sec": 0
     },
@@ -339,7 +339,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 9,
+      "times_used": 10,
       "success_rate": 0.0,
       "avg_duration_sec": 0
     },
@@ -350,7 +350,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 9,
+      "times_used": 10,
       "success_rate": 0.0,
       "avg_duration_sec": 0
     },
@@ -361,7 +361,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 9,
+      "times_used": 10,
       "success_rate": 0.0,
       "avg_duration_sec": 0
     },
@@ -372,7 +372,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 9,
+      "times_used": 10,
       "success_rate": 0.0,
       "avg_duration_sec": 0
     }
@@ -858,7 +858,7 @@
           "success_rate": 0.0
         },
         "delivery_improvement": {
-          "count": 18,
+          "count": 20,
           "avg_sec": 12.0,
           "success_rate": 0.0
         }
@@ -879,7 +879,7 @@
           "success_rate": 0.0
         },
         "delivery_improvement": {
-          "count": 9,
+          "count": 10,
           "avg_sec": 12.0,
           "success_rate": 0.0
         }
@@ -900,7 +900,7 @@
           "success_rate": 0.0
         },
         "delivery_improvement": {
-          "count": 9,
+          "count": 10,
           "avg_sec": 15.0,
           "success_rate": 0.0
         }
@@ -921,7 +921,7 @@
           "success_rate": 0.0
         },
         "delivery_improvement": {
-          "count": 9,
+          "count": 10,
           "avg_sec": 240.0,
           "success_rate": 0.0
         }
@@ -942,7 +942,7 @@
           "success_rate": 0.0
         },
         "delivery_improvement": {
-          "count": 9,
+          "count": 10,
           "avg_sec": 8.0,
           "success_rate": 1.0
         }
@@ -953,7 +953,7 @@
       "capabilities": [],
       "task_stats": {
         "delivery_improvement": {
-          "count": 9,
+          "count": 10,
           "avg_sec": 22.0,
           "success_rate": 0.0
         }
@@ -964,7 +964,7 @@
       "capabilities": [],
       "task_stats": {
         "delivery_improvement": {
-          "count": 9,
+          "count": 10,
           "avg_sec": 28.0,
           "success_rate": 0.0
         }
@@ -975,7 +975,7 @@
       "capabilities": [],
       "task_stats": {
         "delivery_improvement": {
-          "count": 9,
+          "count": 10,
           "avg_sec": 24.0,
           "success_rate": 0.0
         }
@@ -986,7 +986,7 @@
       "capabilities": [],
       "task_stats": {
         "delivery_improvement": {
-          "count": 9,
+          "count": 10,
           "avg_sec": 18.0,
           "success_rate": 0.0
         }
@@ -1212,7 +1212,7 @@
     "event_extraction_llm": 21,
     "telegram_bot_api": 21,
     "twilio_whatsapp_api": 21,
-    "google_calendar_api": 30,
+    "google_calendar_api": 31,
     "microsoft_graph_api": 21,
     "apple_caldav": 21,
     "google_cloud_run_deploy": 1,
@@ -1220,16 +1220,16 @@
     "google_secret_manager": 1,
     "cloud_build_submit": 1,
     "dockerfile_authoring": 1,
-    "html_semantic_markup": 9,
-    "json_ld_localbusiness": 9,
-    "open_graph_metadata": 9,
-    "decap_cms_config": 9,
-    "tailwind_extract_to_static_css": 9,
-    "flask_webhook": 9,
-    "reusable_template_extraction": 9,
-    "pytest_injectable_dependencies": 9,
-    "gmail_api_send": 9,
-    "cloud_run_deploy": 9
+    "html_semantic_markup": 10,
+    "json_ld_localbusiness": 10,
+    "open_graph_metadata": 10,
+    "decap_cms_config": 10,
+    "tailwind_extract_to_static_css": 10,
+    "flask_webhook": 10,
+    "reusable_template_extraction": 10,
+    "pytest_injectable_dependencies": 10,
+    "gmail_api_send": 10,
+    "cloud_run_deploy": 10
   },
   "template_candidates": {
     "fpdf2_pdf_generation": {
