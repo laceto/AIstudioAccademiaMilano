@@ -4,7 +4,7 @@
     "description": "AI Studio Accademia Milano \u00e2\u20ac\u201d global learned settings.",
     "last_updated": "2026-05-24",
     "last_request_id": "007",
-    "total_requests_processed": 10
+    "total_requests_processed": 11
   },
   "skills": {
     "html_tailwind_css": {
@@ -199,7 +199,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 4,
+      "times_used": 5,
       "success_rate": 1.0,
       "avg_duration_sec": 3,
       "requires_user_auth": true,
@@ -210,7 +210,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 4,
+      "times_used": 5,
       "success_rate": 1.0,
       "avg_duration_sec": 5,
       "requires_user_auth": true,
@@ -221,7 +221,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 4,
+      "times_used": 5,
       "success_rate": 1.0,
       "avg_duration_sec": 4,
       "requires_user_auth": true,
@@ -232,7 +232,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 4,
+      "times_used": 5,
       "success_rate": 1.0,
       "avg_duration_sec": 2,
       "requires_user_auth": true,
@@ -243,7 +243,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 4,
+      "times_used": 5,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -252,7 +252,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 4,
+      "times_used": 5,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     }
@@ -556,7 +556,7 @@
       "capabilities": [],
       "task_stats": {
         "calendar_integration": {
-          "count": 6,
+          "count": 8,
           "avg_sec": 6.5,
           "success_rate": 0.0
         }
@@ -567,7 +567,7 @@
       "capabilities": [],
       "task_stats": {
         "calendar_integration": {
-          "count": 3,
+          "count": 4,
           "avg_sec": 4.0,
           "success_rate": 1.0
         }
@@ -578,7 +578,7 @@
       "capabilities": [],
       "task_stats": {
         "calendar_integration": {
-          "count": 3,
+          "count": 4,
           "avg_sec": 18.0,
           "success_rate": 1.0
         }
@@ -589,7 +589,7 @@
       "capabilities": [],
       "task_stats": {
         "calendar_integration": {
-          "count": 3,
+          "count": 4,
           "avg_sec": 120.0,
           "success_rate": 1.0
         }
@@ -600,7 +600,7 @@
       "capabilities": [],
       "task_stats": {
         "calendar_integration": {
-          "count": 3,
+          "count": 4,
           "avg_sec": 4.0,
           "success_rate": 1.0
         }
@@ -608,11 +608,11 @@
     }
   },
   "pattern_counters": {
-    "event_extraction_llm": 3,
-    "telegram_bot_api": 3,
-    "twilio_whatsapp_api": 3,
-    "google_calendar_api": 3,
-    "microsoft_graph_api": 3,
-    "apple_caldav": 3
+    "event_extraction_llm": 4,
+    "telegram_bot_api": 4,
+    "twilio_whatsapp_api": 4,
+    "google_calendar_api": 4,
+    "microsoft_graph_api": 4,
+    "apple_caldav": 4
   }
 }
