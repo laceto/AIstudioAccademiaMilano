@@ -256,6 +256,24 @@ products:
       name: DISCORD_WEBHOOK_URL
       type: api_key
       notes: Server Settings → Integrations → Webhooks. Required only for announcer.
+  agent_deploy_streamlit:
+    label: Deploy 3rd-party LangGraph/agent repo as Streamlit app
+    required:
+    - id: openai_api_key
+      name: OPENAI_API_KEY
+      type: api_key
+      signup_url: https://platform.openai.com/api-keys
+      notes: Required by techa's LangGraph agents (gpt-4o).
+    optional:
+    - id: streamlit_secrets
+      name: Streamlit Secrets
+      type: config
+      notes: For Streamlit Cloud deploy.
+    - id: docker_host
+      name: Container host
+      type: infra
+      notes: Render / Railway / Fly.io / Cloud Run — required if TA-Lib not in target
+        apt repos.
 pricing:
   email_automation: 14.9
   calendar_assistant: 9.9
