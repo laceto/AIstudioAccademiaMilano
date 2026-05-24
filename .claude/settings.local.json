@@ -7,7 +7,8 @@
       "Bash(gh pr create --title 'feat\\(ci\\): GitHub Actions automation — ci, studio-ops, rag-maintenance' --body ' *)",
       "Bash(python scripts/learning_loop.py --event session_end --audit-dir process/audit --settings config/global_settings.json --claude-dir \"C:\\\\Users\\\\l_ace\\\\.claude\")",
       "Bash(gh run *)",
-      "Bash(gh issue *)"
+      "Bash(gh issue *)",
+      "Bash(gh label *)"
     ]
   }
 }
