@@ -369,6 +369,53 @@
       "avg_duration_sec": 0,
       "requires_user_auth": true,
       "auth_method": "oauth2_script"
+    },
+    "rag_indexer_kitai": {
+      "intent_mappings": ["knowledge_query", "repo_search"],
+      "agent": "RAG/Indexer",
+      "first_seen": "2026-05-24",
+      "times_used": 0,
+      "avg_duration_sec": 0,
+      "requires_user_auth": true,
+      "auth_method": "api_key",
+      "script": "scripts/rag/embed_repo.py",
+      "provider": "kitai.batch",
+      "vectorstore": "data/vectorstore/repo/",
+      "registry": "data/rag_registry.tsv"
+    },
+    "rag_retriever_hybrid": {
+      "intent_mappings": ["knowledge_query", "repo_search"],
+      "agent": "RAG/Retriever",
+      "first_seen": "2026-05-24",
+      "times_used": 0,
+      "avg_duration_sec": 0,
+      "script": "scripts/rag/retrieve_repo.py",
+      "provider": "kitai.retriever + kitai.query_translation",
+      "strategies": ["expand", "decompose", "step_back", "none"]
+    },
+    "rag_synthesizer_batch": {
+      "intent_mappings": ["knowledge_query", "deep_research"],
+      "agent": "RAG/Synthesizer",
+      "first_seen": "2026-05-24",
+      "times_used": 0,
+      "avg_duration_sec": 0,
+      "requires_user_auth": true,
+      "auth_method": "api_key",
+      "script": "scripts/rag/synthesize.py",
+      "provider": "kitai.batch",
+      "output_schema": "RepoAnswer",
+      "pending_batch_file": "data/pending_synthesis_batch.txt"
+    },
+    "rag_context_injection": {
+      "intent_mappings": ["always_on"],
+      "agent": "RAG/ContextInjector",
+      "first_seen": "2026-05-24",
+      "times_used": 0,
+      "avg_duration_sec": 0,
+      "script": "scripts/rag/inject_context.py",
+      "hook": "UserPromptSubmit",
+      "hook_strategy": "none",
+      "top_k": 5
     }
   },
   "intent_to_skill_map": {
