@@ -228,6 +228,20 @@ products:
         type: env_var
         notes: "PostgreSQL/MySQL/SQLite — depends on data source"
 
+  weather_dashboard:
+    label: "Weather Dashboard"
+    required:
+      - id: openweathermap_api_key
+        name: "OPENWEATHERMAP_API_KEY"
+        type: api_key
+        signup_url: "https://openweathermap.org/api"
+        notes: "Free tier: 60 calls/min, 1M calls/month. Key activates ~10min after signup."
+    optional:
+      - id: streamlit_secrets
+        name: "Streamlit Secrets (.streamlit/secrets.toml)"
+        type: config
+        notes: "For Streamlit Cloud deploy — add key to .streamlit/secrets.toml instead of env var"
+
 # Pricing reference (for Gianni's quote during intake)
 pricing:
   email_automation: 14.90
@@ -239,4 +253,5 @@ pricing:
   profile_setup: 14.90
   ai_assistant: 14.90
   data_dashboard: 9.90
+  weather_dashboard: 9.90
   unknown_product: null  # blocks delivery until Luigi approves price

@@ -89,3 +89,14 @@ calendar_integration:
     - telegram_bot
     - whatsapp_webhook
     - calendar_event_created
+
+weather_dashboard:
+  skills:
+    - openweathermap_api_integration
+    - weather_data_display
+    - streamlit_app_generation
+    - streamlit_secrets_handling
+  delivery_options:
+    - streamlit_local
+    - streamlit_cloud_url
+    - github_repo

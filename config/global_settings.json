@@ -2,9 +2,9 @@
   "_meta": {
     "version": "1.5",
     "description": "AI Studio Accademia Milano — global learned settings.",
-    "last_updated": "2026-05-23",
-    "last_request_id": "007",
-    "total_requests_processed": 7
+    "last_updated": "2026-05-24",
+    "last_request_id": "011",
+    "total_requests_processed": 11
   },
 
   "skills": {
@@ -33,7 +33,9 @@
     "apple_caldav":               { "intent_mappings": ["calendar_integration"], "agent": "Chiara", "times_used": 1, "success_rate": 1.0, "avg_duration_sec": 4, "requires_user_auth": true, "auth_method": "app_specific_password" },
     "event_extraction_llm":       { "intent_mappings": ["calendar_integration"], "agent": "Chiara", "times_used": 1, "success_rate": 1.0, "avg_duration_sec": 2, "requires_user_auth": true, "auth_method": "api_key" },
     "telegram_bot_api":           { "intent_mappings": ["calendar_integration"], "agent": "Chiara", "times_used": 1, "success_rate": 1.0, "avg_duration_sec": 0 },
-    "twilio_whatsapp_api":        { "intent_mappings": ["calendar_integration"], "agent": "Chiara", "times_used": 1, "success_rate": 1.0, "avg_duration_sec": 0 }
+    "twilio_whatsapp_api":        { "intent_mappings": ["calendar_integration"], "agent": "Chiara", "times_used": 1, "success_rate": 1.0, "avg_duration_sec": 0 },
+    "openweathermap_api_integration": { "intent_mappings": ["weather_dashboard"], "agent": "Chiara", "times_used": 1, "success_rate": 1.0, "avg_duration_sec": 0, "requires_user_auth": true, "auth_method": "api_key", "security_note": "Key in env var or st.secrets only" },
+    "weather_data_display":       { "intent_mappings": ["weather_dashboard"], "agent": "Chiara", "times_used": 1, "success_rate": 1.0, "avg_duration_sec": 0 }
   },
 
   "intent_to_skill_map": {
@@ -45,7 +47,8 @@
     "strategic_consultation": ["advisory_report_generation", "risk_agent_invocation", "markdown_report_formatting"],
     "chatbot_creation":       ["streamlit_app_generation", "openai_api_integration", "chat_history_management", "streamlit_secrets_handling", "streamlit_cloud_deploy"],
     "knowledge_query":        ["file_crawler", "vector_embeddings", "semantic_retrieval", "rag_qa", "streamlit_app_generation", "streamlit_cloud_deploy"],
-    "calendar_integration":   ["event_extraction_llm", "telegram_bot_api", "twilio_whatsapp_api", "google_calendar_api", "microsoft_graph_api", "apple_caldav"]
+    "calendar_integration":   ["event_extraction_llm", "telegram_bot_api", "twilio_whatsapp_api", "google_calendar_api", "microsoft_graph_api", "apple_caldav"],
+    "weather_dashboard":      ["openweathermap_api_integration", "weather_data_display", "streamlit_app_generation", "streamlit_secrets_handling"]
   },
 
   "pricing": {
@@ -57,6 +60,7 @@
     "email_delivery":        "€0.50",
     "rag_knowledge_base":    "€29.90",
     "calendar_integration":  "€14.90",
+    "weather_dashboard":     "€9.90",
     "unknown_product":       null
   },
 
