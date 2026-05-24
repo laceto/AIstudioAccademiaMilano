@@ -42,4 +42,28 @@ The hero section references `bakery-placeholder.svg` — an honest "Foto da sost
 Two defects from the original delivery were fixed at no charge by the V2 Team's recommendation:
 
 1. **Placeholder image**: `bakery.jpg` (which never existed and produced a broken-image icon) was replaced with a local `bakery-placeholder.svg` that visibly reads "Foto da sostituire con vetrina reale". Visitors now see an honest placeholder instead of a broken icon.
-2. **Form sentinel**: a small JS guard in `index.html` intercepts form su
+2. **Form sentinel**: a small JS guard in `index.html` intercepts form submissions when the `action` URL still contains the literal `YOUR_FORM_ID` and shows a visible "Modulo non ancora configurato" message instead of letting the POST silently 404 at Formspree. Once you replace `YOUR_FORM_ID` with a real ID, the guard is a no-op and the form submits normally.
+
+---
+
+## Deploy
+
+### GitHub Pages (free)
+1. Push this folder to a GitHub repo
+2. Settings → Pages → Source: main branch → `/` (root)
+3. Your site is live at `https://<username>.github.io/<repo>/`
+
+### Vercel (free, recommended)
+```bash
+npx vercel
+```
+Or drag-and-drop the folder at [vercel.com](https://vercel.com).
+
+### Local preview
+Open `index.html` directly in your browser — no server needed.
+
+---
+
+## No API Keys Needed for the site itself
+
+The site is 100% static HTML + Tailwind CDN. The only external dependency is Formspree for the contact form.

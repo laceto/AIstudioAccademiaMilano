@@ -88,13 +88,13 @@ def validate_advisory_output(text: str, min_words: int = 0) -> bool:
 # ── Settings helpers ─────────────────────────────────────────────────────────
 
 def load_settings(settings_path: str) -> dict:
-    with open(settings_path) as f:
+    with open(settings_path, encoding="utf-8") as f:
         return json.load(f)
 
 
 def save_settings(settings: dict, settings_path: str) -> None:
-    with open(settings_path, "w") as f:
-        json.dump(settings, f, indent=2)
+    with open(settings_path, "w", encoding="utf-8") as f:
+        json.dump(settings, f, indent=2, ensure_ascii=False)
     print(f"[learning_loop] Settings saved to {settings_path}")
 
 
@@ -110,11 +110,16 @@ def latest_audit_log(audit_dir: str) -> Path:
 
 
 def parse_audit_log(log_path: Path) -> dict:
-    text = log_path.read_text()
+    text = log_path.read_text(encoding="utf-8")
+    # fenced code block: ```yaml ... ```
     match = re.search(r"```yaml\n(.+?)```", text, re.DOTALL)
-    if not match:
-        raise ValueError(f"No YAML block found in {log_path}")
-    return yaml.safe_load(match.group(1))
+    if match:
+        return yaml.safe_load(match.group(1))
+    # YAML frontmatter: ---\n...\n---
+    match = re.match(r"^---\n(.+?)\n---", text, re.DOTALL)
+    if match:
+        return yaml.safe_load(match.group(1))
+    raise ValueError(f"No YAML block found in {log_path}")
 
 
 # ── Learning functions ───────────────────────────────────────────────────────
@@ -320,6 +325,43 @@ def promote_skills_to_files(settings: dict, skills_dir: Path) -> int:
     return changes
 
 
+_TEMPLATE_CANDIDATE_THRESHOLD = 2
+
+
+def check_template_candidates(settings: dict, templates_dir: str = "templates") -> int:
+    """Flag skills whose times_used crosses the template candidate threshold.
+
+    Writes new entries to settings['template_candidates']. Skips skills that
+    are already flagged or already have a template file on disk.
+    """
+    candidates = settings.setdefault("template_candidates", {})
+    today = datetime.now().strftime("%Y-%m-%d")
+    changes = 0
+
+    for skill_name, skill_data in settings.get("skills", {}).items():
+        if skill_data.get("times_used", 0) < _TEMPLATE_CANDIDATE_THRESHOLD:
+            continue
+        if skill_name in candidates:
+            continue
+
+        # Skip if a template file already covers this skill
+        slug = skill_name.replace("_", "-")
+        existing = list(Path(templates_dir).rglob(f"{slug}.py")) if Path(templates_dir).exists() else []
+        if existing:
+            continue
+
+        candidates[skill_name] = {
+            "flagged_date": today,
+            "times_used": skill_data.get("times_used", 0),
+            "intent_mappings": skill_data.get("intent_mappings", []),
+            "status": "pending",
+        }
+        print(f"[learning_loop] Template candidate: {skill_name} (used {skill_data.get('times_used')}x)")
+        changes += 1
+
+    return changes
+
+
 def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
     files = [settings_path, ".claude/settings.json"]
     for f in files:
@@ -416,6 +458,7 @@ def main():
     changes += update_agent_stats(settings, audit)
     changes += check_pattern_hooks(settings, audit)
     changes += promote_skills_to_files(settings, skills_dir)
+    changes += check_template_candidates(settings)
 
     settings["_meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
     settings["_meta"]["last_request_id"] = audit["request_id"]

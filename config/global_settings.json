@@ -3,8 +3,8 @@
     "version": "1.5",
     "description": "AI Studio Accademia Milano â€” global learned settings.",
     "last_updated": "2026-05-24",
-    "last_request_id": "010",
-    "total_requests_processed": 31
+    "last_request_id": "011",
+    "total_requests_processed": 34
   },
   "skills": {
     "html_tailwind_css": {
@@ -320,6 +320,61 @@
       "success_rate": 1.0,
       "avg_duration_sec": 30,
       "notes": "Docker pip install skips HTTPS wheel URLs in requirements.txt â€” guard with flag or separate reqs file"
+    },
+    "reusable_template_extraction": {
+      "description": "Auto-discovered from request 011",
+      "intent_mappings": [
+        "delivery_improvement"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 3,
+      "success_rate": 0.0,
+      "avg_duration_sec": 0
+    },
+    "decap_cms_config": {
+      "description": "Auto-discovered from request 011",
+      "intent_mappings": [
+        "delivery_improvement"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 3,
+      "success_rate": 0.0,
+      "avg_duration_sec": 0
+    },
+    "json_ld_localbusiness": {
+      "description": "Auto-discovered from request 011",
+      "intent_mappings": [
+        "delivery_improvement"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 3,
+      "success_rate": 0.0,
+      "avg_duration_sec": 0
+    },
+    "open_graph_metadata": {
+      "description": "Auto-discovered from request 011",
+      "intent_mappings": [
+        "delivery_improvement"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 3,
+      "success_rate": 0.0,
+      "avg_duration_sec": 0
+    },
+    "v2_critique_authoring": {
+      "description": "Auto-discovered from request 011",
+      "intent_mappings": [
+        "delivery_improvement"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 3,
+      "success_rate": 0.0,
+      "avg_duration_sec": 0
     }
   },
   "intent_to_skill_map": {
@@ -495,6 +550,116 @@
       "matcher": "apple_caldav",
       "description": "Auto-promoted: pre-load apple_caldav context after 3 uses",
       "command": "python3 scripts/preload_apple_caldav.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_gmail_api_send",
+      "event": "PreToolUse",
+      "matcher": "gmail_api_send",
+      "description": "Auto-promoted: pre-load gmail_api_send context after 2 uses",
+      "command": "python3 scripts/preload_gmail_api_send.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 2
+    },
+    {
+      "id": "auto_preload_cloud_run_deploy",
+      "event": "PreToolUse",
+      "matcher": "cloud_run_deploy",
+      "description": "Auto-promoted: pre-load cloud_run_deploy context after 2 uses",
+      "command": "python3 scripts/preload_cloud_run_deploy.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 2
+    },
+    {
+      "id": "auto_preload_html_semantic_markup",
+      "event": "PreToolUse",
+      "matcher": "html_semantic_markup",
+      "description": "Auto-promoted: pre-load html_semantic_markup context after 3 uses",
+      "command": "python3 scripts/preload_html_semantic_markup.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_json_ld_localbusiness",
+      "event": "PreToolUse",
+      "matcher": "json_ld_localbusiness",
+      "description": "Auto-promoted: pre-load json_ld_localbusiness context after 3 uses",
+      "command": "python3 scripts/preload_json_ld_localbusiness.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_open_graph_metadata",
+      "event": "PreToolUse",
+      "matcher": "open_graph_metadata",
+      "description": "Auto-promoted: pre-load open_graph_metadata context after 3 uses",
+      "command": "python3 scripts/preload_open_graph_metadata.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_decap_cms_config",
+      "event": "PreToolUse",
+      "matcher": "decap_cms_config",
+      "description": "Auto-promoted: pre-load decap_cms_config context after 3 uses",
+      "command": "python3 scripts/preload_decap_cms_config.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_tailwind_extract_to_static_css",
+      "event": "PreToolUse",
+      "matcher": "tailwind_extract_to_static_css",
+      "description": "Auto-promoted: pre-load tailwind_extract_to_static_css context after 3 uses",
+      "command": "python3 scripts/preload_tailwind_extract_to_static_css.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_flask_webhook",
+      "event": "PreToolUse",
+      "matcher": "flask_webhook",
+      "description": "Auto-promoted: pre-load flask_webhook context after 3 uses",
+      "command": "python3 scripts/preload_flask_webhook.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_reusable_template_extraction",
+      "event": "PreToolUse",
+      "matcher": "reusable_template_extraction",
+      "description": "Auto-promoted: pre-load reusable_template_extraction context after 3 uses",
+      "command": "python3 scripts/preload_reusable_template_extraction.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_pytest_injectable_dependencies",
+      "event": "PreToolUse",
+      "matcher": "pytest_injectable_dependencies",
+      "description": "Auto-promoted: pre-load pytest_injectable_dependencies context after 3 uses",
+      "command": "python3 scripts/preload_pytest_injectable_dependencies.py 2>&1",
       "added": "2026-05-24",
       "promoted_from_pattern": true,
       "times_fired": 0,
@@ -691,6 +856,11 @@
           "count": 2,
           "avg_sec": 39.5,
           "success_rate": 0.0
+        },
+        "delivery_improvement": {
+          "count": 6,
+          "avg_sec": 12.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -706,6 +876,11 @@
         "chatbot_creation": {
           "count": 1,
           "avg_sec": 45.0,
+          "success_rate": 0.0
+        },
+        "delivery_improvement": {
+          "count": 3,
+          "avg_sec": 12.0,
           "success_rate": 0.0
         }
       }
@@ -723,6 +898,11 @@
           "count": 1,
           "avg_sec": 78.0,
           "success_rate": 0.0
+        },
+        "delivery_improvement": {
+          "count": 3,
+          "avg_sec": 15.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -739,6 +919,11 @@
           "count": 1,
           "avg_sec": 193.0,
           "success_rate": 0.0
+        },
+        "delivery_improvement": {
+          "count": 3,
+          "avg_sec": 240.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -754,6 +939,55 @@
         "chatbot_creation": {
           "count": 1,
           "avg_sec": 12.0,
+          "success_rate": 0.0
+        },
+        "delivery_improvement": {
+          "count": 3,
+          "avg_sec": 8.0,
+          "success_rate": 1.0
+        }
+      }
+    },
+    "Quality Reliability Lead": {
+      "roles": [],
+      "capabilities": [],
+      "task_stats": {
+        "delivery_improvement": {
+          "count": 3,
+          "avg_sec": 22.0,
+          "success_rate": 0.0
+        }
+      }
+    },
+    "Core Architect": {
+      "roles": [],
+      "capabilities": [],
+      "task_stats": {
+        "delivery_improvement": {
+          "count": 3,
+          "avg_sec": 28.0,
+          "success_rate": 0.0
+        }
+      }
+    },
+    "API Product Designer": {
+      "roles": [],
+      "capabilities": [],
+      "task_stats": {
+        "delivery_improvement": {
+          "count": 3,
+          "avg_sec": 24.0,
+          "success_rate": 0.0
+        }
+      }
+    },
+    "Devil's Advocate": {
+      "roles": [],
+      "capabilities": [],
+      "task_stats": {
+        "delivery_improvement": {
+          "count": 3,
+          "avg_sec": 18.0,
           "success_rate": 0.0
         }
       }
@@ -978,13 +1212,216 @@
     "event_extraction_llm": 21,
     "telegram_bot_api": 21,
     "twilio_whatsapp_api": 21,
-    "google_calendar_api": 21,
+    "google_calendar_api": 24,
     "microsoft_graph_api": 21,
     "apple_caldav": 21,
     "google_cloud_run_deploy": 1,
     "artifact_registry_docker": 1,
     "google_secret_manager": 1,
     "cloud_build_submit": 1,
-    "dockerfile_authoring": 1
+    "dockerfile_authoring": 1,
+    "html_semantic_markup": 3,
+    "json_ld_localbusiness": 3,
+    "open_graph_metadata": 3,
+    "decap_cms_config": 3,
+    "tailwind_extract_to_static_css": 3,
+    "flask_webhook": 3,
+    "reusable_template_extraction": 3,
+    "pytest_injectable_dependencies": 3,
+    "gmail_api_send": 3,
+    "cloud_run_deploy": 3
+  },
+  "template_candidates": {
+    "fpdf2_pdf_generation": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "pdf_creation",
+        "invoice_generation"
+      ],
+      "status": "pending"
+    },
+    "gmail_api_oauth": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "email_delivery"
+      ],
+      "status": "pending"
+    },
+    "gmail_api_send": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "email_delivery"
+      ],
+      "status": "pending"
+    },
+    "streamlit_app_generation": {
+      "flagged_date": "2026-05-24",
+      "times_used": 3,
+      "intent_mappings": [
+        "chatbot_creation",
+        "interactive_app",
+        "knowledge_query",
+        "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "openai_api_integration": {
+      "flagged_date": "2026-05-24",
+      "times_used": 3,
+      "intent_mappings": [
+        "chatbot_creation",
+        "ai_integration",
+        "knowledge_query",
+        "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "streamlit_cloud_deploy": {
+      "flagged_date": "2026-05-24",
+      "times_used": 4,
+      "intent_mappings": [
+        "chatbot_creation",
+        "interactive_app",
+        "knowledge_query",
+        "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "google_calendar_api": {
+      "flagged_date": "2026-05-24",
+      "times_used": 22,
+      "intent_mappings": [
+        "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "microsoft_graph_api": {
+      "flagged_date": "2026-05-24",
+      "times_used": 22,
+      "intent_mappings": [
+        "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "apple_caldav": {
+      "flagged_date": "2026-05-24",
+      "times_used": 22,
+      "intent_mappings": [
+        "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "event_extraction_llm": {
+      "flagged_date": "2026-05-24",
+      "times_used": 22,
+      "intent_mappings": [
+        "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "telegram_bot_api": {
+      "flagged_date": "2026-05-24",
+      "times_used": 22,
+      "intent_mappings": [
+        "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "twilio_whatsapp_api": {
+      "flagged_date": "2026-05-24",
+      "times_used": 22,
+      "intent_mappings": [
+        "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "google_cloud_run_deploy": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "chatbot_creation",
+        "deploy_existing_app_new_platform"
+      ],
+      "status": "pending"
+    },
+    "artifact_registry_docker": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "chatbot_creation",
+        "deploy_existing_app_new_platform"
+      ],
+      "status": "pending"
+    },
+    "google_secret_manager": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "chatbot_creation",
+        "deploy_existing_app_new_platform"
+      ],
+      "status": "pending"
+    },
+    "cloud_build_submit": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "chatbot_creation",
+        "deploy_existing_app_new_platform"
+      ],
+      "status": "pending"
+    },
+    "dockerfile_authoring": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "chatbot_creation",
+        "deploy_existing_app_new_platform"
+      ],
+      "status": "pending"
+    },
+    "reusable_template_extraction": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "delivery_improvement"
+      ],
+      "status": "pending"
+    },
+    "decap_cms_config": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "delivery_improvement"
+      ],
+      "status": "pending"
+    },
+    "json_ld_localbusiness": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "delivery_improvement"
+      ],
+      "status": "pending"
+    },
+    "open_graph_metadata": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "delivery_improvement"
+      ],
+      "status": "pending"
+    },
+    "v2_critique_authoring": {
+      "flagged_date": "2026-05-24",
+      "times_used": 2,
+      "intent_mappings": [
+        "delivery_improvement"
+      ],
+      "status": "pending"
+    }
   }
 }
