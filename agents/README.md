@@ -118,6 +118,29 @@ streamlit run deliverables/github-research/streamlit_research_app.py
 
 ---
 
+## Specialist Agents
+
+These agents run outside the 6-agent delivery pipeline. They are invoked directly by Luigi or by Stacy when an intent is tagged as infra, social, or ops.
+
+### IT Staff
+Role: IT infrastructure and accounts management.
+Authority: **Advisory only — Luigi has the final word on every action.**
+
+Responsibilities:
+- Maintains `config/accounts_registry.yaml`: all domains, DNS, email, hosting, and credential env-var locations.
+- Guides domain registration, DNS configuration (Cloudflare), and email setup (Zoho Mail).
+- Wires API tokens: adds providers to `scripts/credential_manager.py`, documents in `config/global_settings.json`.
+- Tracks domain and token expiry; escalates to Lorenzo for P1 issue creation 30 days before renewal.
+- Presents every write action in a structured confirmation block; executes only after Luigi's explicit approval.
+
+See `agents/it_staff.md` for full spec, confirmation protocol, and platform coverage.
+
+### Valentina
+Role: Platform profiles, bio generation, and multi-platform publishing.
+See `agents/valentina.md`.
+
+---
+
 ## V2 Team — Delivery Improvement Squad
 
 See `agents/v2_team/README.md` for the full spec.

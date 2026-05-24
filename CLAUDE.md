@@ -225,9 +225,8 @@ See `agents/research/README.md`.
 | 008 | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) | 0.00 |
 | 009 | 2026-05-24 | Streamlit RAG app deployed to Streamlit Cloud | 29.90 |
 | 010 | 2026-05-24 | Google Cloud Run deployment (Dockerfile + deploy.sh) for laceto/rss_feed | 19.90 |
-| 009 | 2026-05-24 | Streamlit RAG Chatbot Cloud Deploy (laceto/rss_feed) | 19.90 |
-| 011 | 2026-05-24 | Bakery v2 — V2 Team (QRL, Core Architect, APD, Devil's Advocate) + commercial one-pager + Decap CMS + order webhook (Gmail + Calendar). Reframed as internal R&D; basis for `templates/web/` reusables (`order_webhook.py`, `landing_page_base.html`, `decap_cms_config_minimal.yml`). INV-011 voided. | 0.00 (R&D) |
-| 011a | 2026-05-24 | ISS-016 warranty fix on request 001: placeholder image + form sentinel, in-place patch on `deliverables/2026-05-23_001_bakery-website/` | 0.00 (no charge — courtesy) |
+| 011 | 2026-05-24 | Bakery v2 — V2 Team + Decap CMS + order webhook → `templates/web/` extraction. INV-011 voided. | 0.00 (R&D) |
+| 011a | 2026-05-24 | ISS-016 warranty fix on request 001: placeholder image + form sentinel | 0.00 (courtesy) |
 
 ---
 
@@ -253,6 +252,4 @@ See `agents/research/README.md`.
 | ISS-013d | P1 | Wire Cloudflare API token + update accounts_registry — Claude | OPEN |
 | ISS-014 | P2 | Productionise V2 Team (auto-trigger on Stacy QA defect-shipped flag or Marco pricing adequacy < 0.85) — see `agents/v2_team/README.md` | OPEN |
 | ISS-015 | P1 | Set prices for `premium_landing_page` and `commercial_landing_page` SKUs — Luigi 2026-05-24: €29.90 / €45.90 (DA veto overridden) | DECIDED |
-| ISS-016 | P3 | Free warranty fix to request 001: replaced `bakery.jpg` with `bakery-placeholder.svg` + added JS sentinel that catches the unfilled `YOUR_FORM_ID` and shows a visible "modulo non configurato" message instead of a silent 404 — DA recommendation, no charge to buyer | DELIVERED |
-rices for `premium_landing_page` and `commercial_landing_page` SKUs — Luigi 2026-05-24: €29.90 / €45.90 (DA veto overridden) | DECIDED |
-| ISS-016 | P3 | Free warranty fix to request 001: replaced `bakery.jpg` with `bakery-placeholder.svg` + added JS sentinel that catches the unfilled `YOUR_FORM_ID` and shows a visible "modulo non configurato" message instead of a silent 404 — DA recommendation, no charge to buyer | DELIVERED |
+| ISS-016 | P3 | Warranty fix on request 001: placeholder image + JS form sentinel | DELIVERED |

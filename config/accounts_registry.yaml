@@ -1,0 +1,110 @@
+# config/accounts_registry.yaml
+# IT Staff agent's single source of truth for all studio platform accounts.
+# NEVER store credential values here — only env var names and metadata.
+# Owner: IT Staff agent. Luigi has final authority on all changes.
+# Last updated: 2026-05-24
+
+studio:
+  name: AI Studio Accademia Milano
+  founder: Luigi Aceto
+  personal_email: luigi.vinegar@gmail.com
+  business_email: luigi@aistudiomilano.xyz  # pending ISS-013 completion
+
+domains:
+  - domain: aistudiomilano.xyz
+    registrar: Namecheap
+    registered_by: Luigi
+    registered_date: null        # fill after purchase
+    expiry_date: null            # fill after purchase (~1 year from registration)
+    renewal_cost_eur: 1.72
+    dns_provider: Cloudflare     # pending ISS-013b/c nameserver switch
+    status: pending_purchase
+    iss_ref: ISS-013a
+    notes: >
+      Interim .xyz domain at €1.72/yr. PremiumDNS skipped — Cloudflare free tier
+      provides equivalent DDoS protection, DNSSEC, and global anycast DNS.
+      Upgrade path: register aistudiomilano.ai (~€60/yr) once Partita IVA is active (ISS-010).
+
+dns:
+  - provider: Cloudflare
+    plan: free
+    account_email: luigi.vinegar@gmail.com
+    domains_managed:
+      - aistudiomilano.xyz
+    api_token_env: CLOUDFLARE_API_TOKEN
+    api_token_permissions: "Zone:DNS:Edit"
+    nameservers: []              # fill with Cloudflare-assigned NS after account creation
+    status: pending_setup
+    iss_ref: "ISS-013b, ISS-013c, ISS-013d"
+    notes: >
+      Manual step required: Luigi must change Namecheap nameservers to Cloudflare values.
+      Propagation: up to 48h. API token (Zone:DNS:Edit scope) wired by IT Staff after ISS-013c done.
+
+email:
+  - provider: Zoho Mail
+    plan: free
+    mailboxes:
+      - address: luigi@aistudiomilano.xyz
+        forwards_to: luigi.vinegar@gmail.com
+        type: primary_business
+        status: pending_setup
+    domain: aistudiomilano.xyz
+    dns_records_required:
+      - type: MX
+        name: "@"
+        value: mx.zoho.eu
+        priority: 10
+      - type: TXT
+        name: "@"
+        value: "v=spf1 include:zoho.eu ~all"
+      - type: TXT
+        name: zmail._domainkey
+        value: null              # fill from Zoho DKIM setup panel
+      - type: TXT
+        name: _dmarc
+        value: "v=DMARC1; p=none; rua=mailto:luigi@aistudiomilano.xyz"
+    api_key_env: ZOHO_API_KEY
+    status: pending_setup
+    iss_ref: ISS-013
+    notes: Free plan supports up to 5 mailboxes. Setup after Cloudflare DNS is live.
+
+hosting:
+  - provider: Vercel
+    plan: hobby
+    account_email: luigi.vinegar@gmail.com
+    used_for: static_landing_pages
+    deploy_token_env: VERCEL_TOKEN
+    status: active
+
+  - provider: Streamlit Cloud
+    plan: free
+    account_email: luigi.vinegar@gmail.com
+    used_for: streamlit_apps
+    auth_method: github_oauth
+    status: active
+
+  - provider: Google Cloud Run
+    plan: pay_as_you_go
+    project_id: null             # fill from GCP console
+    used_for: containerized_apps
+    auth_env: GOOGLE_CREDENTIALS_JSON
+    region: europe-west1
+    status: active
+
+version_control:
+  - provider: GitHub
+    username: laceto
+    token_env: GITHUB_TOKEN
+    scope: "repo, workflow"
+    status: active
+
+credential_policy:
+  storage: env_var_only          # values never in registry or code
+  session_ttl_sec: 3600          # credential_manager.py default
+  oauth_tokens: session_scoped   # never persisted to disk
+  api_keys: env_var_permanent    # set in shell profile or .env (gitignored)
+
+expiry_monitoring:
+  alert_days_before: 30
+  responsible_agent: IT Staff
+  escalation: Lorenzo files P1 issue automatically

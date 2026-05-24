@@ -87,9 +87,36 @@ def validate_advisory_output(text: str, min_words: int = 0) -> bool:
 
 # ── Settings helpers ─────────────────────────────────────────────────────────
 
+# Mojibake patterns that corrupt JSON parsing, applied in order.
+# Rule: fix garbled em-dash variants BEFORE replacing curly quotes, because
+# garbled em-dashes can contain curly-quote bytes as part of the garbage.
+_MOJIBAKE_BYTES = [
+    # â€" where the trailing byte was already replaced with ASCII "
+    (b"\xc3\xa2\xe2\x82\xac\"", b" \xe2\x80\x94 "),
+    # â€" followed by UTF-8 left/right curly quote
+    (b"\xc3\xa2\xe2\x82\xac\xe2\x80\x9c", b" \xe2\x80\x94 "),
+    (b"\xc3\xa2\xe2\x82\xac\xe2\x80\x9d", b" \xe2\x80\x94 "),
+    # â€" followed by cp1252 right-quote byte 0x94
+    (b"\xc3\xa2\xe2\x82\xac\x94", b" \xe2\x80\x94 "),
+    # Curly/smart quotes used as JSON structural delimiters
+    (b"\xe2\x80\x9c", b"\""),  # U+201C left double quotation mark
+    (b"\xe2\x80\x9d", b"\""),  # U+201D right double quotation mark
+]
+
+
+def _sanitize_json_bytes(raw: bytes) -> bytes:
+    for bad, good in _MOJIBAKE_BYTES:
+        raw = raw.replace(bad, good)
+    return raw
+
+
 def load_settings(settings_path: str) -> dict:
-    with open(settings_path, encoding="utf-8") as f:
-        return json.load(f)
+    raw = Path(settings_path).read_bytes()
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        fixed = _sanitize_json_bytes(raw)
+        return json.loads(fixed.decode("utf-8", errors="replace"))
 
 
 def save_settings(settings: dict, settings_path: str) -> None:
