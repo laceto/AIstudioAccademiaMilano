@@ -23,8 +23,8 @@ EXPOSE 8501
 HEALTHCHECK CMD curl --fail http://localhost:${PORT}/_stcore/health || exit 1
 
 # Honours $PORT so the same image runs on HF Spaces (8501) and Cloud Run ($PORT).
+# XSRF protection stays ON (Streamlit default) — this app handles payments + PII.
 CMD streamlit run main.py \
     --server.address=0.0.0.0 \
     --server.port=${PORT} \
-    --server.enableCORS=false \
-    --server.enableXsrfProtection=false
+    --server.enableCORS=false

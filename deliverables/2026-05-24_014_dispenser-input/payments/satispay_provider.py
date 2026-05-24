@@ -1,4 +1,4 @@
-from .base import CheckoutSession, PaymentProvider
+from .base import CheckoutSession, PaymentProvider, PaymentVerification
 
 
 class SatispayProvider(PaymentProvider):
@@ -22,5 +22,5 @@ class SatispayProvider(PaymentProvider):
     ) -> CheckoutSession:
         raise NotImplementedError("SatispayProvider planned for v2.")
 
-    def verify_payment(self, session_id: str) -> bool:
+    def verify_payment(self, session_id: str) -> PaymentVerification:
         raise NotImplementedError("SatispayProvider planned for v2.")

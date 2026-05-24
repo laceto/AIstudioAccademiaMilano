@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "source": "config/global_settings.json",
+    "snapshot_taken": "2026-05-24",
+    "snapshot_request_id": "015",
+    "note": "Snapshot bundled with the deliverable so the Streamlit app boots on Hugging Face Spaces (which has no access to the parent repo). To refresh, copy the `pricing` block from the source file again."
+  },
+  "pricing": {
+    "static_landing_page": "€9.90",
+    "pdf_document": "€1.90",
+    "invoice_pdf": "€3.90",
+    "strategic_report": "€4.90",
+    "chatbot_app": "€19.90",
+    "email_delivery": "€0.50",
+    "rag_knowledge_base": "€29.90",
+    "calendar_integration": "€14.90",
+    "weather_dashboard": "€9.90",
+    "agent_deploy_streamlit": "€19.90",
+    "unknown_product": null
+  }
+}

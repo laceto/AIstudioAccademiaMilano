@@ -1,4 +1,4 @@
-from .base import CheckoutSession, PaymentProvider
+from .base import CheckoutSession, PaymentProvider, PaymentVerification
 
 
 class PayPalProvider(PaymentProvider):
@@ -22,5 +22,5 @@ class PayPalProvider(PaymentProvider):
     ) -> CheckoutSession:
         raise NotImplementedError("PayPalProvider planned for v2.")
 
-    def verify_payment(self, session_id: str) -> bool:
+    def verify_payment(self, session_id: str) -> PaymentVerification:
         raise NotImplementedError("PayPalProvider planned for v2.")

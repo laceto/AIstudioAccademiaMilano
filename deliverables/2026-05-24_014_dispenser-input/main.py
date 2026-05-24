@@ -6,6 +6,10 @@ Flow:
     3. Pay via Stripe Checkout (configurable provider — Satispay/PayPal coming v2)
     4. Stripe redirects back with ?session_id=… → we verify payment + enqueue
     5. User sees "in the queue" confirmation; deliverable lands on their channel later
+
+Crash-safety: the pending request payload is carried inside Stripe Checkout
+metadata, not Streamlit session_state — session_state does not survive the
+external redirect to Stripe and back, which silently dropped paid orders in v1.0.
 """
 import os
 import sys
@@ -20,9 +24,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import request_queue  # noqa: E402
 from classifiers import CatalogClassifier  # noqa: E402
 from payments import get_provider  # noqa: E402
+from payments.stripe_provider import APP_MARKER  # noqa: E402
 
 PAYMENT_PROVIDER_NAME = os.environ.get("PAYMENT_PROVIDER", "stripe")
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "http://localhost:8501")
+
+# Stripe metadata: 500 chars per value. Cap user-provided fields with a margin.
+MAX_FREE_TEXT = 480
+MAX_RECIPIENT = 64
 
 
 def get_secret(name: str, default: str | None = None) -> str | None:
@@ -66,25 +75,48 @@ def make_provider():
 # ----------------------------------------------- post-payment redirect path
 if payment_session_id:
     provider = make_provider()
-    pending = st.session_state.get("pending_request")
-    if provider and pending and provider.verify_payment(payment_session_id):
-        request_id = request_queue.enqueue({
-            **pending,
-            "payment_session_id": payment_session_id,
-            "payment_provider": provider.name,
-        })
-        del st.session_state["pending_request"]
-        st.success(f"Payment received. Your request is in the queue (id `{request_id[:8]}`).")
-        st.info(
-            "You'll get the deliverable on your chosen channel(s) shortly. "
-            "Median turnaround: 5–10 minutes during operator hours."
-        )
-        st.balloons()
+    if provider is None:
+        st.error("Payment provider not configured — cannot verify the charge. Contact support with the session id.")
+        st.code(payment_session_id, language="text")
         st.stop()
-    else:
+
+    verification = provider.verify_payment(payment_session_id)
+    md = verification.metadata
+    expected_cents = md.get("expected_amount_cents", "")
+    # Three independent checks: Stripe says paid, the session was minted by THIS app
+    # at the same price the user agreed to. Mismatch = reject; do not enqueue.
+    valid = (
+        verification.paid
+        and md.get("app_marker") == APP_MARKER
+        and expected_cents.isdigit()
+        and int(expected_cents) == verification.amount_cents
+    )
+    if not valid:
         st.error("Could not verify payment. If you were charged, contact support with the session id.")
         st.code(payment_session_id, language="text")
         st.stop()
+
+    channels_csv = md.get("channels", "")
+    request_id = request_queue.enqueue({
+        "dispenser_id": md.get("dispenser_id", dispenser_id),
+        "classification": {
+            "product_id": md.get("product_id", ""),
+            "product_label": md.get("product_label", ""),
+            "price_eur": verification.amount_cents / 100,
+            "extras": {"free_text": md.get("free_text", "")},
+        },
+        "delivery_channels": [c for c in channels_csv.split(",") if c],
+        "recipient": md.get("recipient", ""),
+        "payment_session_id": payment_session_id,
+        "payment_provider": provider.name,
+    })
+    st.success(f"Payment received. Your request is in the queue (id `{request_id[:8]}`).")
+    st.info(
+        "You'll get the deliverable on your chosen channel(s) shortly. "
+        "Median turnaround: 5–10 minutes during operator hours."
+    )
+    st.balloons()
+    st.stop()
 
 
 # ---------------------------------------------------------------- the wizard
@@ -104,6 +136,7 @@ with st.form("dispenser_form"):
         "Details",
         placeholder="One or two sentences. E.g. 'Invoice INV-042 for Acme SRL, €1,200, single line item Consulting May 2026.'",
         height=140,
+        max_chars=MAX_FREE_TEXT,
     )
 
     st.subheader("3. Where should we send it?")
@@ -113,6 +146,7 @@ with st.form("dispenser_form"):
     recipient = st.text_input(
         "Number or Telegram chat_id",
         placeholder="+39…  or  123456789",
+        max_chars=MAX_RECIPIENT,
         help=(
             "WhatsApp: full international number (e.g. +393331234567). "
             "Telegram: numeric chat_id (start the bot with /start first to get yours)."
@@ -146,20 +180,31 @@ if errors:
     st.stop()
 
 
-# --------------------------------------------- classify + queue + checkout
-classification = classifier.classify(chosen["id"], free_text=free_text.strip())
+# --------------------------------------------- classify + checkout
+free_text_clean = free_text.strip()[:MAX_FREE_TEXT]
+recipient_clean = recipient.strip()[:MAX_RECIPIENT]
+classification = classifier.classify(chosen["id"], free_text=free_text_clean)
 
-st.session_state["pending_request"] = {
+# Everything Chiara needs to deliver the request rides inside Stripe metadata.
+# That's how we survive the redirect (session_state does not).
+checkout_metadata = {
     "dispenser_id": dispenser_id,
-    "classification": classification.__dict__,
-    "delivery_channels": channels,
-    "recipient": recipient.strip(),
+    "product_id": classification.product_id,
+    "product_label": classification.product_label,
+    "channels": ",".join(channels),
+    "recipient": recipient_clean,
+    "free_text": free_text_clean,
 }
 
 provider = make_provider()
 if provider is None:
     st.info("Payment provider not configured. Showing the request payload that would be queued:")
-    st.json(st.session_state["pending_request"])
+    st.json({
+        "dispenser_id": dispenser_id,
+        "classification": classification.__dict__,
+        "delivery_channels": channels,
+        "recipient": recipient_clean,
+    })
     st.stop()
 
 return_url = f"{PUBLIC_BASE_URL}/?{urlencode({'d': dispenser_id})}"
@@ -168,11 +213,7 @@ checkout = provider.create_checkout_session(
     product_label=classification.product_label,
     success_url=return_url,
     cancel_url=return_url,
-    metadata={
-        "dispenser_id": dispenser_id,
-        "product_id": classification.product_id,
-        "channels": ",".join(channels),
-    },
+    metadata=checkout_metadata,
 )
 
 st.markdown(f"### Total: **€{classification.price_eur:.2f}**")

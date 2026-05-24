@@ -3,8 +3,12 @@ from pathlib import Path
 
 from .base import Classification, RequestClassifier
 
+DELIVERABLE_ROOT = Path(__file__).resolve().parents[1]
+BUNDLED_PRICING = DELIVERABLE_ROOT / "pricing.json"
+# Parent-repo fallback used when running from inside the monorepo (dev loop).
+# Outside the monorepo (e.g. Hugging Face Space), the bundled snapshot is the only source.
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_SETTINGS = PROJECT_ROOT / "config" / "global_settings.json"
+PARENT_SETTINGS = PROJECT_ROOT / "config" / "global_settings.json"
 
 PRODUCT_LABELS = {
     "static_landing_page": "Static landing page",
@@ -27,7 +31,9 @@ def _parse_price(raw) -> float | None:
 
 
 class CatalogClassifier(RequestClassifier):
-    def __init__(self, settings_path: Path | str = DEFAULT_SETTINGS) -> None:
+    def __init__(self, settings_path: Path | str | None = None) -> None:
+        if settings_path is None:
+            settings_path = BUNDLED_PRICING if BUNDLED_PRICING.exists() else PARENT_SETTINGS
         self.settings_path = Path(settings_path)
         with self.settings_path.open() as f:
             self.pricing: dict = json.load(f)["pricing"]
