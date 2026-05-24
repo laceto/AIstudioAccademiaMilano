@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/learning_loop.py --event session_end --audit-dir process/audit --settings config/global_settings.json 2>&1 | tee -a logs/learning_loop.log"
+            "command": "python scripts/learning_loop.py --event session_end --audit-dir process/audit --settings config/global_settings.json >> logs/learning_loop.log 2>&1"
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/check_oauth.py --provider gmail 2>&1"
+            "command": "python scripts/check_oauth.py --provider gmail 2>&1"
           }
         ]
       }
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/learning_loop.py --event delivery_complete --audit-dir process/audit --settings config/global_settings.json 2>&1 | tee -a logs/learning_loop.log"
+            "command": "python scripts/learning_loop.py --event delivery_complete --audit-dir process/audit --settings config/global_settings.json >> logs/learning_loop.log 2>&1"
           }
         ]
       }
@@ -52,9 +52,9 @@
       "Bash(python -m scripts.rag.embed_repo:*)",
       "Bash(python -m scripts.rag.retrieve_repo:*)",
       "Bash(python -m scripts.rag.synthesize:*)",
-      "Bash(python3 scripts/learning_loop.py:*)",
-      "Bash(python3 scripts/post_delivery_update.py:*)",
-      "Bash(python3 scripts/check_oauth.py:*)",
+      "Bash(python scripts/learning_loop.py:*)",
+      "Bash(python scripts/post_delivery_update.py:*)",
+      "Bash(python scripts/check_oauth.py:*)",
       "Bash(git add process/audit/*)",
       "Bash(git add config/global_settings.json)",
       "Bash(git add .claude/settings.json)",

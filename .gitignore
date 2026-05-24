@@ -26,6 +26,9 @@ env/
 data/raw/
 process/research/
 
+# Logs (keep dir, ignore contents)
+logs/*.log
+
 # OS
 .DS_Store
 Thumbs.db
