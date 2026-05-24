@@ -14,11 +14,11 @@ domains:
   - domain: aistudiomilano.xyz
     registrar: Namecheap
     registered_by: Luigi
-    registered_date: null        # fill after purchase
-    expiry_date: null            # fill after purchase (~1 year from registration)
+    registered_date: "2026-05-24"
+    expiry_date: "2027-05-24"
     renewal_cost_eur: 1.72
-    dns_provider: Cloudflare     # pending ISS-013b/c nameserver switch
-    status: pending_purchase
+    dns_provider: Cloudflare
+    status: active
     iss_ref: ISS-013a
     notes: >
       Interim .xyz domain at €1.72/yr. PremiumDNS skipped — Cloudflare free tier
@@ -33,12 +33,15 @@ dns:
       - aistudiomilano.xyz
     api_token_env: CLOUDFLARE_API_TOKEN
     api_token_permissions: "Zone:DNS:Edit"
-    nameservers: []              # fill with Cloudflare-assigned NS after account creation
-    status: pending_setup
+    nameservers:
+      - aaden.ns.cloudflare.com
+      - cloe.ns.cloudflare.com
+    status: nameservers_pending    # awaiting Namecheap update + propagation
     iss_ref: "ISS-013b, ISS-013c, ISS-013d"
     notes: >
-      Manual step required: Luigi must change Namecheap nameservers to Cloudflare values.
-      Propagation: up to 48h. API token (Zone:DNS:Edit scope) wired by IT Staff after ISS-013c done.
+      Cloudflare account created 2026-05-24. Nameservers assigned.
+      Luigi must set custom DNS on Namecheap to aaden/cloe.ns.cloudflare.com (ISS-013c).
+      Propagation: up to 48h. API token (Zone:DNS:Edit scope) wired by IT Staff after activation.
 
 email:
   - provider: Zoho Mail
