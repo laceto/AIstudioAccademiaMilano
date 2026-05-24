@@ -3,8 +3,8 @@
     "version": "1.5",
     "description": "AI Studio Accademia Milano \u00e2\u20ac\u201d global learned settings.",
     "last_updated": "2026-05-24",
-    "last_request_id": "009",
-    "total_requests_processed": 29
+    "last_request_id": "010",
+    "total_requests_processed": 30
   },
   "skills": {
     "html_tailwind_css": {
@@ -266,6 +266,60 @@
       "times_used": 22,
       "success_rate": 1.0,
       "avg_duration_sec": 0
+    },
+    "google_cloud_run_deploy": {
+      "intent_mappings": [
+        "chatbot_creation",
+        "deploy_existing_app_new_platform"
+      ],
+      "agent": "Francesca",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 12
+    },
+    "artifact_registry_docker": {
+      "intent_mappings": [
+        "chatbot_creation",
+        "deploy_existing_app_new_platform"
+      ],
+      "agent": "Chiara",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 5
+    },
+    "google_secret_manager": {
+      "intent_mappings": [
+        "chatbot_creation",
+        "deploy_existing_app_new_platform"
+      ],
+      "agent": "Chiara",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 2,
+      "requires_user_auth": true,
+      "auth_method": "gcloud_iam",
+      "security_note": "Secrets stored in GCP Secret Manager, never in code or env files"
+    },
+    "cloud_build_submit": {
+      "intent_mappings": [
+        "chatbot_creation",
+        "deploy_existing_app_new_platform"
+      ],
+      "agent": "Chiara",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 90
+    },
+    "dockerfile_authoring": {
+      "intent_mappings": [
+        "chatbot_creation",
+        "deploy_existing_app_new_platform"
+      ],
+      "agent": "Chiara",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 30,
+      "notes": "Docker pip install skips HTTPS wheel URLs in requirements.txt — guard with flag or separate reqs file"
     }
   },
   "intent_to_skill_map": {

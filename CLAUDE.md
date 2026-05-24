@@ -221,6 +221,8 @@ See `agents/research/README.md`.
 | 006 | 2026-05-23 | RAG system: embed all code + agents | 29.90 |
 | 007 | 2026-05-23 | WhatsApp/Telegram -> Apple/Outlook/Gmail calendar sync | 14.90 |
 | 008 | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) | 0.00 |
+| 009 | 2026-05-24 | Streamlit RAG app deployed to Streamlit Cloud | 29.90 |
+| 010 | 2026-05-24 | Google Cloud Run deployment (Dockerfile + deploy.sh) for laceto/rss_feed | 19.90 |
 | 009 | 2026-05-24 | Streamlit RAG Chatbot Cloud Deploy (laceto/rss_feed) | 19.90 |
 
 ---
