@@ -8,7 +8,7 @@ studio:
   name: AI Studio Accademia Milano
   founder: Luigi Aceto
   personal_email: luigi.vinegar@gmail.com
-  business_email: luigi@aistudiomilano.xyz  # pending ISS-013 completion
+  business_email: luigi@aistudiomilano.xyz
 
 domains:
   - domain: aistudiomilano.xyz
@@ -36,40 +36,26 @@ dns:
     nameservers:
       - aaden.ns.cloudflare.com
       - cloe.ns.cloudflare.com
-    status: nameservers_pending    # awaiting Namecheap update + propagation
+    status: active                 # Cloudflare live 2026-05-24 — traffic proxying confirmed
     iss_ref: "ISS-013b, ISS-013c, ISS-013d"
     notes: >
-      Cloudflare account created 2026-05-24. Nameservers assigned.
-      Luigi must set custom DNS on Namecheap to aaden/cloe.ns.cloudflare.com (ISS-013c).
-      Propagation: up to 48h. API token (Zone:DNS:Edit scope) wired by IT Staff after activation.
+      ISS-013b done: Cloudflare account created + domain added 2026-05-24.
+      ISS-013c done: Namecheap nameservers updated; traffic proxying confirmed.
+      ISS-013d open: add CLOUDFLARE_API_TOKEN value to .env (Zone:DNS:Edit scope, aistudiomilano.xyz only).
 
 email:
   - provider: Zoho Mail
-    plan: free
+    plan: paid
     mailboxes:
       - address: luigi@aistudiomilano.xyz
-        forwards_to: luigi.vinegar@gmail.com
         type: primary_business
-        status: pending_setup
+        status: active
     domain: aistudiomilano.xyz
-    dns_records_required:
-      - type: MX
-        name: "@"
-        value: mx.zoho.eu
-        priority: 10
-      - type: TXT
-        name: "@"
-        value: "v=spf1 include:zoho.eu ~all"
-      - type: TXT
-        name: zmail._domainkey
-        value: null              # fill from Zoho DKIM setup panel
-      - type: TXT
-        name: _dmarc
-        value: "v=DMARC1; p=none; rua=mailto:luigi@aistudiomilano.xyz"
+    dns_records_status: active    # MX + SPF + DKIM auto-mapped via Zoho 2026-05-24
     api_key_env: ZOHO_API_KEY
-    status: pending_setup
+    status: active
     iss_ref: ISS-013
-    notes: Free plan supports up to 5 mailboxes. Setup after Cloudflare DNS is live.
+    notes: Standalone Zoho mailbox, no forwarding. DNS auto-mapped by Zoho to Cloudflare.
 
 hosting:
   - provider: Vercel
