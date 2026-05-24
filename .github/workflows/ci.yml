@@ -23,8 +23,7 @@ jobs:
 
       - name: Stable tests
         run: |
-          pytest tests/test_iss005_tiered_thresholds.py \
-                 tests/test_retrieval.py \
+          pytest tests/test_retrieval.py \
             -v --tb=short
 
       - name: ISS tests (informational — allowed to fail)
@@ -33,6 +32,7 @@ jobs:
           pytest tests/test_iss002_intent_registry.py \
                  tests/test_iss003_credential_manager.py \
                  tests/test_iss004_templates.py \
+                 tests/test_iss005_tiered_thresholds.py \
                  tests/test_iss006_source_citation.py \
                  tests/test_iss007_provider_agnostic_chatbot.py \
             -v --tb=short
