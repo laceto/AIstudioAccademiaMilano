@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/learning_loop.py --event session_end --audit-dir process/audit --settings config/global_settings.json 2>&1 | tee -a logs/learning_loop.log"
+            "command": "python3 scripts/learning_loop.py --event session_end --audit-dir process/audit --settings config/global_settings.json --claude-dir C:\\Users\\l_ace\\.claude 2>&1 | tee -a logs/learning_loop.log"
           }
         ]
       }

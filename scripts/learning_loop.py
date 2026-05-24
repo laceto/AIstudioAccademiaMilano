@@ -323,6 +323,61 @@ def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
     print(f"[learning_loop] Committed: {msg}")
 
 
+def save_to_claude_memory(settings: dict, audit, claude_dir: str) -> None:
+    """Write live project state to Claude Code memory for future session context."""
+    memory_dir = (
+        Path(claude_dir)
+        / "projects"
+        / "C--Users-l-ace-Desktop-projects-AIstudioAccademiaMilano"
+        / "memory"
+    )
+    memory_dir.mkdir(parents=True, exist_ok=True)
+
+    meta = settings.get("_meta", {})
+    open_issues = [i for i in settings.get("open_issues", []) if i.get("status") == "OPEN"]
+    skills_count = len(settings.get("skills", {}))
+    today = datetime.now().strftime("%Y-%m-%d")
+    request_id = audit.get("request_id", "n/a") if audit else "n/a"
+    intent = audit.get("intent", "n/a") if audit else "n/a"
+
+    issue_lines = "\n".join(
+        f"- [{i['id']}] {i['title']} ({i['priority']})" for i in open_issues
+    ) or "_(none)_"
+
+    content = dedent(f"""\
+        ---
+        name: project-state
+        description: Live AI Studio state — updated by learning_loop.py after each session.
+        metadata:
+          type: project
+        ---
+
+        Last updated: {today}
+        Last request: {request_id} (intent: {intent})
+        Total requests processed: {meta.get('total_requests_processed', 0)}
+        Skills registered: {skills_count}
+
+        **Why:** Auto-saved by learning_loop.py so future sessions start with current state.
+        **How to apply:** Quick orientation — avoids reading global_settings.json from scratch.
+
+        ## Open Issues
+
+        {issue_lines}
+        """)
+
+    state_file = memory_dir / "project_state.md"
+    state_file.write_text(content, encoding="utf-8")
+    print(f"[learning_loop] Memory → {state_file}")
+
+    memory_md = memory_dir / "MEMORY.md"
+    if memory_md.exists():
+        index = memory_md.read_text(encoding="utf-8")
+        entry = "- [Project State](project_state.md) — Live studio state: requests processed, skills count, open issues"
+        if "project_state.md" not in index:
+            memory_md.write_text(index.rstrip() + f"\n{entry}\n", encoding="utf-8")
+            print("[learning_loop] MEMORY.md updated")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -330,6 +385,10 @@ def main():
     )
     parser.add_argument("--audit-dir", default="process/audit")
     parser.add_argument("--settings", default="config/global_settings.json")
+    parser.add_argument("--claude-dir", default=None,
+                        help="Path to ~/.claude — writes project_state.md to memory/")
+    parser.add_argument("--no-commit", action="store_true",
+                        help="Skip git commit/push (used by CI)")
     args = parser.parse_args()
 
     log_path = latest_audit_log(args.audit_dir)
@@ -359,7 +418,15 @@ def main():
     save_settings(settings, args.settings)
     print(f"[learning_loop] {changes} changes. Risk score: {risk_score}")
 
-    if risk_score < 3:
+    if args.claude_dir:
+        try:
+            save_to_claude_memory(settings, audit, args.claude_dir)
+        except Exception as exc:
+            print(f"[learning_loop] Memory save failed (non-fatal): {exc}")
+
+    if args.no_commit:
+        print("[learning_loop] --no-commit set — skipping git commit.")
+    elif risk_score < 3:
         commit_changes(args.settings, args.audit_dir, audit["request_id"])
     else:
         print(
