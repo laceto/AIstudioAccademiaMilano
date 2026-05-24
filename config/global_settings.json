@@ -4,7 +4,7 @@
     "description": "AI Studio Accademia Milano \u2014 global learned settings.",
     "last_updated": "2026-05-24",
     "last_request_id": "013",
-    "total_requests_processed": 17
+    "total_requests_processed": 18
   },
   "skills": {
     "html_tailwind_css": {
@@ -449,7 +449,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 2,
+      "times_used": 3,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -460,7 +460,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 2,
+      "times_used": 3,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -471,7 +471,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 2,
+      "times_used": 3,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     }
@@ -647,6 +647,39 @@
       "promoted_from_pattern": true,
       "times_fired": 0,
       "risk_score": 3
+    },
+    {
+      "id": "auto_preload_langgraph_agent_integration",
+      "event": "PreToolUse",
+      "matcher": "langgraph_agent_integration",
+      "description": "Auto-promoted: pre-load langgraph_agent_integration context after 3 uses",
+      "command": "python3 scripts/preload_langgraph_agent_integration.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_dockerfile_authoring",
+      "event": "PreToolUse",
+      "matcher": "dockerfile_authoring",
+      "description": "Auto-promoted: pre-load dockerfile_authoring context after 3 uses",
+      "command": "python3 scripts/preload_dockerfile_authoring.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_ta_lib_system_dependency_handling",
+      "event": "PreToolUse",
+      "matcher": "ta_lib_system_dependency_handling",
+      "description": "Auto-promoted: pre-load ta_lib_system_dependency_handling context after 3 uses",
+      "command": "python3 scripts/preload_ta_lib_system_dependency_handling.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
     }
   ],
   "mcp": {
@@ -791,7 +824,7 @@
           "success_rate": 1.0
         },
         "agent_deploy_streamlit": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 5.0,
           "success_rate": 1.0
         }
@@ -822,7 +855,7 @@
           "success_rate": 1.0
         },
         "agent_deploy_streamlit": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 90.0,
           "success_rate": 1.0
         }
@@ -853,7 +886,7 @@
           "success_rate": 1.0
         },
         "agent_deploy_streamlit": {
-          "count": 4,
+          "count": 6,
           "avg_sec": 6.5,
           "success_rate": 1.0
         }
@@ -884,7 +917,7 @@
           "success_rate": 1.0
         },
         "agent_deploy_streamlit": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 5.0,
           "success_rate": 0.0
         }
@@ -915,7 +948,7 @@
           "success_rate": 1.0
         },
         "agent_deploy_streamlit": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 8.0,
           "success_rate": 1.0
         }
@@ -941,10 +974,10 @@
     "openweathermap_api_integration": 1,
     "alpaca_paper_trading": 1,
     "sma_crossover_strategy": 1,
-    "streamlit_app_generation": 3,
+    "streamlit_app_generation": 4,
     "plotly_charting": 1,
     "pandas_data_analysis": 1,
-    "streamlit_secrets_handling": 4,
+    "streamlit_secrets_handling": 5,
     "github_rest_api": 1,
     "linkedin_voice_generation": 1,
     "cli_tool_generation": 2,
@@ -952,9 +985,9 @@
     "twitter_x_api_publishing": 1,
     "telegram_bot_publishing": 1,
     "reddit_praw_publishing": 1,
-    "langgraph_agent_integration": 2,
-    "openai_api_integration": 2,
-    "dockerfile_authoring": 2,
-    "ta_lib_system_dependency_handling": 2
+    "langgraph_agent_integration": 3,
+    "openai_api_integration": 3,
+    "dockerfile_authoring": 3,
+    "ta_lib_system_dependency_handling": 3
   }
 }
