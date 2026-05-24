@@ -389,8 +389,59 @@ def check_template_candidates(settings: dict, templates_dir: str = "templates") 
     return changes
 
 
+def update_studio_wiki(audit: dict, settings: dict) -> int:
+    """Append a new row to wiki/studio/01_deliverables.md after a successful delivery."""
+    if not audit:
+        return 0
+    if audit.get("outcome") != "success":
+        return 0
+
+    request_id = audit.get("request_id", "")
+    date = audit.get("date", datetime.now().strftime("%Y-%m-%d"))
+    intent = audit.get("intent", "unknown")
+    price_raw = audit.get("price", None)
+    path = audit.get("deliverable_path", "")
+
+    if not request_id or not price_raw:
+        return 0
+
+    price = f"€{price_raw}" if not str(price_raw).startswith("€") else str(price_raw)
+    skills = audit.get("skills_used", [])
+    stack = ", ".join(skills[:3]) if skills else intent
+
+    wiki_path = Path(__file__).parent.parent / "wiki" / "studio" / "01_deliverables.md"
+    if not wiki_path.exists():
+        return 0
+
+    content = wiki_path.read_text(encoding="utf-8")
+
+    # Deduplicate — skip if request_id already in the table
+    if f"| {request_id} |" in content:
+        return 0
+
+    new_row = f"| {request_id} | {date} | {intent} | {stack} | {price} | `{path}` |"
+
+    # Insert before the Revenue Summary section
+    marker = "\n## Revenue Summary"
+    if marker in content:
+        content = content.replace(marker, f"\n{new_row}{marker}")
+    else:
+        content = content.rstrip() + f"\n{new_row}\n"
+
+    # Update "Last updated" header line
+    content = re.sub(
+        r"Last updated: \d{4}-\d{2}-\d{2}",
+        f"Last updated: {datetime.now().strftime('%Y-%m-%d')}",
+        content,
+    )
+
+    wiki_path.write_text(content, encoding="utf-8")
+    print(f"[learning_loop] Studio wiki updated: request {request_id} appended.")
+    return 1
+
+
 def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
-    files = [settings_path, ".claude/settings.json"]
+    files = [settings_path, ".claude/settings.json", "wiki/studio/01_deliverables.md"]
     for f in files:
         subprocess.run(["git", "add", f], check=False)
     subprocess.run(["git", "add", audit_dir], check=False)
@@ -486,6 +537,7 @@ def main():
     changes += check_pattern_hooks(settings, audit)
     changes += promote_skills_to_files(settings, skills_dir)
     changes += check_template_candidates(settings)
+    changes += update_studio_wiki(audit, settings)
 
     settings["_meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
     settings["_meta"]["last_request_id"] = audit["request_id"]

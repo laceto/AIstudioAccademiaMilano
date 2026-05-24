@@ -101,6 +101,74 @@ version_control:
     scope: "repo, workflow"
     status: active
 
+mcp_connectors:
+  - provider: Google Calendar
+    type: claude_ai_mcp
+    account: luigi.vinegar@gmail.com
+    status: active
+    connected_date: "2026-05-24"
+
+  - provider: Google Drive
+    type: claude_ai_mcp
+    account: luigi.vinegar@gmail.com
+    status: active
+    connected_date: "2026-05-24"
+
+  - provider: Gmail
+    type: claude_ai_mcp
+    account: luigi.vinegar@gmail.com
+    status: active
+    connected_date: "2026-05-24"
+
+  - provider: Slack
+    type: claude_ai_mcp
+    status: pending
+    notes: Luigi to connect via /mcp → claude.ai Slack
+
+  - provider: Supabase
+    type: npm_mcp
+    package: "@supabase/mcp-server-supabase"
+    token_env: SUPABASE_ACCESS_TOKEN
+    status: pending_credentials
+
+  - provider: Vercel
+    type: npm_mcp
+    package: "@vercel/mcp-adapter"
+    token_env: VERCEL_TOKEN
+    status: pending_credentials
+
+  - provider: Stripe
+    type: npm_mcp
+    package: "mcp-server-stripe"
+    token_env: STRIPE_SECRET_KEY
+    status: pending_credentials
+
+  - provider: Twilio
+    type: npm_mcp
+    token_env: TWILIO_AUTH_TOKEN
+    status: pending_credentials
+
+  - provider: Tavily
+    type: npm_mcp
+    package: "mcp-server-tavily"
+    token_env: TAVILY_API_KEY
+    status: pending_credentials
+
+  - provider: Hugging Face
+    type: npm_mcp
+    token_env: HF_TOKEN
+    status: pending_credentials
+
+  - provider: n8n
+    type: npm_mcp
+    token_env: N8N_API_KEY
+    status: pending_credentials
+
+  - provider: Netlify
+    type: npm_mcp
+    token_env: NETLIFY_ACCESS_TOKEN
+    status: pending_credentials
+
 credential_policy:
   storage: env_var_only          # values never in registry or code
   session_ttl_sec: 3600          # credential_manager.py default
