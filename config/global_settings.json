@@ -3,8 +3,8 @@
     "version": "1.5",
     "description": "AI Studio Accademia Milano \u00e2\u20ac\u201d global learned settings.",
     "last_updated": "2026-05-24",
-    "last_request_id": "007",
-    "total_requests_processed": 28
+    "last_request_id": "009",
+    "total_requests_processed": 29
   },
   "skills": {
     "html_tailwind_css": {
@@ -152,9 +152,20 @@
         "calendar_integration"
       ],
       "agent": "Francesca",
-      "times_used": 3,
+      "times_used": 4,
       "success_rate": 1.0,
       "avg_duration_sec": 12
+    },
+    "streamlit_cloud_local_wheel_deploy": {
+      "intent_mappings": [
+        "chatbot_creation",
+        "deploy_existing_app"
+      ],
+      "agent": "Chiara",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 100,
+      "notes": "Install private/local wheels via HTTPS URL in requirements.txt when package not on PyPI"
     },
     "vector_embeddings": {
       "intent_mappings": [

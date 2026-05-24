@@ -57,6 +57,7 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 | File | Purpose |
 |------|--------|
 | `config/global_settings.json` | Single source of truth: skills, pricing, hooks, MCP, issues |
+| `pytest.ini` | `pythonpath = .` — makes `scripts/` importable in CI and locally |
 | `.claude/settings.json` | Hook commands: Stop, PreToolUse, PostToolUse |
 | `scripts/learning_loop.py` | Auto-updates settings after every request |
 | `scripts/credential_manager.py` | Unified auth store: OAuth tokens + API keys |
@@ -111,8 +112,21 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 
 ## Learning Loop
 
-After every completed request, `scripts/learning_loop.py` runs automatically:
+After every completed request, `scripts/learning_loop.py` runs automatically via the `Stop` hook in `.claude/settings.json`:
 
+```
+python scripts/learning_loop.py \
+  --event session_end \
+  --audit-dir process/audit \
+  --settings config/global_settings.json \
+  --claude-dir C:\Users\l_ace\.claude
+```
+
+**`--claude-dir` is mandatory.** It wires the loop to the global Claude installation:
+- Writes `project_state.md` to `C:\Users\l_ace\.claude\projects\...\memory\`
+- Promotes mature skills as `SKILL.md` stubs to `C:\Users\l_ace\.claude\skills\`
+
+Steps:
 1. Reads latest audit log in `process/audit/`
 2. Updates `config/global_settings.json`: new skills, MCP tools, pattern counters
 3. Promotes recurring patterns to hooks using **tiered thresholds**:
@@ -207,6 +221,7 @@ See `agents/research/README.md`.
 | 006 | 2026-05-23 | RAG system: embed all code + agents | 29.90 |
 | 007 | 2026-05-23 | WhatsApp/Telegram -> Apple/Outlook/Gmail calendar sync | 14.90 |
 | 008 | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) | 0.00 |
+| 009 | 2026-05-24 | Streamlit RAG Chatbot Cloud Deploy (laceto/rss_feed) | 19.90 |
 
 ---
 
