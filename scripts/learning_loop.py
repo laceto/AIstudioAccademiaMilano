@@ -4,6 +4,9 @@ Learning Loop — AI Studio Accademia Milano
 Runs after every completed request. Reads the latest audit log,
 extract new skills / MCP / hook patterns, updates global_settings.json
 and .claude/settings.json, then commits if risk_score < 3.
+
+Auto-promotion: skills that reach the skill_preload threshold (default 3)
+are materialized as SKILL.md files in ~/.claude/skills/.
 """
 
 import argparse
@@ -12,6 +15,7 @@ import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
+from textwrap import dedent
 
 import yaml  # pip install pyyaml
 
@@ -205,6 +209,109 @@ def check_pattern_hooks(settings: dict, audit: dict) -> int:
     return changes
 
 
+def _generate_skill_md(skill_name: str, skill_data: dict) -> str:
+    """Generate a SKILL.md stub from global_settings.json skill metadata."""
+    slug = skill_name.replace("_", "-")
+    agent = skill_data.get("agent", "Chiara")
+    intents = skill_data.get("intent_mappings", [])
+    requires_auth = skill_data.get("requires_user_auth", False)
+    auth_method = skill_data.get("auth_method", "")
+    security_note = skill_data.get("security_note", "")
+    times_used = skill_data.get("times_used", 0)
+    intent_str = ", ".join(f"`{i}`" for i in intents) if intents else "general purpose"
+
+    description = (
+        f"AI Studio Accademia Milano skill: {skill_name.replace('_', ' ')}. "
+        f"Owner: {agent}. Intents: {', '.join(intents) or 'general'}. "
+        f"Auto-promoted after {times_used} successful uses."
+    )
+    if requires_auth:
+        description += f" Requires {auth_method} authentication."
+
+    auth_block = ""
+    if requires_auth:
+        if auth_method == "api_key":
+            auth_block = dedent("""\
+                ## Authentication
+
+                Read the API key from an environment variable — never hardcode.
+                If the env var is missing, halt and tell Luigi exactly which one to set.
+                """)
+        elif auth_method in ("oauth2", "oauth1a", "oauth2_script", "device_code_oauth"):
+            auth_block = dedent("""\
+                ## Authentication
+
+                Use OAuth via `scripts/credential_manager.py`.
+                Token is session-scoped only — discard after use, never write to disk.
+                """)
+        elif auth_method == "webhook_url":
+            auth_block = dedent("""\
+                ## Authentication
+
+                Read the webhook URL from an environment variable.
+                Never log or commit the URL.
+                """)
+
+    security_block = f"\n## Security note\n\n{security_note}\n" if security_note else ""
+
+    return dedent(f"""\
+        ---
+        name: {slug}
+        description: '{description}'
+        ---
+
+        # {skill_name.replace("_", " ").title()}
+
+        **Owner:** {agent}
+        **Intent mappings:** {intent_str}
+        **Times used:** {times_used} (auto-promoted by learning loop)
+
+        ## When to use
+
+        Invoke when the current task involves `{skill_name}` or any of: {intent_str}.
+
+        {auth_block}{security_block}
+        ## Studio pipeline
+
+        This skill is part of the 6-agent pipeline:
+        Stacy → Gianni → Chiara → Stacy QA → Marco → Francesca.
+        Coordinate with the owning agent ({agent}) for implementation details.
+
+        ## Hand-craft this skill
+
+        This stub was auto-generated. Replace it with a full SKILL.md when
+        you have enough examples to document the exact steps, code patterns,
+        and edge cases for `{skill_name}`.
+        """)
+
+
+def promote_skills_to_files(settings: dict, skills_dir: Path) -> int:
+    """Auto-create SKILL.md stubs for skills that have reached the promotion threshold."""
+    if not skills_dir.exists():
+        print(f"[learning_loop] Skills dir not found: {skills_dir} — skipping promotion")
+        return 0
+
+    threshold = settings.get("pattern_thresholds", {}).get("skill_preload", 3)
+    changes = 0
+
+    for skill_name, skill_data in settings.get("skills", {}).items():
+        if skill_data.get("times_used", 0) < threshold:
+            continue
+
+        slug = skill_name.replace("_", "-")
+        skill_file = skills_dir / slug / "SKILL.md"
+
+        if skill_file.exists():
+            continue  # already promoted — hand-crafted or previous run
+
+        skill_file.parent.mkdir(parents=True, exist_ok=True)
+        skill_file.write_text(_generate_skill_md(skill_name, skill_data), encoding="utf-8")
+        print(f"[learning_loop] Promoted skill → ~/.claude/skills/{slug}/SKILL.md")
+        changes += 1
+
+    return changes
+
+
 def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
     files = [settings_path, ".claude/settings.json"]
     for f in files:
@@ -235,11 +342,13 @@ def main():
     settings = load_settings(args.settings)
 
     risk_score = audit.get("learning_flags", {}).get("risk_score", 1)
+    skills_dir = Path.home() / ".claude" / "skills"
     changes = 0
     changes += update_skills(settings, audit)
     changes += update_mcp(settings, audit)
     changes += update_agent_stats(settings, audit)
     changes += check_pattern_hooks(settings, audit)
+    changes += promote_skills_to_files(settings, skills_dir)
 
     settings["_meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
     settings["_meta"]["last_request_id"] = audit["request_id"]
