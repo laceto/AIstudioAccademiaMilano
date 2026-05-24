@@ -222,3 +222,6 @@ See `agents/research/README.md`.
 | ISS-007 | P3 | Provider-agnostic chatbot template | OPEN |
 | ISS-008 | P2 | RAG retrieval system | DELIVERED |
 | ISS-009 | P3 | Schedule GitHub Research runs (cron + digest commit) | OPEN |
+| ISS-010 | P0 | Register Partita IVA — blocks banking, invoicing, and legal revenue collection | OPEN |
+| ISS-011 | P0 | Open Qonto (EUR/IT) + Wise Business (USD) accounts — requires ISS-010 | OPEN |
+| ISS-012 | P2 | Marco: bank reconciliation webhook (Qonto API → audit log margin tracking) | OPEN |
