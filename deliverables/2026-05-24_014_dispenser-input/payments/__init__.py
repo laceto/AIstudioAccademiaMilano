@@ -1,4 +1,4 @@
-from .base import CheckoutSession, PaymentProvider
+from .base import CheckoutSession, PaymentProvider, PaymentVerification
 from .stripe_provider import StripeProvider
 from .satispay_provider import SatispayProvider
 from .paypal_provider import PayPalProvider
@@ -16,4 +16,10 @@ def get_provider(name: str) -> PaymentProvider:
     return PROVIDERS[name]()
 
 
-__all__ = ["CheckoutSession", "PaymentProvider", "get_provider", "PROVIDERS"]
+__all__ = [
+    "CheckoutSession",
+    "PaymentProvider",
+    "PaymentVerification",
+    "get_provider",
+    "PROVIDERS",
+]
