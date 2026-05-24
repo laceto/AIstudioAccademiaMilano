@@ -33,15 +33,37 @@ def self_attention(x, W_q, W_k, W_v):
 | Key (K) | What each token advertises | Book index |
 | Value (V) | Actual content to retrieve | Book content |
 
-## Multi-Head Attention
+## Multi-Head Attention (MHA)
 
-Run `h` heads in parallel, each with independent weights. Concatenate, project back.
-
+Run `h` heads in parallel, each with independent weights. Concatenate, project back.  
 GPT-2 small: 12 heads. GPT-4: ~96 heads.
 
-## Complexity
+## Grouped Query Attention (GQA) — Modern Default
 
-`Q @ K.T` is O(T²). With T=128K (GPT-4 context): 17B ops per attention layer × 120 layers.  
-This is why long contexts are expensive. FlashAttention makes it faster but same math.
+Standard MHA: each query head has its own K and V heads → memory-heavy.  
+**GQA**: multiple query heads share one K/V pair → 4-8× smaller KV cache.
+
+```
+MHA:  Q heads = K heads = V heads = 32   (GPT-2 style)
+GQA:  Q heads = 32,  K/V heads = 8       (LLaMA 3, Mistral, Gemma 2)
+MQA:  Q heads = 32,  K/V heads = 1       (extreme, early mobile models)
+```
+
+Why it matters: KV cache grows linearly with context length and batch size.  
+GQA makes 128K+ context windows practical.
+
+## Complexity & FlashAttention
+
+`Q @ K.T` is O(T²) in memory. With T=128K: storing scores needs 128GB.
+
+**FlashAttention 2/3**: never materialises the full (T×T) matrix. Tiles the computation across SRAM. Same math, no approximation, 3-8× faster wall-clock.
+
+```python
+# Use automatically in modern PyTorch (2.0+)
+with torch.backends.cuda.sdp_kernel(enable_flash=True):
+    out = F.scaled_dot_product_attention(Q, K, V, is_causal=True)
+```
+
+All recent models (LLaMA 3, Claude, GPT-4o) use FlashAttention internally.
 
 *Next: [04 — Transformer](04_transformer.md)*
