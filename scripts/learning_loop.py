@@ -98,8 +98,14 @@ def save_settings(settings: dict, settings_path: str) -> None:
     print(f"[learning_loop] Settings saved to {settings_path}")
 
 
+_AUDIT_LOG_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_\d+_.+\.md$")
+
+
 def latest_audit_log(audit_dir: str) -> Path:
-    logs = sorted(Path(audit_dir).glob("*.md"))
+    logs = sorted(
+        p for p in Path(audit_dir).glob("*.md")
+        if _AUDIT_LOG_RE.match(p.name)
+    )
     return logs[-1] if logs else None
 
 
@@ -116,7 +122,8 @@ def parse_audit_log(log_path: Path) -> dict:
 def update_skills(settings: dict, audit: dict) -> int:
     changes = 0
     today = datetime.now().strftime("%Y-%m-%d")
-    for skill in audit.get("learning_flags", {}).get("new_skills", []):
+    flags = audit.get("learning_flags") or {}
+    for skill in flags.get("new_skills") or []:
         if skill not in settings["skills"]:
             settings["skills"][skill] = {
                 "description": f"Auto-discovered from request {audit['request_id']}",
@@ -139,7 +146,8 @@ def update_skills(settings: dict, audit: dict) -> int:
 def update_mcp(settings: dict, audit: dict) -> int:
     changes = 0
     today = datetime.now().strftime("%Y-%m-%d")
-    for tool in audit.get("learning_flags", {}).get("new_mcp", []):
+    flags = audit.get("learning_flags") or {}
+    for tool in flags.get("new_mcp") or []:
         if tool not in settings["mcp"]:
             settings["mcp"][tool] = {
                 "description": f"Auto-discovered from request {audit['request_id']}",
@@ -159,9 +167,9 @@ def update_mcp(settings: dict, audit: dict) -> int:
 def update_agent_stats(settings: dict, audit: dict) -> int:
     changes = 0
     intent = audit.get("intent", "unknown")
-    for agent_entry in audit.get("agents_invoked", []):
-        name = agent_entry["name"]
-        if name not in settings["agents"]:
+    for agent_entry in audit.get("agents_invoked") or []:
+        name = agent_entry.get("name", "unknown")
+        if name not in settings.setdefault("agents", {}):
             settings["agents"][name] = {"roles": [], "capabilities": [], "task_stats": {}}
         stats = settings["agents"][name].setdefault("task_stats", {})
         if intent not in stats:
@@ -183,7 +191,7 @@ def check_pattern_hooks(settings: dict, audit: dict) -> int:
     changes = 0
     counters = settings.setdefault("pattern_counters", {})
 
-    for skill in audit.get("skills_used", []):
+    for skill in audit.get("skills_used") or []:
         counters[skill] = counters.get(skill, 0) + 1
         threshold = get_threshold_for_skill(skill)
         if counters[skill] == threshold:
@@ -274,7 +282,7 @@ def _generate_skill_md(skill_name: str, skill_data: dict) -> str:
         ## Studio pipeline
 
         This skill is part of the 6-agent pipeline:
-        Stacy → Gianni → Chiara → Stacy QA → Marco → Francesca.
+        Stacy -> Gianni -> Chiara -> Stacy QA -> Marco -> Francesca.
         Coordinate with the owning agent ({agent}) for implementation details.
 
         ## Hand-craft this skill
@@ -306,7 +314,7 @@ def promote_skills_to_files(settings: dict, skills_dir: Path) -> int:
 
         skill_file.parent.mkdir(parents=True, exist_ok=True)
         skill_file.write_text(_generate_skill_md(skill_name, skill_data), encoding="utf-8")
-        print(f"[learning_loop] Promoted skill → ~/.claude/skills/{slug}/SKILL.md")
+        print(f"[learning_loop] Promoted skill -> ~/.claude/skills/{slug}/SKILL.md")
         changes += 1
 
     return changes
@@ -367,7 +375,7 @@ def save_to_claude_memory(settings: dict, audit, claude_dir: str) -> None:
 
     state_file = memory_dir / "project_state.md"
     state_file.write_text(content, encoding="utf-8")
-    print(f"[learning_loop] Memory → {state_file}")
+    print(f"[learning_loop] Memory -> {state_file}")
 
     memory_md = memory_dir / "MEMORY.md"
     if memory_md.exists():
