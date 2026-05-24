@@ -58,16 +58,21 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 |------|--------|
 | `config/global_settings.json` | Single source of truth: skills, pricing, hooks, MCP, issues |
 | `config/accounts_registry.yaml` | All platform accounts: URL, status, credential readiness — owned by Valentina |
-| `.claude/settings.json` | Hook commands: Stop, PreToolUse, PostToolUse |
+| `.claude/settings.json` | Hook commands: Stop, PreToolUse, PostToolUse, UserPromptSubmit (RAG injection) |
+| `credentials/registry.md` | Step-by-step guide for all 19 credentials across deliverables |
+| `.env.example` | Template for all environment variables — copy to `.env` and fill in |
 | `scripts/learning_loop.py` | Auto-updates settings after every request |
-| `scripts/credential_manager.py` | Unified auth store: OAuth tokens + API keys |
-| `scripts/embed_index.py` | Build semantic search index over all repo files |
-| `scripts/retrieve.py` | Query the index: `python -m scripts.retrieve "query"` |
-| `scripts/rag_chat.py` | RAG + GPT synthesis |
+| `scripts/post_delivery_update.py` | Post-commit hook: creates audit stubs, patches CLAUDE.md table |
+| `scripts/digital_presence_pipeline.py` | Bridges D009+D010: GitHub activity → post → multi-platform publish |
+| `scripts/rag/embed_repo.py` | Index all repo files via kitai batch + FAISS |
+| `scripts/rag/retrieve_repo.py` | Hybrid BM25+FAISS retrieval; `retrieve()` and `ask()` public API |
+| `scripts/rag/inject_context.py` | UserPromptSubmit hook — injects top-5 repo chunks before every response |
+| `scripts/rag/synthesize.py` | Async batch synthesis via kitai.batch (50% cheaper, Pydantic output) |
 | `scripts/github_research/main.py` | GitHub AI Research CLI (Scout->Analyst->Curator->Reporter) |
 | `process/intent_registry.yaml` | All known intents -> skills -> delivery options |
 | `process/audit/` | One YAML-fronted Markdown file per completed request |
 | `agents/README.md` | Agent role definitions + actuarial specs |
+| `agents/rag/README.md` | RAG Team: Indexer, Retriever, Synthesizer, Context Injector specs |
 | `agents/research/README.md` | GitHub Research Department spec |
 | `templates/pdf/invoice_standard.py` | `InvoiceTemplate` -> valid PDF bytes via fpdf2 |
 | `templates/streamlit/chatbot.py` | `ChatbotTemplate(provider, model)` -> Streamlit app |

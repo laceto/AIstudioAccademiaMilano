@@ -105,6 +105,38 @@ Responsibilities:
 
 ---
 
+## Valentina (Publishing Agent)
+
+Role: Digital presence and multi-platform publishing — runs in parallel with the pipeline, not inline.  
+Spec: `agents/valentina.md`
+
+Responsibilities:
+- Generates platform-optimised bios and first posts for LinkedIn, Twitter/X, Telegram, Discord, Reddit, Instagram, GitHub, Product Hunt.
+- Auto-publishes to Telegram, Twitter/X, Discord, Reddit via API. LinkedIn and Instagram require manual paste.
+- Receives LinkedIn post text from Deliverable 009 (GitHub activity → Claude voice) and routes it.
+- Maintains `config/accounts_registry.yaml` — platform status, credential readiness.
+- Triggered by: new deliverable shipped (Francesca handoff), new platform launch, or weekly schedule.
+
+Handoffs: Francesca → Valentina (announce new deliverable) | D009 → Valentina (LinkedIn text) | Valentina → Luigi (approval gate before any publish).
+
+---
+
+## RAG Team
+
+Four agents providing semantic memory over the entire repo (kitai + FAISS + BM25).  
+Full spec: `agents/rag/README.md`
+
+| Agent | Script | Trigger |
+|---|---|---|
+| Indexer | `scripts/rag/embed_repo.py` | Stop hook or manual |
+| Retriever | `scripts/rag/retrieve_repo.py` | On-demand or via Synthesizer |
+| Synthesizer | `scripts/rag/synthesize.py` | Learning loop / deep research |
+| Context Injector | `scripts/rag/inject_context.py` | UserPromptSubmit hook (always-on) |
+
+Context injection is always-on — top-5 repo chunks are injected before every Claude Code response without blocking the pipeline (any error exits silently).
+
+---
+
 ## Research Department
 
 See `agents/research/README.md` for the full spec.

@@ -47,6 +47,9 @@ A parallel layer of 5 **Risk Agents** (Technical Auditor, Financial Controller, 
 | 005 | Streamlit chatbot + OpenAI streaming | €19.90 | `deliverables/2026-05-23_005_chatbot/` |
 | 006 | RAG system: semantic search over all code | €29.90 | `deliverables/rag/` |
 | 007 | WhatsApp/Telegram → Calendar sync (Google, Outlook, Apple) | €14.90 | `deliverables/2026-05-23_007_calendar-sync/` |
+| 008 | Algo trading bot (SMA crossover, Alpaca paper, Streamlit dashboard) | €0.00 | `deliverables/2026-05-23_008_algo-trading/` |
+| 009 | LinkedIn post generator from GitHub activity (Claude voice) | €0.00 | `deliverables/2026-05-23_009_linkedin-post-generator/` |
+| 010 | Valentina agent — profile setup & multi-platform publishing pipeline | €0.00 | `deliverables/2026-05-23_010_profile-setup/` |
 
 ---
 
@@ -71,6 +74,26 @@ streamlit run deliverables/github-research/streamlit_research_app.py
 ```
 See `agents/research/README.md` for the full department spec.
 
+### Digital Presence Pipeline
+Bridges D009 (LinkedIn post generator) with D010 (Valentina publisher). One command generates from GitHub activity and auto-posts to Telegram, Twitter/X, Discord. Fires every Monday 09:00 UTC via GitHub Actions:
+```bash
+python scripts/digital_presence_pipeline.py --days 7 --platforms telegram
+python scripts/digital_presence_pipeline.py --dry-run   # generate only
+```
+Generated posts saved to `process/digital-presence/`. LinkedIn post always available as a GitHub Actions artifact for manual paste.
+
+### RAG Agent Team
+Four agents providing semantic memory over the entire repo (kitai + FAISS + BM25):
+```bash
+pip install -r requirements-rag.txt
+python -m scripts.rag.embed_repo                                         # build index
+python -m scripts.rag.retrieve_repo "how does invoice pricing work?" --no-llm
+python -m scripts.rag.retrieve_repo "explain the 6-agent pipeline"       # full RAG
+python -m scripts.rag.synthesize --queries "what skills does Chiara use?" # async batch
+```
+Context injection is always-on via `UserPromptSubmit` hook — top-5 repo chunks are injected before every Claude Code response.
+See `agents/rag/README.md` for the full architecture.
+
 ### LLM Education Wiki
 Karpathy-style, 7 chapters + runnable code:
 ```
@@ -83,11 +106,16 @@ wiki/llm/code/  —  bpe_minimal.py, nano_attention.py, sampling_demo.py
 ## Repository Structure
 
 ```
-agents/          Agent role definitions (staff + risk + research department)
-config/          global_settings.json — single source of truth for skills, pricing, hooks
+agents/          Staff, risk, research, RAG team, and Valentina agent specs
+config/          global_settings.json (skills/pricing/hooks) + accounts_registry.yaml
+credentials/     registry.md — step-by-step guide for all 19 credentials
+data/            vectorstore/repo/ (FAISS index) + synthesis_results/
 deliverables/    One folder per completed request
-process/         Pipeline spec, audit logs, learning loop, risk review process
-scripts/         learning_loop.py, embed_index.py, retrieve.py, github_research/
+logs/            learning_loop.log (gitignored)
+process/         Pipeline spec, audit logs, digital-presence posts, learning loop
+scripts/         learning_loop.py, post_delivery_update.py, digital_presence_pipeline.py
+scripts/rag/     embed_repo, retrieve_repo, synthesize, inject_context
+scripts/github_research/  Scout → Analyst → Curator → Reporter pipeline
 templates/       Reusable PDF and Streamlit templates
 tests/           TDD test suites (pytest)
 wiki/llm/        Karpathy-style LLM education wiki
