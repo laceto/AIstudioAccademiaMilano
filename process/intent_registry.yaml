@@ -96,3 +96,33 @@ discord_bot:
   - openweathermap_api_integration
   delivery_options:
   - github_repo
+algo_trading:
+  skills:
+  - alpaca_paper_trading
+  - sma_crossover_strategy
+  - streamlit_app_generation
+  - plotly_charting
+  - pandas_data_analysis
+  - streamlit_secrets_handling
+  delivery_options:
+  - github_repo
+linkedin_post_generator:
+  skills:
+  - anthropic_api_integration
+  - github_rest_api
+  - linkedin_voice_generation
+  - cli_tool_generation
+  delivery_options:
+  - github_repo
+profile_setup:
+  skills:
+  - anthropic_api_integration
+  - multi_platform_bio_generation
+  - twitter_x_api_publishing
+  - telegram_bot_publishing
+  - discord_webhook_posting
+  - reddit_praw_publishing
+  - cli_tool_generation
+  - streamlit_secrets_handling
+  delivery_options:
+  - github_repo
