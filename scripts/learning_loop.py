@@ -205,8 +205,58 @@ def check_pattern_hooks(settings: dict, audit: dict) -> int:
     return changes
 
 
+def update_requirements_registry(registry_path: str, audit: dict) -> int:
+    """Add new product types from audit learning_flags to requirements_registry.yaml."""
+    changes = 0
+    new_types = audit.get("learning_flags", {}).get("new_product_types", {})
+    if not new_types:
+        return 0
+    with open(registry_path) as f:
+        registry = yaml.safe_load(f)
+    new_pricing = audit.get("learning_flags", {}).get("new_pricing", {})
+    for product_type, spec in new_types.items():
+        if product_type not in registry.get("products", {}):
+            registry.setdefault("products", {})[product_type] = spec
+            if product_type in new_pricing:
+                registry.setdefault("pricing", {})[product_type] = new_pricing[product_type]
+            print(f"[learning_loop] New product type in requirements registry: {product_type}")
+            changes += 1
+    if changes:
+        with open(registry_path, "w") as f:
+            yaml.dump(registry, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+    return changes
+
+
+def update_intent_registry(intent_registry_path: str, audit: dict) -> int:
+    """Add new intents from audit learning_flags to process/intent_registry.yaml."""
+    changes = 0
+    new_intents = audit.get("learning_flags", {}).get("new_intents", [])
+    if not new_intents:
+        return 0
+    with open(intent_registry_path) as f:
+        registry = yaml.safe_load(f) or {}
+    for intent in new_intents:
+        if intent not in registry:
+            registry[intent] = {
+                "skills": audit.get("skills_used", []),
+                "delivery_options": ["github_repo"],
+            }
+            print(f"[learning_loop] New intent registered: {intent}")
+            changes += 1
+    if changes:
+        with open(intent_registry_path, "w") as f:
+            yaml.dump(registry, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+    return changes
+
+
 def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
-    files = [settings_path, ".claude/settings.json"]
+    files = [
+        settings_path,
+        ".claude/settings.json",
+        "config/requirements_registry.yaml",
+        "process/intent_registry.yaml",
+        "CLAUDE.md",
+    ]
     for f in files:
         subprocess.run(["git", "add", f], check=False)
     subprocess.run(["git", "add", audit_dir], check=False)
@@ -223,6 +273,8 @@ def main():
     )
     parser.add_argument("--audit-dir", default="process/audit")
     parser.add_argument("--settings", default="config/global_settings.json")
+    parser.add_argument("--requirements-registry", default="config/requirements_registry.yaml")
+    parser.add_argument("--intent-registry", default="process/intent_registry.yaml")
     args = parser.parse_args()
 
     log_path = latest_audit_log(args.audit_dir)
@@ -240,6 +292,8 @@ def main():
     changes += update_mcp(settings, audit)
     changes += update_agent_stats(settings, audit)
     changes += check_pattern_hooks(settings, audit)
+    changes += update_requirements_registry(args.requirements_registry, audit)
+    changes += update_intent_registry(args.intent_registry, audit)
 
     settings["_meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
     settings["_meta"]["last_request_id"] = audit["request_id"]
