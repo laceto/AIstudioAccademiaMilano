@@ -139,3 +139,18 @@ internal_infra_build:
   - file_backed_queue
   delivery_options:
   - github_repo
+agent_deploy_streamlit:
+  skills:
+  - langgraph_agent_streamlit_wrapper
+  - openai_api_integration
+  - streamlit_app_generation
+  - streamlit_secrets_handling
+  - dockerfile_authoring
+  - ta_lib_system_dependency
+  - huggingface_spaces_docker_deploy
+  - google_cloud_run_deploy
+  delivery_options:
+  - hf_spaces
+  - google_cloud_run
+  - docker_host
+  - github_repo

@@ -211,6 +211,7 @@ See `agents/research/README.md`.
 | 009 | 2026-05-23 | LinkedIn Post Generator from GitHub activity (Claude claude-sonnet-4-6) | 4.90 |
 | 010 | 2026-05-23 | Profile Setup & Publishing — bio + first post for 9 platforms | 14.90 |
 | 011 | 2026-05-24 | Milan Weather Dashboard (Streamlit + OpenWeatherMap) | 9.90 |
+| 013 | 2026-05-24 | techa Streamlit deploy (LangGraph trading agents + TA-Lib, HF Spaces / Cloud Run) | 19.90 |
 | 014 | 2026-05-24 | Dispenser input v1 — QR/Streamlit form, Stripe, WhatsApp+Telegram delivery | 0.00 (internal infra) |
 
 ---
@@ -227,6 +228,7 @@ See `agents/research/README.md`.
 | ISS-007 | P3 | Provider-agnostic chatbot template | OPEN |
 | ISS-008 | P2 | RAG retrieval system | DELIVERED |
 | ISS-009 | P3 | Schedule GitHub Research runs (cron + digest commit) | OPEN |
+| ISS-010 | P2 | Add `hosting_target` required field to requirements gate for `*_deploy_*` intents (HF Spaces / Render / Docker / local) | OPEN |
 | ISS-011 | P1 | Acquire dispenser credentials before go-live: Stripe API key, Twilio (SID + token + WhatsApp sender), Telegram bot token (@BotFather), Luigi's admin chat_id, public HTTPS URL, Italian VAT/Stripe Tax setup | OPEN |
 | ISS-012 | P2 | Implement `LLMClassifier` for free-text dispenser requests (gpt-4o-mini / claude-haiku, escalate via Telegram if confidence < 0.8 — Marco rule) | OPEN |
 | ISS-013 | P3 | Implement `SatispayProvider` + `PayPalProvider` (stubs in deliverable 014) | OPEN |
