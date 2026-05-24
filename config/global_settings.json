@@ -4,7 +4,7 @@
     "description": "AI Studio Accademia Milano \u00e2\u20ac\u201d global learned settings.",
     "last_updated": "2026-05-24",
     "last_request_id": "010",
-    "total_requests_processed": 30
+    "total_requests_processed": 31
   },
   "skills": {
     "html_tailwind_css": {
@@ -273,7 +273,7 @@
         "deploy_existing_app_new_platform"
       ],
       "agent": "Francesca",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 12
     },
@@ -283,7 +283,7 @@
         "deploy_existing_app_new_platform"
       ],
       "agent": "Chiara",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 5
     },
@@ -293,7 +293,7 @@
         "deploy_existing_app_new_platform"
       ],
       "agent": "Chiara",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 2,
       "requires_user_auth": true,
@@ -306,7 +306,7 @@
         "deploy_existing_app_new_platform"
       ],
       "agent": "Chiara",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 90
     },
@@ -316,10 +316,10 @@
         "deploy_existing_app_new_platform"
       ],
       "agent": "Chiara",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 30,
-      "notes": "Docker pip install skips HTTPS wheel URLs in requirements.txt — guard with flag or separate reqs file"
+      "notes": "Docker pip install skips HTTPS wheel URLs in requirements.txt \u00e2\u20ac\u201d guard with flag or separate reqs file"
     }
   },
   "intent_to_skill_map": {
@@ -664,6 +664,11 @@
           "count": 42,
           "avg_sec": 6.5,
           "success_rate": 0.0
+        },
+        "chatbot_creation": {
+          "count": 2,
+          "avg_sec": 39.5,
+          "success_rate": 0.0
         }
       }
     },
@@ -675,6 +680,11 @@
           "count": 21,
           "avg_sec": 4.0,
           "success_rate": 1.0
+        },
+        "chatbot_creation": {
+          "count": 1,
+          "avg_sec": 45.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -686,6 +696,11 @@
           "count": 21,
           "avg_sec": 18.0,
           "success_rate": 1.0
+        },
+        "chatbot_creation": {
+          "count": 1,
+          "avg_sec": 78.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -697,6 +712,11 @@
           "count": 21,
           "avg_sec": 120.0,
           "success_rate": 1.0
+        },
+        "chatbot_creation": {
+          "count": 1,
+          "avg_sec": 193.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -708,6 +728,11 @@
           "count": 21,
           "avg_sec": 4.0,
           "success_rate": 1.0
+        },
+        "chatbot_creation": {
+          "count": 1,
+          "avg_sec": 12.0,
+          "success_rate": 0.0
         }
       }
     }
@@ -933,6 +958,11 @@
     "twilio_whatsapp_api": 21,
     "google_calendar_api": 21,
     "microsoft_graph_api": 21,
-    "apple_caldav": 21
+    "apple_caldav": 21,
+    "google_cloud_run_deploy": 1,
+    "artifact_registry_docker": 1,
+    "google_secret_manager": 1,
+    "cloud_build_submit": 1,
+    "dockerfile_authoring": 1
   }
 }
