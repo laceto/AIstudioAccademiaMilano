@@ -548,6 +548,46 @@
       "title": "RAG retrieval system",
       "status": "DELIVERED",
       "resolved_on": "2026-05-23"
+    },
+    {
+      "id": "ISS-013",
+      "priority": "P1",
+      "title": "Set up AI Studio company email address",
+      "status": "OPEN",
+      "owner": "Luigi + Claude",
+      "notes": "Decision: Namecheap registrar + Cloudflare DNS + Zoho Mail free plan. Domain: aistudiomilano.ai (.io as fallback)."
+    },
+    {
+      "id": "ISS-013a",
+      "priority": "P1",
+      "title": "Register aistudiomilano.ai + aistudiomilano.io on Namecheap",
+      "status": "OPEN",
+      "owner": "Luigi",
+      "notes": "~€82/yr total. namecheap.com. Blocks ISS-013b."
+    },
+    {
+      "id": "ISS-013b",
+      "priority": "P1",
+      "title": "Create Cloudflare account and add both domains",
+      "status": "OPEN",
+      "owner": "Luigi",
+      "notes": "Free plan. cloudflare.com. Blocked by ISS-013a."
+    },
+    {
+      "id": "ISS-013c",
+      "priority": "P1",
+      "title": "Point Namecheap nameservers to Cloudflare",
+      "status": "OPEN",
+      "owner": "Luigi",
+      "notes": "Set ns1.cloudflare.com + ns2.cloudflare.com on both domains in Namecheap. Propagation up to 24h. Blocked by ISS-013b."
+    },
+    {
+      "id": "ISS-013d",
+      "priority": "P1",
+      "title": "Wire Cloudflare API token + update accounts_registry.yaml",
+      "status": "OPEN",
+      "owner": "Claude",
+      "notes": "Generate Cloudflare token (Zone:DNS:Edit), add to credential manager, update accounts_registry.yaml, set up email routing luigi@aistudiomilano.ai → luigi.vinegar@gmail.com. Blocked by ISS-013c."
     }
   ],
   "agents": {

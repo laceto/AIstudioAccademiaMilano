@@ -225,3 +225,8 @@ See `agents/research/README.md`.
 | ISS-010 | P0 | Register Partita IVA — blocks banking, invoicing, and legal revenue collection | OPEN |
 | ISS-011 | P0 | Open Qonto (EUR/IT) + Wise Business (USD) accounts — requires ISS-010 | OPEN |
 | ISS-012 | P2 | Marco: bank reconciliation webhook (Qonto API → audit log margin tracking) | OPEN |
+| ISS-013 | P1 | Set up AI Studio company email (Namecheap + Cloudflare + Zoho) | OPEN |
+| ISS-013a | P1 | Register aistudiomilano.ai + .io on Namecheap — Luigi | OPEN |
+| ISS-013b | P1 | Create Cloudflare account + add both domains — Luigi | OPEN |
+| ISS-013c | P1 | Point Namecheap nameservers to Cloudflare — Luigi | OPEN |
+| ISS-013d | P1 | Wire Cloudflare API token + update accounts_registry — Claude | OPEN |
