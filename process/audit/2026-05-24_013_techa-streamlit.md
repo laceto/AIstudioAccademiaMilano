@@ -239,3 +239,40 @@ Proposed: **€19.90** (matches `chatbot_app` — same Streamlit + LangGraph + O
 | `langgraph_agent_integration` skill | First wrapper over an external LangGraph factory |
 | Pricing **proposed** €19.90 — blocked for Luigi | Marco's `unknown_product: null` rule fired correctly |
 ```
+
+---
+
+## Global Propagation Backfill (2026-05-24)
+
+Per Luigi's policy ("wire every learning to `~/.claude/` globally, no filter"), backfilled all 44 missing project skills as `~/.claude/skills/<kebab-name>/SKILL.md`. Plus the 5 already landed for this request and 1 pre-existing (`session-start-hook`) = **50 globally discoverable skills**.
+
+Naming alignment landed: project `ta_lib_system_dependency_handling` → `ta_lib_system_dependency` (drops `_handling` to match global kebab form).
+
+Final inventory under `~/.claude/skills/`:
+
+```
+advisory-report-generation, alpaca-paper-trading, alpine-js,
+anthropic-api-integration, apple-caldav, chat-history-management,
+cli-tool-generation, discord-bot-development, discord-slash-commands,
+discord-webhook-posting, dockerfile-authoring, event-extraction-llm,
+file-crawler, formspree-contact-form, fpdf2-pdf-generation,
+github-rest-api, gmail-api-oauth, gmail-api-send, google-calendar-api,
+google-cloud-run-deploy, html-tailwind-css, huggingface-spaces-docker-deploy,
+invoice-template-pdf, langgraph-agent-integration,
+langgraph-agent-streamlit-wrapper, linkedin-voice-generation,
+markdown-report-formatting, microsoft-graph-api,
+multi-platform-bio-generation, openai-api-integration,
+openweathermap-api-integration, pandas-data-analysis, plotly-charting,
+rag-qa, reddit-praw-publishing, risk-agent-invocation,
+semantic-retrieval, session-start-hook, sma-crossover-strategy,
+streamlit-app-generation, streamlit-cloud-deploy,
+streamlit-secrets-handling, ta-lib-system-dependency, telegram-bot-api,
+telegram-bot-publishing, twilio-whatsapp-api, twitter-x-api-publishing,
+vector-embeddings, vercel-static-deploy, weather-data-display
+```
+
+Two `langgraph-*` skills kept as related-but-distinct (different scope):
+- `langgraph-agent-integration` — *build* a StateGraph from scratch
+- `langgraph-agent-streamlit-wrapper` — *wrap* an existing factory in Streamlit UI
+
+Each SKILL.md follows the Claude Code contract: YAML frontmatter (`name` + `description` with "Use when…"), then markdown body sized to skill importance (~25 lines for narrow ones like `alpine-js`, ~150–200 for high-value ones like `openai-api-integration` / `gmail-api-oauth`). All secret-touching skills include a Security section.
