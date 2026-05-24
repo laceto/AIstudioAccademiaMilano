@@ -122,6 +122,19 @@ After every completed request, `scripts/learning_loop.py` runs automatically:
    - `skill_preload` (everything else): threshold = 3
 4. Auto-commits if risk score < 3; escalates to Luigi if >= 3
 
+### Global propagation (mandatory)
+
+**Every learning lands in two places** — project-scoped AND `~/.claude/`:
+
+| Artefact | Project path | Global path |
+|---|---|---|
+| Skill | `config/global_settings.json → skills` | `~/.claude/skills/<kebab-name>/SKILL.md` |
+| Hook | `.claude/settings.json → hooks` | `~/.claude/settings.json → hooks` |
+| Subagent | `agents/<name>.md` | `~/.claude/agents/<name>.md` |
+| Policy/memory | `CLAUDE.md` (this file) | `~/.claude/CLAUDE.md` |
+
+Scope: globalise **every** skill — no filtering (Luigi, 2026-05-24). Use `kebab-case` for the `~/.claude/skills/` directory and the `name:` frontmatter; project configs may keep `snake_case`.
+
 ---
 
 ## Audit Log Format
