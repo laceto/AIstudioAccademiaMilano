@@ -4,7 +4,7 @@
     "description": "AI Studio Accademia Milano \u00e2\u20ac\u201d global learned settings.",
     "last_updated": "2026-05-24",
     "last_request_id": "007",
-    "total_requests_processed": 9
+    "total_requests_processed": 10
   },
   "skills": {
     "html_tailwind_css": {
@@ -199,7 +199,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 3,
+      "times_used": 4,
       "success_rate": 1.0,
       "avg_duration_sec": 3,
       "requires_user_auth": true,
@@ -210,7 +210,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 3,
+      "times_used": 4,
       "success_rate": 1.0,
       "avg_duration_sec": 5,
       "requires_user_auth": true,
@@ -221,7 +221,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 3,
+      "times_used": 4,
       "success_rate": 1.0,
       "avg_duration_sec": 4,
       "requires_user_auth": true,
@@ -232,7 +232,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 3,
+      "times_used": 4,
       "success_rate": 1.0,
       "avg_duration_sec": 2,
       "requires_user_auth": true,
@@ -243,7 +243,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 3,
+      "times_used": 4,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -252,7 +252,7 @@
         "calendar_integration"
       ],
       "agent": "Chiara",
-      "times_used": 3,
+      "times_used": 4,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     }
@@ -366,6 +366,72 @@
       "command": "python3 scripts/check_oauth.py --provider google_calendar",
       "times_fired": 1,
       "risk_score": 2
+    },
+    {
+      "id": "auto_preload_event_extraction_llm",
+      "event": "PreToolUse",
+      "matcher": "event_extraction_llm",
+      "description": "Auto-promoted: pre-load event_extraction_llm context after 3 uses",
+      "command": "python3 scripts/preload_event_extraction_llm.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_telegram_bot_api",
+      "event": "PreToolUse",
+      "matcher": "telegram_bot_api",
+      "description": "Auto-promoted: pre-load telegram_bot_api context after 3 uses",
+      "command": "python3 scripts/preload_telegram_bot_api.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_twilio_whatsapp_api",
+      "event": "PreToolUse",
+      "matcher": "twilio_whatsapp_api",
+      "description": "Auto-promoted: pre-load twilio_whatsapp_api context after 3 uses",
+      "command": "python3 scripts/preload_twilio_whatsapp_api.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_google_calendar_api",
+      "event": "PreToolUse",
+      "matcher": "google_calendar_api",
+      "description": "Auto-promoted: pre-load google_calendar_api context after 3 uses",
+      "command": "python3 scripts/preload_google_calendar_api.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_microsoft_graph_api",
+      "event": "PreToolUse",
+      "matcher": "microsoft_graph_api",
+      "description": "Auto-promoted: pre-load microsoft_graph_api context after 3 uses",
+      "command": "python3 scripts/preload_microsoft_graph_api.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
+    },
+    {
+      "id": "auto_preload_apple_caldav",
+      "event": "PreToolUse",
+      "matcher": "apple_caldav",
+      "description": "Auto-promoted: pre-load apple_caldav context after 3 uses",
+      "command": "python3 scripts/preload_apple_caldav.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
     }
   ],
   "mcp": {
@@ -490,7 +556,7 @@
       "capabilities": [],
       "task_stats": {
         "calendar_integration": {
-          "count": 4,
+          "count": 6,
           "avg_sec": 6.5,
           "success_rate": 0.0
         }
@@ -501,7 +567,7 @@
       "capabilities": [],
       "task_stats": {
         "calendar_integration": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 4.0,
           "success_rate": 1.0
         }
@@ -512,7 +578,7 @@
       "capabilities": [],
       "task_stats": {
         "calendar_integration": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 18.0,
           "success_rate": 1.0
         }
@@ -523,7 +589,7 @@
       "capabilities": [],
       "task_stats": {
         "calendar_integration": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 120.0,
           "success_rate": 1.0
         }
@@ -534,7 +600,7 @@
       "capabilities": [],
       "task_stats": {
         "calendar_integration": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 4.0,
           "success_rate": 1.0
         }
@@ -542,11 +608,11 @@
     }
   },
   "pattern_counters": {
-    "event_extraction_llm": 2,
-    "telegram_bot_api": 2,
-    "twilio_whatsapp_api": 2,
-    "google_calendar_api": 2,
-    "microsoft_graph_api": 2,
-    "apple_caldav": 2
+    "event_extraction_llm": 3,
+    "telegram_bot_api": 3,
+    "twilio_whatsapp_api": 3,
+    "google_calendar_api": 3,
+    "microsoft_graph_api": 3,
+    "apple_caldav": 3
   }
 }
