@@ -256,6 +256,10 @@ products:
       name: DISCORD_WEBHOOK_URL
       type: api_key
       notes: Server Settings → Integrations → Webhooks. Required only for announcer.
+  internal_infra_build:
+    label: Internal infrastructure build (no customer invoice)
+    pricing: 0.0
+    required: []
 pricing:
   email_automation: 14.9
   calendar_assistant: 9.9
@@ -269,3 +273,4 @@ pricing:
   weather_dashboard: 9.9
   unknown_product: null
   discord_bot: 19.9
+  internal_infra_build: 0.0

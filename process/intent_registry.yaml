@@ -126,3 +126,16 @@ profile_setup:
   - streamlit_secrets_handling
   delivery_options:
   - github_repo
+internal_infra_build:
+  skills:
+  - streamlit_app_generation
+  - streamlit_secrets_handling
+  - stripe_checkout_integration
+  - twilio_whatsapp_api
+  - telegram_bot_api
+  - dockerfile_authoring
+  - huggingface_spaces_docker_deploy
+  - payment_provider_abstraction
+  - file_backed_queue
+  delivery_options:
+  - github_repo
