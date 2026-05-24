@@ -95,7 +95,8 @@ def save_settings(settings: dict, settings_path: str) -> None:
 
 
 def latest_audit_log(audit_dir: str) -> Path:
-    logs = sorted(Path(audit_dir).glob("*.md"))
+    # Only match date-prefixed audit logs (YYYY-MM-DD_NNN_*.md), skip README etc.
+    logs = sorted(Path(audit_dir).glob("[0-9][0-9][0-9][0-9]-*.md"))
     return logs[-1] if logs else None
 
 
@@ -112,7 +113,7 @@ def parse_audit_log(log_path: Path) -> dict:
 def update_skills(settings: dict, audit: dict) -> int:
     changes = 0
     today = datetime.now().strftime("%Y-%m-%d")
-    for skill in audit.get("learning_flags", {}).get("new_skills", []):
+    for skill in audit.get("learning_flags", {}).get("new_skills", []) or []:
         if skill not in settings["skills"]:
             settings["skills"][skill] = {
                 "description": f"Auto-discovered from request {audit['request_id']}",
@@ -135,7 +136,7 @@ def update_skills(settings: dict, audit: dict) -> int:
 def update_mcp(settings: dict, audit: dict) -> int:
     changes = 0
     today = datetime.now().strftime("%Y-%m-%d")
-    for tool in audit.get("learning_flags", {}).get("new_mcp", []):
+    for tool in audit.get("learning_flags", {}).get("new_mcp", []) or []:
         if tool not in settings["mcp"]:
             settings["mcp"][tool] = {
                 "description": f"Auto-discovered from request {audit['request_id']}",
@@ -157,7 +158,7 @@ def update_agent_stats(settings: dict, audit: dict) -> int:
     intent = audit.get("intent", "unknown")
     for agent_entry in audit.get("agents_invoked", []):
         name = agent_entry["name"]
-        if name not in settings["agents"]:
+        if name not in settings.setdefault("agents", {}):
             settings["agents"][name] = {"roles": [], "capabilities": [], "task_stats": {}}
         stats = settings["agents"][name].setdefault("task_stats", {})
         if intent not in stats:
