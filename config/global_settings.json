@@ -3,8 +3,8 @@
     "version": "1.5",
     "description": "AI Studio Accademia Milano \u2014 global learned settings.",
     "last_updated": "2026-05-24",
-    "last_request_id": "010",
-    "total_requests_processed": 15
+    "last_request_id": "014",
+    "total_requests_processed": 16
   },
   "skills": {
     "html_tailwind_css": {
@@ -441,6 +441,39 @@
       "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 0
+    },
+    "stripe_checkout_integration": {
+      "description": "Auto-discovered from request 014",
+      "intent_mappings": [
+        "internal_infra_build"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "payment_provider_abstraction": {
+      "description": "Auto-discovered from request 014",
+      "intent_mappings": [
+        "internal_infra_build"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "file_backed_queue": {
+      "description": "Auto-discovered from request 014",
+      "intent_mappings": [
+        "internal_infra_build"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
     }
   },
   "intent_to_skill_map": {
@@ -581,6 +614,17 @@
       "promoted_from_pattern": true,
       "times_fired": 0,
       "risk_score": 1
+    },
+    {
+      "id": "auto_preload_streamlit_secrets_handling",
+      "event": "PreToolUse",
+      "matcher": "streamlit_secrets_handling",
+      "description": "Auto-promoted: pre-load streamlit_secrets_handling context after 3 uses",
+      "command": "python3 scripts/preload_streamlit_secrets_handling.py 2>&1",
+      "added": "2026-05-24",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
     }
   ],
   "mcp": {
@@ -723,6 +767,11 @@
           "count": 1,
           "avg_sec": 3.0,
           "success_rate": 1.0
+        },
+        "internal_infra_build": {
+          "count": 1,
+          "avg_sec": 8.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -748,6 +797,11 @@
         "profile_setup": {
           "count": 1,
           "avg_sec": 80.0,
+          "success_rate": 1.0
+        },
+        "internal_infra_build": {
+          "count": 1,
+          "avg_sec": 240.0,
           "success_rate": 1.0
         }
       }
@@ -775,6 +829,11 @@
           "count": 1,
           "avg_sec": 10.0,
           "success_rate": 1.0
+        },
+        "internal_infra_build": {
+          "count": 2,
+          "avg_sec": 8.5,
+          "success_rate": 1.0
         }
       }
     },
@@ -800,6 +859,11 @@
         "profile_setup": {
           "count": 1,
           "avg_sec": 5.0,
+          "success_rate": 1.0
+        },
+        "internal_infra_build": {
+          "count": 1,
+          "avg_sec": 1.0,
           "success_rate": 1.0
         }
       }
@@ -827,6 +891,11 @@
           "count": 1,
           "avg_sec": 8.0,
           "success_rate": 1.0
+        },
+        "internal_infra_build": {
+          "count": 1,
+          "avg_sec": 5.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -850,16 +919,23 @@
     "openweathermap_api_integration": 1,
     "alpaca_paper_trading": 1,
     "sma_crossover_strategy": 1,
-    "streamlit_app_generation": 1,
+    "streamlit_app_generation": 2,
     "plotly_charting": 1,
     "pandas_data_analysis": 1,
-    "streamlit_secrets_handling": 2,
+    "streamlit_secrets_handling": 3,
     "github_rest_api": 1,
     "linkedin_voice_generation": 1,
     "cli_tool_generation": 2,
     "multi_platform_bio_generation": 1,
     "twitter_x_api_publishing": 1,
     "telegram_bot_publishing": 1,
-    "reddit_praw_publishing": 1
+    "reddit_praw_publishing": 1,
+    "stripe_checkout_integration": 1,
+    "twilio_whatsapp_api": 1,
+    "telegram_bot_api": 1,
+    "dockerfile_authoring": 1,
+    "huggingface_spaces_docker_deploy": 1,
+    "payment_provider_abstraction": 1,
+    "file_backed_queue": 1
   }
 }
