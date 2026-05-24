@@ -1,10 +1,10 @@
 {
   "_meta": {
     "version": "1.5",
-    "description": "AI Studio Accademia Milano â€” global learned settings.",
+    "description": "AI Studio Accademia Milano  —  global learned settings.",
     "last_updated": "2026-05-24",
     "last_request_id": "011",
-    "total_requests_processed": 41
+    "total_requests_processed": 42
   },
   "skills": {
     "html_tailwind_css": {
@@ -319,7 +319,7 @@
       "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 30,
-      "notes": "Docker pip install skips HTTPS wheel URLs in requirements.txt â€” guard with flag or separate reqs file"
+      "notes": "Docker pip install skips HTTPS wheel URLs in requirements.txt  —  guard with flag or separate reqs file"
     },
     "reusable_template_extraction": {
       "description": "Auto-discovered from request 011",
@@ -328,7 +328,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 10,
+      "times_used": 11,
       "success_rate": 0.0,
       "avg_duration_sec": 0
     },
@@ -339,7 +339,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 10,
+      "times_used": 11,
       "success_rate": 0.0,
       "avg_duration_sec": 0
     },
@@ -350,7 +350,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 10,
+      "times_used": 11,
       "success_rate": 0.0,
       "avg_duration_sec": 0
     },
@@ -361,7 +361,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 10,
+      "times_used": 11,
       "success_rate": 0.0,
       "avg_duration_sec": 0
     },
@@ -372,7 +372,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 10,
+      "times_used": 11,
       "success_rate": 0.0,
       "avg_duration_sec": 0
     }
@@ -840,6 +840,13 @@
       "title": "Free warranty fix to request 001 (replace YOUR_FORM_ID literal + bakery.jpg placeholder)",
       "status": "DELIVERED",
       "resolution": "2026-05-24: placeholder image swapped to bakery-placeholder.svg + JS sentinel guards YOUR_FORM_ID. In-place patch on deliverables/2026-05-23_001_bakery-website/. No charge."
+    },
+    {
+      "id": "ISS-017",
+      "priority": "P2",
+      "title": "IT Staff agent — infrastructure & accounts management",
+      "status": "DELIVERED",
+      "resolution": "2026-05-24: agents/it_staff.md + config/accounts_registry.yaml created. Agent registered in global_settings.json. CLOUDFLARE_API_TOKEN and ZOHO_API_KEY added to env_vars. cloudflare_api_token, zoho_api_key, namecheap_api_key added to credential_manager SUPPORTED_PROVIDERS. agents/README.md updated with Specialist Agents section."
     }
   ],
   "agents": {
@@ -858,7 +865,7 @@
           "success_rate": 0.0
         },
         "delivery_improvement": {
-          "count": 20,
+          "count": 22,
           "avg_sec": 12.0,
           "success_rate": 0.0
         }
@@ -879,7 +886,7 @@
           "success_rate": 0.0
         },
         "delivery_improvement": {
-          "count": 10,
+          "count": 11,
           "avg_sec": 12.0,
           "success_rate": 0.0
         }
@@ -900,7 +907,7 @@
           "success_rate": 0.0
         },
         "delivery_improvement": {
-          "count": 10,
+          "count": 11,
           "avg_sec": 15.0,
           "success_rate": 0.0
         }
@@ -921,7 +928,7 @@
           "success_rate": 0.0
         },
         "delivery_improvement": {
-          "count": 10,
+          "count": 11,
           "avg_sec": 240.0,
           "success_rate": 0.0
         }
@@ -942,7 +949,7 @@
           "success_rate": 0.0
         },
         "delivery_improvement": {
-          "count": 10,
+          "count": 11,
           "avg_sec": 8.0,
           "success_rate": 1.0
         }
@@ -953,7 +960,7 @@
       "capabilities": [],
       "task_stats": {
         "delivery_improvement": {
-          "count": 10,
+          "count": 11,
           "avg_sec": 22.0,
           "success_rate": 0.0
         }
@@ -964,7 +971,7 @@
       "capabilities": [],
       "task_stats": {
         "delivery_improvement": {
-          "count": 10,
+          "count": 11,
           "avg_sec": 28.0,
           "success_rate": 0.0
         }
@@ -975,7 +982,7 @@
       "capabilities": [],
       "task_stats": {
         "delivery_improvement": {
-          "count": 10,
+          "count": 11,
           "avg_sec": 24.0,
           "success_rate": 0.0
         }
@@ -986,11 +993,32 @@
       "capabilities": [],
       "task_stats": {
         "delivery_improvement": {
-          "count": 10,
+          "count": 11,
           "avg_sec": 18.0,
           "success_rate": 0.0
         }
       }
+    },
+    "IT Staff": {
+      "roles": [
+        "infrastructure",
+        "accounts",
+        "dns",
+        "email",
+        "credentials"
+      ],
+      "capabilities": [
+        "accounts_registry_management",
+        "cloudflare_dns_configuration",
+        "zoho_email_setup",
+        "credential_wiring",
+        "domain_ttl_monitoring"
+      ],
+      "authority": "advisory_only",
+      "final_authority": "Luigi",
+      "spec": "agents/it_staff.md",
+      "registry": "config/accounts_registry.yaml",
+      "task_stats": {}
     }
   },
   "env_vars": {
@@ -1199,20 +1227,39 @@
       "provider": "HuggingFace",
       "used_by": [],
       "required": false,
-      "note": "huggingface.co/settings/tokens â€” write role"
+      "note": "huggingface.co/settings/tokens  —  write role"
     },
     "HUGGINGFACE_REPO": {
       "provider": "HuggingFace",
       "used_by": [],
       "required": false,
       "note": "format: username/repo-name"
+    },
+    "CLOUDFLARE_API_TOKEN": {
+      "provider": "Cloudflare",
+      "used_by": [
+        "IT Staff",
+        "ISS-013d"
+      ],
+      "required": false,
+      "scope": "Zone:DNS:Edit",
+      "note": "Generate at Cloudflare dashboard > My Profile > API Tokens. Minimum scope only."
+    },
+    "ZOHO_API_KEY": {
+      "provider": "Zoho Mail",
+      "used_by": [
+        "IT Staff",
+        "ISS-013"
+      ],
+      "required": false,
+      "note": "Zoho Mail API key for mailbox and DNS record verification."
     }
   },
   "pattern_counters": {
     "event_extraction_llm": 21,
     "telegram_bot_api": 21,
     "twilio_whatsapp_api": 21,
-    "google_calendar_api": 31,
+    "google_calendar_api": 32,
     "microsoft_graph_api": 21,
     "apple_caldav": 21,
     "google_cloud_run_deploy": 1,
@@ -1220,16 +1267,16 @@
     "google_secret_manager": 1,
     "cloud_build_submit": 1,
     "dockerfile_authoring": 1,
-    "html_semantic_markup": 10,
-    "json_ld_localbusiness": 10,
-    "open_graph_metadata": 10,
-    "decap_cms_config": 10,
-    "tailwind_extract_to_static_css": 10,
-    "flask_webhook": 10,
-    "reusable_template_extraction": 10,
-    "pytest_injectable_dependencies": 10,
-    "gmail_api_send": 10,
-    "cloud_run_deploy": 10
+    "html_semantic_markup": 11,
+    "json_ld_localbusiness": 11,
+    "open_graph_metadata": 11,
+    "decap_cms_config": 11,
+    "tailwind_extract_to_static_css": 11,
+    "flask_webhook": 11,
+    "reusable_template_extraction": 11,
+    "pytest_injectable_dependencies": 11,
+    "gmail_api_send": 11,
+    "cloud_run_deploy": 11
   },
   "template_candidates": {
     "fpdf2_pdf_generation": {
