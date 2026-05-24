@@ -4,7 +4,7 @@
     "description": "AI Studio Accademia Milano \u2014 global learned settings.",
     "last_updated": "2026-05-24",
     "last_request_id": "013",
-    "total_requests_processed": 23,
+    "total_requests_processed": 24,
     "v1.6_changes": "Confirmed pricing agent_deploy_streamlit=\u20ac19.90 (Luigi approved); added skills huggingface_spaces_docker_deploy + langgraph_agent_streamlit_wrapper; wired agent_deploy_streamlit into intent_to_skill_map"
   },
   "skills": {
@@ -450,7 +450,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 8,
+      "times_used": 9,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -461,7 +461,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-24",
-      "times_used": 8,
+      "times_used": 9,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -472,7 +472,7 @@
       ],
       "agent": "Chiara",
       "first_seen": "2026-05-24",
-      "times_used": 8,
+      "times_used": 9,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -483,7 +483,7 @@
       ],
       "agent": "Francesca",
       "first_seen": "2026-05-24",
-      "times_used": 3,
+      "times_used": 4,
       "success_rate": 1.0,
       "avg_duration_sec": 0,
       "requires_user_auth": true,
@@ -508,7 +508,7 @@
       ],
       "agent": "Francesca",
       "first_seen": "2026-05-24",
-      "times_used": 3,
+      "times_used": 4,
       "success_rate": 1.0,
       "avg_duration_sec": 0,
       "requires_user_auth": true,
@@ -897,7 +897,7 @@
           "success_rate": 1.0
         },
         "agent_deploy_streamlit": {
-          "count": 8,
+          "count": 9,
           "avg_sec": 5.0,
           "success_rate": 1.0
         }
@@ -928,7 +928,7 @@
           "success_rate": 1.0
         },
         "agent_deploy_streamlit": {
-          "count": 8,
+          "count": 9,
           "avg_sec": 90.0,
           "success_rate": 1.0
         }
@@ -959,7 +959,7 @@
           "success_rate": 1.0
         },
         "agent_deploy_streamlit": {
-          "count": 16,
+          "count": 18,
           "avg_sec": 6.5,
           "success_rate": 1.0
         }
@@ -990,7 +990,7 @@
           "success_rate": 1.0
         },
         "agent_deploy_streamlit": {
-          "count": 8,
+          "count": 9,
           "avg_sec": 5.0,
           "success_rate": 0.0
         }
@@ -1021,7 +1021,7 @@
           "success_rate": 1.0
         },
         "agent_deploy_streamlit": {
-          "count": 8,
+          "count": 9,
           "avg_sec": 8.0,
           "success_rate": 1.0
         }
@@ -1047,10 +1047,10 @@
     "openweathermap_api_integration": 1,
     "alpaca_paper_trading": 1,
     "sma_crossover_strategy": 1,
-    "streamlit_app_generation": 9,
+    "streamlit_app_generation": 10,
     "plotly_charting": 1,
     "pandas_data_analysis": 1,
-    "streamlit_secrets_handling": 10,
+    "streamlit_secrets_handling": 11,
     "github_rest_api": 1,
     "linkedin_voice_generation": 1,
     "cli_tool_generation": 2,
@@ -1058,11 +1058,11 @@
     "twitter_x_api_publishing": 1,
     "telegram_bot_publishing": 1,
     "reddit_praw_publishing": 1,
-    "langgraph_agent_integration": 8,
-    "openai_api_integration": 8,
-    "dockerfile_authoring": 8,
-    "ta_lib_system_dependency_handling": 8,
-    "huggingface_spaces_docker_deploy": 2,
-    "google_cloud_run_deploy": 2
+    "langgraph_agent_integration": 9,
+    "openai_api_integration": 9,
+    "dockerfile_authoring": 9,
+    "ta_lib_system_dependency_handling": 9,
+    "huggingface_spaces_docker_deploy": 3,
+    "google_cloud_run_deploy": 3
   }
 }
