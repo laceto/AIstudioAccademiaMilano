@@ -10,7 +10,9 @@
       "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\agents\\\\rag\")",
       "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\scripts\\\\rag\")",
       "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\data\\\\vectorstore\\\\repo\")",
-      "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\data\\\\synthesis_results\")"
+      "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\data\\\\synthesis_results\")",
+      "Bash(gh pr create --title 'feat\\(rag\\): 4-agent RAG team — kitai + FAISS + BM25 + context injection' --body ' *)",
+      "Bash(python *)"
     ]
   }
 }
