@@ -261,6 +261,12 @@ def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
     for f in files:
         subprocess.run(["git", "add", f], check=False)
     subprocess.run(["git", "add", audit_dir], check=False)
+    # Don't commit a no-op: if nothing is actually staged-different, bail.
+    # `git diff --cached --quiet` exits 0 when there's no diff, 1 when there is.
+    diff = subprocess.run(["git", "diff", "--cached", "--quiet"], check=False)
+    if diff.returncode == 0:
+        print("[learning_loop] No staged changes — skipping commit.")
+        return
     msg = f"learn: update global settings from request {request_id}"
     subprocess.run(["git", "commit", "-m", msg], check=False)
     subprocess.run(["git", "push"], check=False)
@@ -276,6 +282,11 @@ def main():
     parser.add_argument("--settings", default="config/global_settings.json")
     parser.add_argument("--requirements-registry", default="config/requirements_registry.yaml")
     parser.add_argument("--intent-registry", default="process/intent_registry.yaml")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Reprocess the latest audit log even if it was already marked processed.",
+    )
     args = parser.parse_args()
 
     log_path = latest_audit_log(args.audit_dir)
@@ -283,9 +294,22 @@ def main():
         print("[learning_loop] No audit logs found. Nothing to learn.")
         return
 
+    settings = load_settings(args.settings)
+
+    # Idempotency: don't reprocess the same audit log on every Stop event.
+    # Several mutators (update_agent_stats avg, check_pattern_hooks counters)
+    # touch settings without bumping the `changes` counter, which made every
+    # rerun look like new work and produced duplicate `learn:` commits.
+    last_processed = settings.get("_meta", {}).get("last_processed_audit_log")
+    if last_processed == log_path.name and not args.force:
+        print(
+            f"[learning_loop] {log_path.name} already processed "
+            f"(set _meta.last_processed_audit_log). Pass --force to override."
+        )
+        return
+
     print(f"[learning_loop] Processing: {log_path.name}")
     audit = parse_audit_log(log_path)
-    settings = load_settings(args.settings)
 
     risk_score = audit.get("learning_flags", {}).get("risk_score", 1)
     changes = 0
@@ -298,6 +322,7 @@ def main():
 
     settings["_meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
     settings["_meta"]["last_request_id"] = audit["request_id"]
+    settings["_meta"]["last_processed_audit_log"] = log_path.name
     settings["_meta"]["total_requests_processed"] = (
         settings["_meta"].get("total_requests_processed", 0) + 1
     )
