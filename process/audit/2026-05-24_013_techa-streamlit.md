@@ -72,6 +72,8 @@ skills_used:
   - streamlit_secrets_handling
   - dockerfile_authoring
   - ta_lib_system_dependency_handling
+  - huggingface_spaces_docker_deploy
+  - google_cloud_run_deploy
 
 mcp_tools_used:
   - WebFetch    # github.com/laceto/techa README, pyproject, orchestrator agent
@@ -115,6 +117,8 @@ learning_flags:
     - langgraph_agent_integration
     - ta_lib_system_dependency_handling
     - dockerfile_authoring
+    - huggingface_spaces_docker_deploy
+    - google_cloud_run_deploy
   new_mcp: []
   new_intents:
     - agent_deploy_streamlit

@@ -71,7 +71,7 @@ export OPENAI_API_KEY=sk-...
 streamlit run main.py
 ```
 
-### Docker (Render / Railway / Fly.io / Cloud Run)
+### Docker (Render / Railway / Fly.io)
 
 Same Dockerfile works on any container host:
 
@@ -79,6 +79,33 @@ Same Dockerfile works on any container host:
 docker build -t techa-streamlit .
 docker run -p 8501:8501 -e OPENAI_API_KEY=sk-... techa-streamlit
 ```
+
+### Google Cloud Run
+
+The Dockerfile honours `$PORT` (Cloud Run injects it), so no image changes are needed.
+
+```bash
+# 1. Store the OpenAI key in Secret Manager (one-off):
+printf "sk-..." | gcloud secrets create openai-key --data-file=-
+
+# 2. Deploy from source — Cloud Build picks up the Dockerfile:
+gcloud run deploy techa \
+  --source . \
+  --region europe-west1 \
+  --memory 1Gi \
+  --cpu 1 \
+  --timeout 300 \
+  --session-affinity \
+  --allow-unauthenticated \
+  --set-secrets OPENAI_API_KEY=openai-key:latest
+```
+
+Notes:
+- **`--session-affinity`** is important — Streamlit uses WebSockets, and without affinity reconnects can bounce across instances.
+- **`--memory 1Gi`** — the 512 MiB default is tight once TA-Lib, yfinance and the LangGraph runtime are loaded.
+- **`--timeout 300`** — orchestrator runs can take 30–60 s; the 5-min cap leaves headroom.
+- Cold start is ~2–4 s (image is already built; TA-Lib compile happens at *build* time, not runtime).
+- Free tier: 2 M requests/month, 360 k vCPU-seconds.
 
 ### Streamlit Community Cloud
 

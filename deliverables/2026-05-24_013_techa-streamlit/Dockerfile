@@ -22,11 +22,13 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 
 COPY --chown=user main.py ./
 
+ENV PORT=8501
 EXPOSE 8501
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:${PORT}/_stcore/health || exit 1
 
-CMD ["streamlit", "run", "main.py", \
-     "--server.address=0.0.0.0", \
-     "--server.port=8501", \
-     "--server.enableCORS=false", \
-     "--server.enableXsrfProtection=false"]
+# Honour $PORT so the same image works on HF Spaces (8501) and Cloud Run ($PORT, typically 8080).
+CMD streamlit run main.py \
+    --server.address=0.0.0.0 \
+    --server.port=${PORT} \
+    --server.enableCORS=false \
+    --server.enableXsrfProtection=false

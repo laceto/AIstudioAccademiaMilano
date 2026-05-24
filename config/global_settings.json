@@ -500,6 +500,20 @@
       "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 0
+    },
+    "google_cloud_run_deploy": {
+      "description": "Deploy a Dockerised Streamlit app to Cloud Run via `gcloud run deploy --source .`. Container must honour $PORT; session affinity required for WebSockets; OPENAI_API_KEY via Secret Manager (--set-secrets); memory bumped to 1Gi for TA-Lib + LangGraph runtime.",
+      "intent_mappings": [
+        "agent_deploy_streamlit"
+      ],
+      "agent": "Francesca",
+      "first_seen": "2026-05-24",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0,
+      "requires_user_auth": true,
+      "auth_method": "gcloud_application_default",
+      "security_note": "OPENAI_API_KEY in Secret Manager, never baked into image layers"
     }
   },
   "intent_to_skill_map": {
@@ -565,7 +579,8 @@
       "streamlit_secrets_handling",
       "dockerfile_authoring",
       "ta_lib_system_dependency_handling",
-      "huggingface_spaces_docker_deploy"
+      "huggingface_spaces_docker_deploy",
+      "google_cloud_run_deploy"
     ]
   },
   "pricing": {
