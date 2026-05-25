@@ -81,6 +81,7 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 | `credentials/registry.md` | Step-by-step guide for all credentials across deliverables |
 | `.env.example` | Template for all environment variables — copy to `.env` and fill in |
 | `scripts/learning_loop.py` | Auto-updates settings after every request |
+| `scripts/precommit_secret_scan.sh` | Pre-commit hook: blocks `.env` + known secret patterns before any commit |
 | `scripts/post_delivery_update.py` | Post-commit hook: creates audit stubs, patches CLAUDE.md table |
 | `scripts/digital_presence_pipeline.py` | Bridges D009+D010: GitHub activity → post → multi-platform publish |
 | `scripts/rag/embed_repo.py` | Index all repo files via kitai batch + FAISS |
@@ -137,6 +138,12 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 - Apple Calendar: app-specific password only (generate at appleid.apple.com) — main Apple ID password never used
 - Twilio webhook: HMAC-SHA1 signature validation active in production
 - Google `credentials.json` and `token.json` kept local, never committed
+- **Pre-commit secret scan** (`scripts/precommit_secret_scan.sh`): blocks staged `.env` files and known credential patterns (OpenAI, Anthropic, AWS, GitHub PAT, Stripe, Slack, Google, Twilio, Alpaca, PEM blocks). Install once per clone:
+  ```
+  ln -sf ../../scripts/precommit_secret_scan.sh .git/hooks/pre-commit
+  chmod +x .git/hooks/pre-commit
+  ```
+  Required because the standing "auto-commit and merge on task completion" rule (see Active Branch) removes the per-step human review that would otherwise catch a leaked key. Bypass only with `--no-verify` and only for confirmed false positives.
 
 ---
 
