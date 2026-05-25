@@ -18,6 +18,8 @@ Create a **fresh branch from main** for every feature. Never push to main direct
 Naming convention: `claude/<slug>` (e.g. `claude/calendar-sync`, `claude/readme-review`).  
 The branch `claude/digital-communities-guide-a5lBV` is legacy — do not use it.
 
+**Auto-commit and merge on task completion (standing rule).** When a task is finished, commit on the feature branch, push, open a PR against `main`, and merge it via GitHub MCP — do not ask for confirmation at each step. Exceptions that still require asking first: destructive operations (`git reset --hard`, `git push --force`, deleting branches), commits that touch `.env`/credentials, or work the user explicitly paused mid-flow.
+
 ---
 
 ## Cross-Platform Hook Convention
