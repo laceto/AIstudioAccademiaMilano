@@ -16,7 +16,9 @@
       "Bash(python -c \"import pandas as pd; df = pd.read_csv\\('data/rag_registry.tsv', sep='\\\\t'\\); print\\(f'{len\\(df\\)} chunks, {df.path.nunique\\(\\)} files'\\)\")",
       "Bash(python -c ' *)",
       "Bash(python -c \"import kitai; print\\('kitai ok'\\)\")",
-      "Bash(python -m pytest tests/test_gateway_pablo.py tests/test_gateway_sofia.py tests/test_gateway_carlos.py tests/test_gateway_worker.py -v)"
+      "Bash(python -m pytest tests/test_gateway_pablo.py tests/test_gateway_sofia.py tests/test_gateway_carlos.py tests/test_gateway_worker.py -v)",
+      "Bash(grep -i \"settings.local\" .gitignore)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }
