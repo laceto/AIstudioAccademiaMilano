@@ -4,6 +4,20 @@ Hybrid BM25 + FAISS retrieval over the repo vectorstore.
 Mirrors rss_feed/pipeline/hybrid_rag.py exactly.
 
 Public API:
+    load_vectorstore(folder, index_name, embeddings_model) -> FAISS
+        Load and validate FAISS store from disk. Raises FileNotFoundError if
+        .faiss or .pkl files are missing.
+
+    extract_docs(vs) -> list[Document]
+        Pull all documents from the FAISS in-memory docstore.
+
+    translate_query(chat_model, query, strategy) -> list[str]
+        Expand a single query into an augmented pool via kitai.query_translation.
+        Returns [original, ...augmented]; [0] is always the original.
+
+    retrieve_for_queries(queries, hybrid) -> list[Document]
+        Run each query through the hybrid retriever; deduplicate by guid.
+
     retrieve(query, *, top_k=12, strategy="none") -> list[Document]
         Real-time, no LLM call. Used by inject_context.py.
 
@@ -50,7 +64,7 @@ EMBED_DIMENSIONS = 1536
 CHAT_MODEL       = "gpt-4o-mini"
 K_SEMANTIC       = 6
 K_BM25           = 6
-WEIGHTS_SPARSE   = 0.5   # 0.0 = pure semantic, 1.0 = pure BM25
+WEIGHTS_SPARSE   = 0.5
 QUERY_STRATEGY   = "expand"
 
 logging.basicConfig(
@@ -79,6 +93,47 @@ class _OpenAIEmbeddings(Embeddings):
         return self.embed_documents([text])[0]
 
 
+# ── Vectorstore helpers ───────────────────────────────────────────────────────
+
+def load_vectorstore(
+    folder: Path,
+    index_name: str,
+    embeddings_model: _OpenAIEmbeddings,
+) -> FAISS:
+    """Load a FAISS index from disk, with pre-flight file checks.
+
+    Raises:
+        FileNotFoundError: If .faiss or .pkl files are missing.
+            Message includes the remediation command.
+    """
+    faiss_file = folder / f"{index_name}.faiss"
+    pkl_file   = folder / f"{index_name}.pkl"
+    for f in (faiss_file, pkl_file):
+        if not f.exists():
+            raise FileNotFoundError(
+                f"Expected vectorstore file not found: {f}\n"
+                "Run: python -m scripts.rag.embed_repo"
+            )
+    log.info("Loading FAISS index from %s ...", folder)
+    vs = FAISS.load_local(
+        folder_path=str(folder),
+        embeddings=embeddings_model,
+        index_name=index_name,
+        allow_dangerous_deserialization=True,  # safe: we own this .pkl
+    )
+    log.info("Loaded %d vectors.", vs.index.ntotal)
+    return vs
+
+
+def extract_docs(vs: FAISS) -> list[Document]:
+    """Pull all Documents from the FAISS in-memory docstore.
+
+    Used to build the BM25 index over the same corpus so both retrievers
+    always see identical documents.
+    """
+    return list(vs.docstore._dict.values())
+
+
 # ── Lazy resource cache ───────────────────────────────────────────────────────
 
 _lazy: dict | None = None
@@ -96,22 +151,13 @@ def _get_resources() -> dict:
         raise EnvironmentError(
             "OPENAI_API_KEY not set. Add to .env or environment."
         )
-    if not VECTORSTORE_DIR.exists():
-        raise FileNotFoundError(
-            f"Vectorstore not found at {VECTORSTORE_DIR}.\n"
-            "Run: python -m scripts.rag.embed_repo"
-        )
 
     log.info("Loading RAG resources (first call) ...")
     openai_client    = _OpenAIClient(api_key=api_key)
     embeddings_model = _OpenAIEmbeddings(model=EMBEDDING_MODEL, client=openai_client)
-    vs = FAISS.load_local(
-        str(VECTORSTORE_DIR), embeddings_model,
-        index_name=FAISS_INDEX_NAME,
-        allow_dangerous_deserialization=True,  # safe: we own this .pkl
-    )
-    corpus     = list(vs.docstore._dict.values())
-    chat_model = ChatOpenAI(model=CHAT_MODEL, temperature=0)
+    vs               = load_vectorstore(VECTORSTORE_DIR, FAISS_INDEX_NAME, embeddings_model)
+    corpus           = extract_docs(vs)
+    chat_model       = ChatOpenAI(model=CHAT_MODEL, temperature=0)
 
     log.info("RAG ready: %d vectors, %d corpus docs.", vs.index.ntotal, len(corpus))
     _lazy = {
@@ -144,8 +190,20 @@ def _build_hybrid(
 
 # ── Query translation ─────────────────────────────────────────────────────────
 
-def _translate(chat_model, query: str, strategy: str) -> list[str]:
-    """Expand a single query into an augmented pool via kitai.query_translation."""
+def translate_query(chat_model, query: str, strategy: str) -> list[str]:
+    """Expand a single query into an augmented pool via kitai.query_translation.
+
+    Args:
+        chat_model: LangChain ChatOpenAI instance used by the translation chain.
+        query:      Raw user question.
+        strategy:   One of "expand", "decompose", "step_back", "none".
+
+    Returns:
+        Deduplicated list of query strings; [0] is always the original.
+
+    Raises:
+        ValueError: If strategy is not a recognised value.
+    """
     if strategy == "none":
         return [query]
 
@@ -161,7 +219,6 @@ def _translate(chat_model, query: str, strategy: str) -> list[str]:
     else:
         raise ValueError(f"Unknown strategy: {strategy!r}. Choose: expand, decompose, step_back, none.")
 
-    # Original always first; deduplicate while preserving order
     seen    = {query}
     queries = [query]
     for q in augmented:
@@ -170,25 +227,37 @@ def _translate(chat_model, query: str, strategy: str) -> list[str]:
             seen.add(q)
 
     log.info("Query translation [%s]: %d queries from %r", strategy, len(queries), query)
+    for i, q in enumerate(queries):
+        log.debug("  query %d: %s%s", i, q, " [original]" if i == 0 else "")
     return queries
 
 
 # ── Retrieval + deduplication ─────────────────────────────────────────────────
 
-def _retrieve_docs(queries: list[str], hybrid) -> list[Document]:
-    """Run each query through the hybrid retriever; deduplicate by guid."""
+def retrieve_for_queries(queries: list[str], hybrid) -> list[Document]:
+    """Run each query through the hybrid retriever; deduplicate by guid.
+
+    First-retrieved occurrence wins, preserving ranking signal from the
+    original (first) query.
+    """
     results: list[list[Document]] = hybrid.batch(queries)
     seen:    set[str]             = set()
     merged:  list[Document]       = []
 
-    for docs in results:
+    for q, docs in zip(queries, results):
+        added = 0
         for doc in docs:
             guid = doc.metadata.get("guid", "")
             if guid not in seen:
                 seen.add(guid)
                 merged.append(doc)
+                added += 1
+        log.debug("Query %r -> %d retrieved, %d new after dedup.", q, len(docs), added)
 
-    log.info("Retrieved %d unique docs from %d quer%s.", len(merged), len(queries), "y" if len(queries) == 1 else "ies")
+    log.info(
+        "Retrieved %d unique docs from %d quer%s.",
+        len(merged), len(queries), "y" if len(queries) == 1 else "ies",
+    )
     return merged
 
 
@@ -213,8 +282,8 @@ def retrieve(
     res    = _get_resources()
     hybrid = _build_hybrid(res)
 
-    queries = _translate(res["chat_model"], query, strategy)
-    merged  = _retrieve_docs(queries, hybrid)
+    queries = translate_query(res["chat_model"], query, strategy)
+    merged  = retrieve_for_queries(queries, hybrid)
     ordered = reorder_docs(merged)
     return ordered[:top_k]
 
@@ -245,8 +314,8 @@ def ask(
     res    = _get_resources()
     hybrid = _build_hybrid(res, k_semantic=k_semantic, k_bm25=k_bm25, weights=weights_sparse)
 
-    queries = _translate(res["chat_model"], query, strategy)
-    merged  = _retrieve_docs(queries, hybrid)
+    queries = translate_query(res["chat_model"], query, strategy)
+    merged  = retrieve_for_queries(queries, hybrid)
     ordered = reorder_docs(merged)
 
     context  = "\n\n".join(doc.page_content for doc in ordered)
@@ -280,11 +349,11 @@ def ask(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Query the repo RAG index")
-    parser.add_argument("query",     nargs="?",  help="Question to answer")
-    parser.add_argument("--top-k",   type=int,   default=5)
+    parser.add_argument("query",      nargs="?",  help="Question to answer")
+    parser.add_argument("--top-k",    type=int,   default=5)
     parser.add_argument("--strategy", choices=["expand", "decompose", "step_back", "none"], default=QUERY_STRATEGY)
-    parser.add_argument("--json",    action="store_true", help="Output as JSON")
-    parser.add_argument("--no-llm",  action="store_true", help="Retrieve only, no LLM synthesis")
+    parser.add_argument("--json",     action="store_true", help="Output as JSON")
+    parser.add_argument("--no-llm",   action="store_true", help="Retrieve only, no LLM synthesis")
     args = parser.parse_args()
 
     if not args.query:

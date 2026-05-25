@@ -8,8 +8,7 @@ Mirrors rss_feed/enrich/embed_feeds.py exactly:
     kitai.batch embed → align → init_or_update FAISS → save_registry
 
 Usage:
-    python -m scripts.rag.embed_repo                    # kitai batch (OpenAI, 50% cheaper)
-    python -m scripts.rag.embed_repo --provider local   # sentence-transformers, offline
+    python -m scripts.rag.embed_repo
 
 Invariants:
     - guid = "{rel_path}::{chunk_index}" — stable per-chunk identifier
@@ -32,6 +31,7 @@ from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
+from openai import OpenAI
 
 from kitai.batch import (
     build_embedding_tasks,
@@ -133,7 +133,6 @@ def save_registry(registry: pd.DataFrame) -> None:
 # ── Chunk discovery ───────────────────────────────────────────────────────────
 
 def build_all_chunks(files: list[Path]) -> list[dict]:
-    """Build raw chunk records from all repo files."""
     all_chunks: list[dict] = []
     for f in files:
         try:
@@ -155,7 +154,6 @@ def build_all_chunks(files: list[Path]) -> list[dict]:
 
 
 def find_new_chunks(all_chunks: list[dict], registry: pd.DataFrame) -> list[dict]:
-    """Return chunks not in registry or whose content_hash changed."""
     known: set[tuple[str, str]] = set()
     if not registry.empty:
         known = set(zip(registry["guid"], registry["content_hash"]))
@@ -203,7 +201,7 @@ def build_documents(new_chunks: list[dict]) -> list[Document]:
 
 def run_embedding_batch(
     docs: list[Document],
-    client,
+    client: OpenAI,
 ) -> list[tuple[str, list[float]]]:
     """Embed documents via kitai batch API (async, 50% cheaper than sync)."""
     tasks  = build_embedding_tasks(docs, model=EMBED_MODEL, dimensions=EMBED_DIMENSIONS)
@@ -221,16 +219,6 @@ def run_embedding_batch(
     pairs   = parse_embedding_results(results)
     log.info("Parsed %d embeddings from batch %s.", len(pairs), job_id)
     return pairs
-
-
-def run_embedding_local(docs: list[Document]) -> list[tuple[str, list[float]]]:
-    """Offline fallback using sentence-transformers (no API key needed)."""
-    from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    texts = [doc.page_content for doc in docs]
-    vecs  = model.encode(texts, normalize_embeddings=True, show_progress_bar=True)
-    # Mimic kitai custom_id format: "custom_id_{id}"
-    return [(f"custom_id_{doc.metadata['id']}", vec.tolist()) for doc, vec in zip(docs, vecs)]
 
 
 def align_pairs(
@@ -267,7 +255,6 @@ def init_vectorstore(
     text_emb_pairs: list[tuple[str, list[float]]],
     embeddings_model: OpenAIEmbeddings,
 ) -> FAISS:
-    """Cold start: build new FAISS store from scratch."""
     embeddings_arr = np.array([emb for _, emb in text_emb_pairs], dtype=np.float32)
     store = create_vectorstore(docs, embeddings_arr, embeddings_model)
     log.info("Created vectorstore: %d vectors.", store.index.ntotal)
@@ -279,7 +266,6 @@ def update_vectorstore(
     aligned_docs: list[Document],
     embeddings_model: OpenAIEmbeddings,
 ) -> FAISS:
-    """Incremental: load existing FAISS, append new embeddings — no rebuild."""
     store = FAISS.load_local(
         str(VECTORSTORE_DIR), embeddings_model,
         allow_dangerous_deserialization=True,
@@ -296,7 +282,7 @@ def update_vectorstore(
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-def main(provider: str = "openai") -> None:
+def main() -> None:
     load_dotenv()
 
     embeddings_model = OpenAIEmbeddings(model=EMBED_MODEL, dimensions=EMBED_DIMENSIONS)
@@ -308,11 +294,7 @@ def main(provider: str = "openai") -> None:
     new_chunks = assign_ids(new_chunks, registry)
     docs       = build_documents(new_chunks)
 
-    if provider == "local":
-        pairs = run_embedding_local(docs)
-    else:
-        from openai import OpenAI
-        pairs = run_embedding_batch(docs, OpenAI())
+    pairs = run_embedding_batch(docs, OpenAI())
 
     aligned_pairs, aligned_docs = align_pairs(pairs, docs)
     if not aligned_docs:
@@ -343,10 +325,4 @@ def main(provider: str = "openai") -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Embed repo files into FAISS via kitai batch")
-    parser.add_argument(
-        "--provider", choices=["openai", "local"], default="openai",
-        help="openai: kitai batch API (50%% cheaper, async). local: sentence-transformers (offline).",
-    )
-    args = parser.parse_args()
-    main(provider=args.provider)
+    main()
