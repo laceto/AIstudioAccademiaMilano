@@ -13,7 +13,7 @@ from __future__ import annotations
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
-from .nodes import (
+from nodes import (
     chiara_sim,
     francesca_sim,
     gianni_sim,
@@ -21,8 +21,8 @@ from .nodes import (
     stacy_sim,
     synthesizer,
 )
-from .state import TwinState
-from .studio_loader import load_studio_state_node
+from state import TwinState
+from studio_loader import load_studio_state_node
 
 _DEPARTMENTS = ["stacy_sim", "gianni_sim", "chiara_sim", "marco_sim", "francesca_sim"]
 
@@ -67,7 +67,7 @@ def run_simulation(
     steps: list of intermediate state snapshots (one per graph event)
     final_state: the complete TwinState after the graph finishes
     """
-    from .studio_loader import load_studio_baseline
+    from studio_loader import load_studio_baseline
 
     initial: TwinState = {
         "event":              event,
