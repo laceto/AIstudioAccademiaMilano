@@ -61,17 +61,25 @@ class QueueWorker:
         self.adapter = PipelineAdapter(queue_dir=str(self.queue_dir))
         self.poll_interval = poll_interval
 
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if api_key:
+        anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        openai_key = os.environ.get("OPENAI_API_KEY", "")
+
+        if anthropic_key and not anthropic_key.startswith("sk-ant-your"):
             import anthropic
-            self.claude: object = anthropic.AsyncAnthropic(api_key=api_key)
+            self._provider = "anthropic"
+            self._llm: object = anthropic.AsyncAnthropic(api_key=anthropic_key)
+        elif openai_key and not openai_key.startswith("sk-proj-your"):
+            from openai import AsyncOpenAI
+            self._provider = "openai"
+            self._llm = AsyncOpenAI(api_key=openai_key)
         else:
-            self.claude = None
-            logger.warning("[worker] ANTHROPIC_API_KEY not set — jobs will be queued but not processed")
+            self._provider = None
+            self._llm = None
+            logger.warning("[worker] No LLM API key set — jobs will be queued but not classified")
 
     async def classify(self, text: str) -> dict:
-        """Run Stacy classification via Claude Haiku. Returns classification dict."""
-        if not self.claude:
+        """Run Stacy classification via LLM (Anthropic preferred, OpenAI fallback)."""
+        if not self._provider:
             return {
                 "intent": "unknown",
                 "product_type": "unknown_product",
@@ -80,13 +88,26 @@ class QueueWorker:
                 "needs_review": True,
             }
 
-        message = await self.claude.messages.create(  # type: ignore[union-attr]
-            model="claude-haiku-4-5-20251001",
-            max_tokens=256,
-            system=_STACY_SYSTEM,
-            messages=[{"role": "user", "content": text}],
-        )
-        raw = message.content[0].text.strip()
+        if self._provider == "anthropic":
+            message = await self._llm.messages.create(  # type: ignore[union-attr]
+                model="claude-haiku-4-5-20251001",
+                max_tokens=256,
+                system=_STACY_SYSTEM,
+                messages=[{"role": "user", "content": text}],
+            )
+            raw = message.content[0].text.strip()
+        else:
+            model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini").strip()
+            response = await self._llm.chat.completions.create(  # type: ignore[union-attr]
+                model=model,
+                max_tokens=256,
+                messages=[
+                    {"role": "system", "content": _STACY_SYSTEM},
+                    {"role": "user", "content": text},
+                ],
+            )
+            raw = response.choices[0].message.content.strip()
+
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):

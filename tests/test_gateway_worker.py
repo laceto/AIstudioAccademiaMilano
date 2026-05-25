@@ -17,8 +17,11 @@ def tmp_worker(tmp_path):
 # ── classify (no API key → fallback) ────────────────────────────────────────
 
 class TestClassifyFallback:
-    def test_no_api_key_returns_unknown(self, tmp_worker):
-        result = asyncio.run(tmp_worker.classify("Build me a chatbot"))
+    def test_no_api_key_returns_unknown(self, tmp_worker, monkeypatch):
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        w = QueueWorker(queue_dir=str(tmp_worker.queue_dir))
+        result = asyncio.run(w.classify("Build me a chatbot"))
         assert result["product_type"] == "unknown_product"
         assert result["needs_review"] is True
         assert result["confidence"] == 0.0
