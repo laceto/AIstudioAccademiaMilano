@@ -20,10 +20,10 @@ from textwrap import dedent
 
 import yaml  # pip install pyyaml
 
-from config.brand import b, fmt
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from scripts.settings_io import load_settings, save_settings, settings_lock  # noqa: E402
+
+from config.brand import b, fmt
+from scripts.settings_io import load_settings, save_settings, settings_lock
 
 
 # ── Tiered thresholds ────────────────────────────────────────────────────────
