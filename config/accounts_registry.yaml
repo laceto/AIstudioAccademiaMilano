@@ -156,6 +156,68 @@ mcp_connectors:
     token_env: NETLIFY_ACCESS_TOKEN
     status: pending_credentials
 
+social_media:
+  - platform: linkedin
+    account_email: luigi@aistudiomilano.xyz
+    profile_url: null               # fill after profile is live
+    handle: null                    # fill after profile is live
+    publish_method: manual          # D009 generates post text; paste at linkedin.com/feed/
+    status: active
+    notes: >
+      Primary B2B channel. Use D009 (github_activity → Claude post) for content.
+      No API key needed for manual posting.
+
+  - platform: github_profile_readme
+    username: laceto
+    profile_url: https://github.com/laceto
+    publish_method: git_push        # create repo laceto/laceto, push README.md
+    status: pending_setup
+    notes: D010 generates README content. Create repo laceto/laceto on GitHub.
+
+  - platform: telegram
+    handle: null                    # fill after channel is created
+    channel_id_env: TELEGRAM_CHANNEL_ID
+    bot_token_env: TELEGRAM_BOT_TOKEN
+    publish_method: auto            # publisher.py post_to_telegram()
+    status: pending_credentials
+    notes: Create channel via Telegram app, then @BotFather → /newbot for token.
+
+  - platform: twitter_x
+    handle: null                    # fill after account is created
+    publish_method: auto            # publisher.py post_to_twitter() via Tweepy v2
+    status: pending_setup
+    notes: >
+      Requires Twitter Developer Portal approval (can take 1 day).
+      Env vars: TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_SECRET.
+
+  - platform: discord
+    server_name: null               # fill after server is created
+    webhook_url_env: DISCORD_WEBHOOK_URL
+    publish_method: auto            # publisher.py post_to_discord()
+    status: pending_setup
+    notes: Create server → Server Settings → Integrations → Webhooks → copy URL to .env.
+
+  - platform: reddit
+    username: null                  # fill after account is created
+    default_subreddit: MachineLearning
+    publish_method: auto            # publisher.py post_to_reddit() via PRAW
+    status: pending_setup
+    notes: >
+      Env vars: REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME, REDDIT_PASSWORD.
+      Create app at reddit.com/prefs/apps (script type).
+
+  - platform: instagram
+    handle: null
+    publish_method: manual
+    status: pending_setup
+    notes: Visual-first; low priority for technical content. Manual posting only.
+
+  - platform: product_hunt
+    handle: null
+    publish_method: manual
+    status: pending_setup
+    notes: Use for specific product launches only. D010 generates maker profile text.
+
 credential_policy:
   storage: env_var_only          # values never in registry or code
   session_ttl_sec: 3600          # credential_manager.py default

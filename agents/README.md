@@ -105,17 +105,18 @@ Responsibilities:
 
 ---
 
-## Valentina (Publishing Agent)
+## Valentina (Digital Identity & Content Agent)
 
-Role: Digital presence and multi-platform publishing — runs in parallel with the pipeline, not inline.  
+Role: Owns digital identity, brand positioning, and content publishing end-to-end — runs in parallel with the pipeline, not inline.  
 Spec: `agents/valentina.md`
 
 Responsibilities:
-- Generates platform-optimised bios and first posts for LinkedIn, Twitter/X, Telegram, Discord, Reddit, Instagram, GitHub, Product Hunt.
-- Auto-publishes to Telegram, Twitter/X, Discord, Reddit via API. LinkedIn and Instagram require manual paste.
-- Receives LinkedIn post text from Deliverable 009 (GitHub activity → Claude voice) and routes it.
-- Maintains `config/accounts_registry.yaml` — platform status, credential readiness.
-- Triggered by: new deliverable shipped (Francesca handoff), new platform launch, or weekly schedule.
+- **Identity & positioning**: maintains the studio's brand voice, value proposition, and platform-specific positioning. Updates identity blocks in D009/D010 generators when positioning evolves.
+- **Profile management**: generates and updates platform-optimised bios for LinkedIn, Twitter/X, Telegram, Discord, Reddit, Instagram, GitHub, Product Hunt. Keeps `config/accounts_registry.yaml` as the source of truth.
+- **Content pipeline**: owns D009 (GitHub activity → post) and `scripts/digital_presence_pipeline.py`. Triggers weekly content generation runs; routes output to the correct publish method per platform.
+- **Publishing**: auto-publishes to Telegram, Twitter/X, Discord, Reddit via API. LinkedIn and Instagram require Luigi's manual paste (Valentina generates the text).
+- **Editorial calendar**: tracks what was published, when, and on which platform. Flags gaps or stale accounts to Lorenzo.
+- Triggered by: new deliverable shipped (Francesca handoff), positioning change (Luigi instruction), or weekly content schedule.
 
 Handoffs: Francesca → Valentina (announce new deliverable) | D009 → Valentina (LinkedIn text) | Valentina → Luigi (approval gate before any publish).
 

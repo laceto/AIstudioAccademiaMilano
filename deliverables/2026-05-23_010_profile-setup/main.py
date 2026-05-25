@@ -16,6 +16,9 @@ import os
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
+
 OUTPUT_DIR = Path("output")
 
 
@@ -42,9 +45,9 @@ def cmd_generate(args):
     from bio_generator import PLATFORM_SPECS, generate_bio
     from first_post_generator import PLATFORM_POST_SPECS, generate_first_post
 
-    api_key = args.api_key or os.environ.get("ANTHROPIC_API_KEY")
+    api_key = args.api_key or os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        print("Error: set ANTHROPIC_API_KEY or pass --api-key")
+        print("Error: set OPENAI_API_KEY or pass --api-key")
         sys.exit(1)
 
     OUTPUT_DIR.mkdir(exist_ok=True)
@@ -74,7 +77,7 @@ def cmd_generate(args):
             md.append(f"```\n{bio}\n```\n")
             md.append(f"*{len(bio)}/{spec['max_chars']} chars*\n")
         (OUTPUT_DIR / "bios.md").write_text("\n".join(md))
-        print(f"  → output/bios.md + output/bios.json")
+        print(f"  -> output/bios.md + output/bios.json")
 
     posts = {}
     if post_platforms:
@@ -90,7 +93,7 @@ def cmd_generate(args):
             md.append(f"{post}\n")
             md.append("---\n")
         (OUTPUT_DIR / "first_posts.md").write_text("\n".join(md))
-        print(f"  → output/first_posts.md + output/first_posts.json")
+        print(f"  -> output/first_posts.md + output/first_posts.json")
 
     print("\nDone. Review output/ before publishing.")
 
@@ -148,7 +151,7 @@ def main():
     parser.add_argument("--platform", help="Target a specific platform only")
     parser.add_argument("--publish", metavar="PLATFORM", help="Publish saved post to platform")
     parser.add_argument("--list", action="store_true", help="Show all platforms and their publish method")
-    parser.add_argument("--api-key", help="Anthropic API key (or set ANTHROPIC_API_KEY)")
+    parser.add_argument("--api-key", help="OpenAI API key (or set OPENAI_API_KEY)")
     args = parser.parse_args()
 
     if args.list:

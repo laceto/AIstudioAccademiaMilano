@@ -1,8 +1,8 @@
 from typing import Optional
 
-import anthropic
+from openai import OpenAI
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "gpt-4o"
 
 PLATFORM_SPECS = {
     "linkedin_headline": {
@@ -53,28 +53,30 @@ PLATFORM_SPECS = {
 }
 
 _IDENTITY = """
-Name: Luigi
-Company: AI Studio Accademia Milano (Milan, Italy)
-What: AI-native software production — one human + AI agents building at industrial scale
-Stack: Python, Claude, LangChain, Streamlit, FastAPI, GitHub Actions
-Built so far: bakery website, PDF email sender, invoice generator, chatbot template,
-  calendar sync, algo trading bot (Alpaca paper), GitHub research department,
-  LinkedIn post generator, profile setup automation
-Philosophy: implementation over hype — every project ships deployed, working software
-Mission: raise economic value through AI implementation
-Voice: direct, builder, no corporate speak, no buzzwords
+Studio: AI Studio Accademia Milano (Milan, Italy)
+What we sell: AI implementation. You bring the idea. We build it and deliver it working.
+Two entry points:
+  - Physical: anyone with an idea — no technical background required, walk in and leave with a deployed AI product.
+  - Digital: businesses and professionals who need AI implemented, not explained or consulted on.
+Product model: a fixed catalogue of AI assets at fixed prices. No hourly billing. No proposals. No scope creep.
+Asset types: AI chatbots, RAG knowledge bases, automation pipelines, data dashboards,
+  agent systems, document generators, API integrations, research tools.
+Implementation: no stack limitations — we use AI to build whatever the project requires.
+Positioning: we are the first studio in this space. We were shipping working AI products before the market knew it needed them.
+Philosophy: implementation over hype. Every engagement ends with deployed, working software.
 """
 
-_SYSTEM = f"""You write platform bios for Luigi, founder of AI Studio Accademia Milano.
+_SYSTEM = f"""You write platform bios for AI Studio Accademia Milano.
 
-Identity:
+Studio positioning:
 {_IDENTITY}
 
 Rules:
 - Stay under the character limit (count carefully)
-- No: \"passionate about\", \"leveraging\", \"ecosystem\", \"game-changer\", \"excited\"
-- Be specific — mention actual things built when relevant
-- Feel native to each platform
+- No: \"passionate about\", \"leveraging\", \"ecosystem\", \"game-changer\", \"excited\", \"solutions\"
+- Lead with the product: you bring the idea, we implement it
+- Convey the dual channel (physical walk-in + digital) where relevant
+- First mover confidence — not arrogant, just matter-of-fact
 - Output ONLY the bio text, nothing else
 """
 
@@ -83,22 +85,24 @@ def generate_bio(platform: str, api_key: Optional[str] = None) -> str:
     if platform not in PLATFORM_SPECS:
         raise ValueError(f"Unknown platform '{platform}'. Options: {list(PLATFORM_SPECS)}.")
     spec = PLATFORM_SPECS[platform]
-    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
-    msg = client.messages.create(
+    client = OpenAI(api_key=api_key) if api_key else OpenAI()
+    resp = client.chat.completions.create(
         model=MODEL,
         max_tokens=600,
-        system=_SYSTEM,
-        messages=[{
-            "role": "user",
-            "content": (
-                f"Platform: {platform.replace('_', ' ').title()}\n"
-                f"Max characters: {spec['max_chars']}\n"
-                f"Tone: {spec['tone']}\n"
-                f"Format: {spec['format']}\n"
-            ),
-        }],
+        messages=[
+            {"role": "system", "content": _SYSTEM},
+            {
+                "role": "user",
+                "content": (
+                    f"Platform: {platform.replace('_', ' ').title()}\n"
+                    f"Max characters: {spec['max_chars']}\n"
+                    f"Tone: {spec['tone']}\n"
+                    f"Format: {spec['format']}\n"
+                ),
+            },
+        ],
     )
-    return msg.content[0].text.strip()
+    return resp.choices[0].message.content.strip()
 
 
 def generate_all_bios(api_key: Optional[str] = None) -> dict:

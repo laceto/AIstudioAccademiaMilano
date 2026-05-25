@@ -1,8 +1,8 @@
 from typing import Optional
 
-import anthropic
+from openai import OpenAI
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "gpt-4o"
 
 PLATFORM_POST_SPECS = {
     "linkedin": {
@@ -62,26 +62,41 @@ PLATFORM_POST_SPECS = {
 }
 
 _IDENTITY = """
-Luigi, founder of AI Studio Accademia Milano (Milan, Italy).
-Builds AI-native software: automations, chatbots, websites, invoice systems,
-algo trading bots, RAG systems, LinkedIn post generators, profile setup tools.
-Stack: Python, Claude (claude-sonnet-4-6), LangChain, Streamlit, GitHub Actions.
-Philosophy: implementation over hype — every project ships deployed, working software.
-Built so far: 10 deliverables including bakery site, PDF email, invoice generator,
-chatbot template, calendar sync, algo trading bot, GitHub research department.
+AI Studio Accademia Milano (Milan, Italy).
+What we sell: AI implementation. You bring the idea. We build it and deliver it working.
+Two entry points:
+  - Physical: anyone with an idea — no technical knowledge needed. Walk in, leave with a deployed AI product.
+  - Digital: businesses and professionals who need AI built, not explained.
+Product model: fixed catalogue of AI assets, fixed prices, fast delivery. No proposals, no hourly billing.
+Asset types: AI chatbots, RAG knowledge bases, automation pipelines, data dashboards,
+  agent systems, document generators, API integrations, research tools.
+Implementation: no stack limitations — we use AI to build whatever the project requires.
+Positioning: first mover. We were shipping working AI products before the market had a name for it.
 """
 
-_SYSTEM = f"""You generate first posts for Luigi on various platforms.
+_SYSTEM = f"""You generate first posts for AI Studio Accademia Milano on various platforms.
 
-Identity:
+Studio positioning:
 {_IDENTITY}
 
 Voice rules:
-- First person, direct, confident
-- Never: \"excited to announce\", \"passionate about\", \"leverage\", \"ecosystem\", \"game-changer\"
-- Specific — mention real things built
-- Platform-native — feel natural on each platform
-- Output ONLY the post text, nothing else
+- Short sentences. Direct. No filler words.
+- Do NOT introduce any person by name. No \"I'm Luigi\", no \"meet [name]\".
+- Do NOT say \"our team\" — one founder, AI agents. No team.
+- Do NOT say: \"excited\", \"thrilled\", \"passionate\", \"leverage\", \"ecosystem\", \"game-changer\",
+  \"solutions\", \"cutting-edge\", \"transforming\", \"turn your ideas into reality\",
+  \"bringing ideas to life\", \"sneak peek\", \"stay ahead\", \"insights\", \"journey\",
+  \"empower\", \"unlock\", \"seamless\", \"innovative\", \"from day one\", \"where ideas meet\"
+- Use only straight apostrophes ('). No curly quotes. No special characters.
+- Output ONLY the post text. Nothing else.
+
+Tone example (use this as a model, do not copy it):
+\"We have been building AI products for months. No announcements, no decks. Just shipping.
+RAG systems, chatbots, automation pipelines, agent teams. Fixed price. Working on delivery.
+We are on LinkedIn now. If you have an idea that needs AI to work, this is the place.
+#AIImplementation #Milan #BuildDontTalk\"
+
+The example above shows: matter-of-fact, short, specific about what we build, no personal introductions, no marketing language.
 """
 
 
@@ -89,23 +104,25 @@ def generate_first_post(platform: str, api_key: Optional[str] = None) -> str:
     if platform not in PLATFORM_POST_SPECS:
         raise ValueError(f"Unknown platform '{platform}'. Options: {list(PLATFORM_POST_SPECS)}.")
     spec = PLATFORM_POST_SPECS[platform]
-    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
-    msg = client.messages.create(
+    client = OpenAI(api_key=api_key) if api_key else OpenAI()
+    resp = client.chat.completions.create(
         model=MODEL,
         max_tokens=1024,
-        system=_SYSTEM,
-        messages=[{
-            "role": "user",
-            "content": (
-                f"Platform: {platform.replace('_', ' ').title()}\n"
-                f"Limit: {spec['limit']}\n"
-                f"Tone: {spec['tone']}\n"
-                f"Purpose: {spec['purpose']}\n"
-                f"Format: {spec['format']}\n"
-            ),
-        }],
+        messages=[
+            {"role": "system", "content": _SYSTEM},
+            {
+                "role": "user",
+                "content": (
+                    f"Platform: {platform.replace('_', ' ').title()}\n"
+                    f"Limit: {spec['limit']}\n"
+                    f"Tone: {spec['tone']}\n"
+                    f"Purpose: {spec['purpose']}\n"
+                    f"Format: {spec['format']}\n"
+                ),
+            },
+        ],
     )
-    return msg.content[0].text.strip()
+    return resp.choices[0].message.content.strip()
 
 
 def generate_all_first_posts(api_key: Optional[str] = None) -> dict:

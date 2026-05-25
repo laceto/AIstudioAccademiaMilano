@@ -245,6 +245,7 @@ See `agents/research/README.md`.
 | 011 | 2026-05-24 | Milan Weather Dashboard (Streamlit + OpenWeatherMap) | 9.90 |
 | 013 | 2026-05-24 | techa Streamlit deploy (LangGraph trading agents + TA-Lib, HF Spaces / Cloud Run) | 19.90 |
 | 014 | 2026-05-24 | Dispenser input v1 — QR/Streamlit form, Stripe, WhatsApp+Telegram delivery | 0.00 (internal infra) |
+| 015 | 2026-05-25 | Logo Generator — circle/square/minimal styles, configurable size + accent color | 0.00 (internal) |
 
 ---
 
