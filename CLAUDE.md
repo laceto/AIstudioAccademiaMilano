@@ -20,6 +20,22 @@ The branch `claude/digital-communities-guide-a5lBV` is legacy — do not use it.
 
 ---
 
+## Cross-Platform Hook Convention
+
+Hooks in `.claude/settings.json` run in both environments:
+- **Local Windows** (Luigi's machine, Git Bash) — `C:\Users\l_ace\Desktop\projects\...`
+- **Linux remote** (Claude Code on the web container) — `/home/user/<repo>`
+
+**Never hardcode absolute paths in hook commands.** Use:
+- `$CLAUDE_PROJECT_DIR` — repo root (set by Claude Code on both platforms)
+- `$HOME/.claude` — global Claude config dir (resolves correctly on Windows Git Bash and Linux)
+
+Hooks already run with CWD = `$CLAUDE_PROJECT_DIR`, so the leading `cd` is usually redundant; if kept for clarity, quote the variable: `cd "$CLAUDE_PROJECT_DIR"`.
+
+**Global propagation:** mirror this convention in `~/.claude/CLAUDE.md` (Luigi's global memory) so it applies to every future project, not just this repo. When bootstrapping a new project, audit `.claude/settings.json` for hardcoded `C:\` or `/Users/` paths before the first push.
+
+---
+
 ## 6-Agent Pipeline
 
 Every request flows through this sequence. Never skip a step.
