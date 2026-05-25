@@ -50,7 +50,7 @@ def _verify_twilio_signature(request: Request, body: bytes) -> bool:
     return hmac.compare_digest(expected, sig)
 
 
-@router.post("/webhook/whatsapp/reply", response_class=PlainTextResponse)
+@router.post("/webhook/whatsapp", response_class=PlainTextResponse)
 async def whatsapp_reply(
     request: Request,
     Body: str = Form(default=""),

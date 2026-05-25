@@ -4,29 +4,50 @@ gateway/api.py — Pablo (Platform Engineer)
 FastAPI application exposing the Input Gateway to the public internet.
 
 Endpoints:
-  POST /submit         Accept a pipeline request (JSON)
-  GET  /status/{id}   Poll job status
-  POST /webhook/whatsapp  Twilio WhatsApp webhook (Carlos)
-  GET  /health        Liveness probe
+  POST /submit              Accept a pipeline request (JSON)
+  GET  /status/{id}         Poll job status
+  POST /webhook/whatsapp    Twilio WhatsApp webhook (Carlos, HMAC-validated)
+  GET  /health              Liveness probe
 
 Run locally:
   uvicorn gateway.api:app --reload --port 8080
 
 Environment variables:
   GATEWAY_HMAC_SECRET   Shared HMAC secret for webhook authentication
+  GATEWAY_QUEUE_DIR     Queue directory path (default: gateway/queue)
+  ANTHROPIC_API_KEY     Required for the queue worker to process jobs
 """
 
+import asyncio
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, field_validator
 
-from gateway.middleware import check_rate_limit, verify_hmac
+from gateway.bot_whatsapp import router as whatsapp_router
+from gateway.middleware import check_rate_limit
 from gateway.pipeline_adapter import PipelineAdapter
 
-app = FastAPI(title="AI Studio Input Gateway", version="1.0.0")
-_adapter = PipelineAdapter()
+_queue_dir = os.environ.get("GATEWAY_QUEUE_DIR", "gateway/queue")
+_adapter = PipelineAdapter(queue_dir=_queue_dir)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from gateway.worker import QueueWorker
+    worker = QueueWorker(queue_dir=_queue_dir)
+    task = asyncio.create_task(worker.run())
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
+app = FastAPI(title="AI Studio Input Gateway", version="1.0.0", lifespan=lifespan)
+app.include_router(whatsapp_router)
 
 
 # ── Request / response models ────────────────────────────────────────────────
@@ -87,17 +108,3 @@ async def get_status(job_id: str):
     if job["status"] == "not_found":
         raise HTTPException(status_code=404, detail=f"Job {job_id!r} not found")
     return job
-
-
-@app.post("/webhook/whatsapp")
-async def whatsapp_webhook(request: Request):
-    """Twilio WhatsApp webhook — registered here so it runs behind Pablo's rate limiter."""
-    body_bytes = await request.body()
-    sig = request.headers.get("X-Twilio-Signature", "")
-
-    if not verify_hmac(body_bytes, sig, secret_env="TWILIO_AUTH_TOKEN"):
-        raise HTTPException(status_code=403, detail="Invalid Twilio signature")
-
-    # Actual message handling is in gateway/bot_whatsapp.py; this endpoint
-    # exists so the URL is registered and HMAC-validated before Carlos's code runs.
-    return PlainTextResponse("ok")

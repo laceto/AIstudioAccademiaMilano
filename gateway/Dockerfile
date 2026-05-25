@@ -7,8 +7,8 @@ RUN pip install --no-cache-dir -r gateway/requirements.txt
 
 COPY gateway/ ./gateway/
 
-RUN mkdir -p gateway/queue
-
+# Cloud Run filesystem is read-only except /tmp — use /tmp/queue for job files
+ENV GATEWAY_QUEUE_DIR=/tmp/queue
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8080
