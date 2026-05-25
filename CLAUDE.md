@@ -267,6 +267,28 @@ See `agents/research/README.md`.
 
 ---
 
+## Delivery ID Policy (Single Source of Truth)
+
+To avoid the kind of conflict that gave request 008 two different products, follow these five rules. They are mechanical, not bureaucratic.
+
+1. **The audit log filename is the canonical ID.** Format: `process/audit/YYYY-MM-DD_NNN_slug.md`. The `NNN` is the request ID. If there is no audit log, there is no ID.
+2. **IDs are globally unique and monotonic.** Next ID = max(NNN across **all** audit logs) + 1. Never reuse a number, even on a different date. Date is metadata, not a disambiguator.
+3. **Three artefacts must exist together before a delivery is "done":**
+   - `process/audit/YYYY-MM-DD_NNN_slug.md` (the canonical record)
+   - `deliverables/YYYY-MM-DD_NNN_slug/` (the code/output)
+   - A row in the Delivered Requests table above
+   Missing any one = incomplete delivery, not eligible for the table.
+4. **New pricing must land in three places in the same commit** as the audit log:
+   - `learning_flags.new_pricing` in the audit log
+   - `pricing` block in this file (CLAUDE.md)
+   - `pricing` dict in `config/global_settings.json`
+   `scripts/learning_loop.py` is supposed to propagate (2) and (3) from (1); if the hook didn't run (e.g. broken path on a different platform), do it by hand and verify before pushing.
+5. **Internal/free tooling without a numbered audit log** uses ID `—` in the table and lives at `deliverables/<slug>/` (no date/number prefix). It's still a row, just unnumbered — never squat on a real ID.
+
+**Pre-push checklist (10 seconds):** `ls process/audit/ | tail -3` → confirm your new audit log is there with the next free NNN, then `grep "| $NNN " CLAUDE.md` → confirm exactly one row.
+
+---
+
 ## Open Issues
 
 | ID | Priority | Title | Status |
