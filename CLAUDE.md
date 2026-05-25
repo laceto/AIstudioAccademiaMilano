@@ -38,6 +38,24 @@ Hooks already run with CWD = `$CLAUDE_PROJECT_DIR`, so the leading `cd` is usual
 
 ---
 
+## Agentic Framework Skills (Mandatory Gate)
+
+Whenever a task involves **LangGraph, LangChain, multi-agent systems, or agentic pipelines**, invoke the `/agentic-router` skill first — it routes to the correct framework skills. Then invoke whichever it recommends before writing any implementation code.
+
+| Trigger | Skills to load |
+|---------|---------------|
+| LangGraph graph / StateGraph / Send dispatch | `langgraph-fundamentals`, `langgraph-dynamic-parallelism` |
+| Subagents / nested agents | `langgraph-subagents`, `deep-agents-orchestration` |
+| Persistence / checkpointing | `langgraph-persistence` |
+| Human-in-the-loop | `langgraph-human-in-the-loop` |
+| LangChain chains / RAG | `langchain-fundamentals`, `langchain-rag` |
+| Memory across sessions | `deep-agents-memory` |
+| General multi-agent orchestration | `deep-agents-core` |
+
+This gate is automated: `scripts/agentic_skill_router.py` runs on every `UserPromptSubmit` and injects a reminder when agentic keywords are detected. Do not skip the skill invocation even when confident — skills encode the canonical conventions for this repo.
+
+---
+
 ## 6-Agent Pipeline
 
 Every request flows through this sequence. Never skip a step.

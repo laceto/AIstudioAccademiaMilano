@@ -20,6 +20,15 @@
             "command": "python -m scripts.rag.inject_context"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python scripts/agentic_skill_router.py",
+            "statusMessage": "Checking for agentic workflow..."
+          }
+        ]
       }
     ],
     "Stop": [
