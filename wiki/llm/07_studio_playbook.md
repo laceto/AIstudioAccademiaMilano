@@ -23,7 +23,9 @@ Local / no API key / HF?        → nomic-embed-text or BAAI/bge-large-en-v1.5
 | Chiara | Code generation | claude-sonnet-4-6 | Quality + speed balance |
 | Marco | Pricing check | claude-haiku-4-5 | Simple table lookup |
 | Francesca | Delivery actions | claude-haiku-4-5 | Mostly tool calls |
-| Luigi | Escalations | claude-opus-4-7 | High-stakes, needs best reasoning |
+| Luigi | Escalations | claude-opus-4-7 + extended thinking | High-stakes, needs best reasoning |
+| RAG/Synthesizer | Batch synthesis | claude-haiku-4-5 via kitai.batch | 50% batch discount, async |
+| LLMClassifier (ISS-012) | Free-text dispenser input | claude-haiku-4-5 | Sub-cent per request, escalate at confidence < 0.8 |
 
 ## RAG vs Full Context
 

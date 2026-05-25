@@ -49,6 +49,37 @@ python scripts/github_research/main.py --topics llm rag ai-agents --min-stars 20
 
 ---
 
+## RAG Team
+
+Semantic memory over the entire repo. Always-on via `UserPromptSubmit` hook — top-5 chunks injected before every Claude Code response. See `agents/rag/README.md`.
+
+| Agent | Role | Script |
+|-------|------|--------|
+| **RAG/Indexer** | Batch-embed all repo files via kitai → FAISS vectorstore | `scripts/rag/embed_repo.py` |
+| **RAG/Retriever** | Hybrid BM25 + FAISS retrieval, query translation | `scripts/rag/retrieve_repo.py` |
+| **RAG/Synthesizer** | Async batch synthesis via kitai.batch, Pydantic output | `scripts/rag/synthesize.py` |
+| **RAG/ContextInjector** | UserPromptSubmit hook — prepends top-5 chunks every call | `scripts/rag/inject_context.py` |
+
+```bash
+python -m scripts.rag.embed_repo          # build index
+python -m scripts.rag.retrieve_repo "query" --no-llm   # retrieval only
+python -m scripts.rag.retrieve_repo "query"            # full RAG
+```
+
+---
+
+## Input Gateway Team
+
+Three parallel channels that feed requests into the 6-agent pipeline. See `agents/input_gateway/README.md` and ISS-018/019/020.
+
+| Agent | Channel | Status |
+|-------|---------|--------|
+| **Pablo** | FastAPI `/submit` + HMAC middleware + `pipeline_adapter.py` | ISS-018 open |
+| **Sofia** | Streamlit UI wired to PipelineAdapter | ISS-019 open |
+| **Carlos** | Telegram bot + WhatsApp webhook → PipelineAdapter | ISS-020 open |
+
+---
+
 ## V2 Team (delivery improvement)
 
 Triggered when: Luigi asks, Stacy QA flags a shipped defect, Marco pricing adequacy < 0.85, or Reputation Guardian RU > 5.

@@ -41,7 +41,7 @@ User text  →  [Tokenizer]  →  [Embedding]  →  [N × Transformer Blocks]  �
 
 ---
 
-## Quick Reference: Model Costs (2025)
+## Quick Reference: Model Costs (2026)
 
 | Model | Input $/1M | Output $/1M | Best for |
 |-------|-----------|------------|----------|
@@ -49,9 +49,13 @@ User text  →  [Tokenizer]  →  [Embedding]  →  [N × Transformer Blocks]  �
 | `claude-sonnet-4-6` | $3.00 | $15.00 | Chiara, Gianni — generation + coding |
 | `claude-opus-4-7` | $15.00 | $75.00 | Luigi escalations, extended thinking |
 | `gpt-4o-mini` | $0.15 | $0.60 | OpenAI fallback, structured extraction |
+| `gpt-4o` | $2.50 | $10.00 | OpenAI heavy reasoning tasks |
 | `llama-3.3-70b` (Groq) | $0.59 | $0.79 | Ultra-low latency |
 | `text-embedding-3-small` | $0.02 | — | RAG embeddings (OpenAI) |
 | `nomic-embed-text` | free | — | RAG embeddings (local/HF) |
 
-*Maintained by: [wiki-curator agent](~/.claude/agents/wiki-curator.md)*  
-*Last updated: 2026-05-24*
+**Cache discount:** Anthropic prompt caching saves ~90% on repeated system prompts (input only). Always cache prompts >1024 tokens.  
+**Batch discount:** Anthropic and OpenAI batch APIs give 50% off for async jobs (use `kitai.batch` in this studio).
+
+*Maintained by: wiki-curator agent*  
+*Last updated: 2026-05-25*

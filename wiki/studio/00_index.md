@@ -18,6 +18,6 @@ One-founder AI enterprise. Every request produces a deployed output.
 | Domain | aistudiomilano.xyz |
 | GitHub | github.com/laceto/AIstudioAccademiaMilano |
 | Pipeline | 6-agent (Stacy → Gianni → Chiara → Stacy QA → Marco → Francesca) |
-| Requests delivered | 11 |
-| Templates available | 4 |
-| Agents active | 18 |
+| Requests delivered | 13 (+ 1 internal) |
+| Templates available | 5 |
+| Agents active | 22 |

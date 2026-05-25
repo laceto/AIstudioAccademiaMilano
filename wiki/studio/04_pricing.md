@@ -19,6 +19,8 @@ Marco enforces these prices. **Unknown products block delivery and escalate to L
 | `email_delivery` | €0.50 | Per send, Gmail API |
 | `rag_knowledge_base` | €29.90 | Embeddings + retrieval + Streamlit UI |
 | `calendar_integration` | €14.90 | Any calendar provider (Google/MS/Apple) |
+| `weather_dashboard` | €9.90 | Streamlit + OpenWeatherMap or similar |
+| `agent_deploy_streamlit` | €19.90 | LangGraph/LangChain agent deployed to Streamlit Cloud, HF Spaces, or Cloud Run |
 | `unknown_product` | **null** | **Blocks delivery — escalate to Luigi** |
 
 ---
@@ -55,3 +57,5 @@ Audit log records Luigi override
 |-----|--------|------|-------|
 | `premium_landing_page` | Luigi | 2026-05-24 | €29.90 — above DA floor of €24.90 |
 | `commercial_landing_page` | Luigi | 2026-05-24 | €45.90 — above APD ceiling of €39.90, DA veto overridden |
+| `weather_dashboard` | Luigi | 2026-05-24 | €9.90 — new SKU, same tier as static landing page |
+| `agent_deploy_streamlit` | Luigi | 2026-05-24 | €19.90 — same tier as chatbot app; covers TA-Lib, Docker, cloud infra complexity |
