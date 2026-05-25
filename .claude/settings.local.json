@@ -33,7 +33,12 @@
       "Bash(python -m scripts.rag.api_server)",
       "Bash(curl *)",
       "Bash(python *)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "mcp__claude_ai_Google_Calendar__create_event",
+      "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\deliverables\\\\2026-05-25_017_mindful-bot\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\deliverables\\\\2026-05-25_018_psy-assist\")",
+      "Bash(xargs grep -l \"User\\\\|contributor\\\\|author\")",
+      "Bash(GIT_EDITOR=true git rebase *)"
     ]
   }
 }

@@ -313,3 +313,4 @@ To avoid the kind of conflict that gave request 008 two different products, foll
 | ISS-019 | P1 | Sofia: `gateway/streamlit_app.py` wired to PipelineAdapter — Input Gateway Track 1 | OPEN |
 | ISS-020 | P1 | Carlos: `gateway/bot_telegram.py` + `bot_whatsapp.py` wired to PipelineAdapter — Input Gateway Track 2 | OPEN |
 | ISS-021 | P2 | Deploy Input Gateway: all three channels live (Streamlit Cloud + Cloud Run + Telegram/Twilio webhooks) | OPEN |
+| ISS-022 | P1 | Crash-recovery flush: periodic checkpoint write to project_state.md before each git commit (assign Gianni to scope) | OPEN |

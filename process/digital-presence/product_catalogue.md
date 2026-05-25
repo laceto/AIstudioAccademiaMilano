@@ -99,5 +99,7 @@ Pricing published at aistudiomilano.xyz.
 
 ---
 
+*Presenza con valore.*
+
 *AI Studio Accademia Milano — Milan, Italy*  
 *aistudiomilano.xyz*

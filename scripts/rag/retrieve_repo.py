@@ -47,6 +47,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_openai import ChatOpenAI
 from openai import OpenAI as _OpenAIClient
 
+from config.brand import b, fmt
 from kitai.query_translation import decompose_query, expand_query, step_back_query
 from kitai.retriever import (
     create_BM25retriever_from_docs,
@@ -320,7 +321,7 @@ def ask(
 
     context  = "\n\n".join(doc.page_content for doc in ordered)
     prompt   = (
-        "You are an expert on the AI Studio Accademia Milano repository.\n"
+        fmt(b("agent_personas.rag_expert_prompt")) + "\n"
         "Use the following repo excerpts to answer the question precisely.\n"
         "If the context does not contain enough information, say so.\n\n"
         f"Context:\n{context}\n\n"

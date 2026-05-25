@@ -18,6 +18,8 @@ import os
 import re
 from pathlib import Path
 
+from config.brand import b, fmt
+
 # Load .env from repo root so TELEGRAM_BOT_TOKEN is available without manual export
 _env_file = Path(__file__).resolve().parent.parent / ".env"
 if _env_file.exists():
@@ -52,8 +54,7 @@ def _normalize(text: str) -> str:
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        "Welcome to AI Studio Accademia Milano!\n\n"
-        "Tell me what you need and I'll get it built for you.\n\n"
+        fmt(b("ui_strings.telegram_welcome")) + "\n\n"
         "Examples:\n"
         "• I need a landing page for my restaurant\n"
         "• Create an invoice PDF for 500€\n"

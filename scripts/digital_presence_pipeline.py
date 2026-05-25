@@ -21,10 +21,13 @@ REPO_ROOT = Path(__file__).parent.parent
 D009 = REPO_ROOT / "deliverables" / "2026-05-23_009_linkedin-post-generator"
 D010 = REPO_ROOT / "deliverables" / "2026-05-23_010_profile-setup"
 
+sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(D009))
 sys.path.insert(0, str(D010))
 
-DEFAULT_REPO = "laceto/AIstudioAccademiaMilano"
+from config.brand import b
+
+DEFAULT_REPO = b("github.full_repo")
 OUTPUT_DIR = REPO_ROOT / "process" / "digital-presence"
 RUN_LOG = OUTPUT_DIR / "run_log.json"
 

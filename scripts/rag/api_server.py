@@ -33,6 +33,7 @@ ROOT = Path(__file__).parent.parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from config.brand import b, fmt
 from scripts.rag.retrieve_repo import (
     CHAT_MODEL,
     K_BM25,
@@ -59,7 +60,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
-    "You are an expert on the AI Studio Accademia Milano repository.\n"
+    fmt(b("agent_personas.rag_expert_prompt")) + "\n"
     "Use the following repo excerpts to answer the question precisely.\n"
     "If the context does not contain enough information, say so.\n\n"
 )

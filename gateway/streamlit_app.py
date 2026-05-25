@@ -18,13 +18,14 @@ from pathlib import Path
 import streamlit as st
 import yaml
 
+from config.brand import b
 from gateway.pipeline_adapter import PipelineAdapter
 
 # ── Page config ──────────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="AI Studio Accademia Milano",
-    page_icon="🎓",
+    page_title=b("studio.name"),
+    page_icon=b("identity.page_icon"),
     layout="centered",
 )
 
@@ -80,7 +81,7 @@ with st.sidebar:
 
 # ── Main form ────────────────────────────────────────────────────────────────
 
-st.title("AI Studio Accademia Milano")
+st.title(b("studio.name"))
 st.caption("Tell us what you need — we'll build it.")
 
 intents = load_intents()

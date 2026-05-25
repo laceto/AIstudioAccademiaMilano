@@ -1,3 +1,5 @@
+from config.brand import b
+
 _PROVIDERS = {
     "openai": {
         "import": "from openai import OpenAI",
@@ -43,8 +45,8 @@ class ChatbotTemplate:
             "import streamlit as st",
             c["import"],
             "",
-            'st.set_page_config(page_title="AI Studio Chatbot", layout="wide")',
-            'st.title("AI Studio Chatbot")',
+            f'st.set_page_config(page_title="{b("ui_strings.chatbot_template_title")}", layout="wide")',
+            f'st.title("{b("ui_strings.chatbot_template_title")}")',
             "",
             "with st.sidebar:",
             '    st.header("Settings")',

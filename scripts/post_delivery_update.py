@@ -20,6 +20,8 @@ from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from scripts.settings_io import load_settings, save_settings, settings_lock  # noqa: E402
 DELIVERABLES_DIR = ROOT / "deliverables"
 AUDIT_DIR = ROOT / "process" / "audit"
 SETTINGS_PATH = ROOT / "config" / "global_settings.json"
@@ -164,43 +166,41 @@ learning_flags:
 # ── global_settings.json ──────────────────────────────────────────────────────
 
 def update_global_settings(new_deliverables: list[dict]) -> None:
-    settings = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    with settings_lock(str(SETTINGS_PATH)):
+        settings = load_settings(str(SETTINGS_PATH))
 
-    # Collect all known deliverable IDs from ALL folders (not just new ones) to get total
-    all_deliverables = scan_deliverable_folders()
-    max_id = max(int(d["id"]) for d in all_deliverables) if all_deliverables else 0
+        all_deliverables = scan_deliverable_folders()
+        max_id = max(int(d["id"]) for d in all_deliverables) if all_deliverables else 0
 
-    settings["_meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
-    settings["_meta"]["last_request_id"] = str(max_id).zfill(3)
-    settings["_meta"]["total_requests_processed"] = max_id
-    settings["_meta"]["version"] = "1.6"
+        settings["_meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
+        settings["_meta"]["last_request_id"] = str(max_id).zfill(3)
+        settings["_meta"]["total_requests_processed"] = max_id
+        settings["_meta"]["version"] = "1.6"
 
-    # Add new skills
-    today = datetime.now().strftime("%Y-%m-%d")
-    for d in new_deliverables:
-        intent = _guess_intent(d["slug"])
-        skills = _guess_skills(d["slug"])
-        for skill in skills:
-            if skill not in settings["skills"]:
-                settings["skills"][skill] = {
-                    "intent_mappings": [intent],
-                    "agent": "Chiara",
-                    "first_seen": today,
-                    "times_used": 1,
-                    "success_rate": 1.0,
-                    "avg_duration_sec": 0,
-                }
-                print(f"[post_delivery] New skill registered: {skill}")
-            else:
-                settings["skills"][skill]["times_used"] = settings["skills"][skill].get("times_used", 0) + 1
+        today = datetime.now().strftime("%Y-%m-%d")
+        for d in new_deliverables:
+            intent = _guess_intent(d["slug"])
+            skills = _guess_skills(d["slug"])
+            for skill in skills:
+                if skill not in settings["skills"]:
+                    settings["skills"][skill] = {
+                        "intent_mappings": [intent],
+                        "agent": "Chiara",
+                        "first_seen": today,
+                        "times_used": 1,
+                        "success_rate": 1.0,
+                        "avg_duration_sec": 0,
+                    }
+                    print(f"[post_delivery] New skill registered: {skill}")
+                else:
+                    settings["skills"][skill]["times_used"] = settings["skills"][skill].get("times_used", 0) + 1
 
-        # Add intent to intent_to_skill_map if new
-        if intent not in settings.get("intent_to_skill_map", {}):
-            settings.setdefault("intent_to_skill_map", {})[intent] = skills
-            print(f"[post_delivery] New intent registered: {intent}")
+            if intent not in settings.get("intent_to_skill_map", {}):
+                settings.setdefault("intent_to_skill_map", {})[intent] = skills
+                print(f"[post_delivery] New intent registered: {intent}")
 
-    SETTINGS_PATH.write_text(json.dumps(settings, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"[post_delivery] global_settings.json updated (v{settings['_meta']['version']})")
+        save_settings(settings, str(SETTINGS_PATH))
+        print(f"[post_delivery] global_settings.json updated (v{settings['_meta']['version']})")
 
 
 # ── CLAUDE.md ─────────────────────────────────────────────────────────────────

@@ -11,8 +11,10 @@ Requires: OPENAI_API_KEY env var + a pre-built index (python -m scripts.embed_in
 import argparse
 import os
 
+from config.brand import b, fmt
+
 SYSTEM_PROMPT = (
-    "You are the AI Studio Accademia Milano assistant. "
+    fmt(b("agent_personas.rag_chat_prompt")) + " "
     "Answer questions using ONLY the provided context from the codebase and docs. "
     "Be concise and precise. "
     "If the answer is not in the context, say so explicitly."

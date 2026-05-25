@@ -25,6 +25,7 @@ import os
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 
+from config.brand import b, fmt
 from gateway.pipeline_adapter import PipelineAdapter
 
 logger = logging.getLogger(__name__)
@@ -91,10 +92,7 @@ async def whatsapp_reply(
     )
 
     if result["status"] == "error":
-        reply = (
-            "We can't process that yet — Luigi needs to approve this type of request. "
-            "Please try a different request."
-        )
+        reply = fmt(b("ui_strings.whatsapp_unknown_product")) + " Please try a different request."
     else:
         reply = (
             f"Got it! Your request is being processed.\n"

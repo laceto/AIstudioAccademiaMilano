@@ -1,0 +1,5 @@
+data/*.csv
+data/prompt_index.json
+.env
+__pycache__/
+*.pyc

@@ -37,6 +37,7 @@ if _env_file.exists():
 from fastapi import FastAPI, HTTPException, Request, status
 from pydantic import BaseModel, field_validator
 
+from config.brand import b
 from gateway.bot_whatsapp import router as whatsapp_router
 from gateway.middleware import check_rate_limit
 from gateway.pipeline_adapter import PipelineAdapter
@@ -59,7 +60,7 @@ async def lifespan(app: FastAPI):
     pass
 
 
-app = FastAPI(title="AI Studio Input Gateway", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title=b("studio.name") + " Input Gateway", version="1.0.0", lifespan=lifespan)
 app.include_router(whatsapp_router)
 
 
@@ -155,7 +156,7 @@ async def telegram_webhook(request: Request):
         await bot.send_message(
             chat_id=chat_id,
             text=(
-                "Benvenuto in AI Studio Accademia Milano!\n\n"
+                "Benvenuto in " + b("studio.name") + "!\n\n"
                 "Dimmi cosa ti serve e lo costruiamo per te.\n\n"
                 "Esempi:\n"
                 "• Ho bisogno di un sito per il mio ristorante\n"

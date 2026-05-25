@@ -22,7 +22,7 @@ Luigi (Founder Layer — final approvals)
 |---|---|---|
 | Technical | Technical Auditor | deployment failures, hallucinations, API outages |
 | Financial | Financial Controller | runaway costs, underpriced projects, unpaid invoices |
-| Operational | Operational Monitor | workflow failures, broken automations |
+| Operational | Operational Monitor | workflow failures, broken automations, concurrent session conflicts |
 | Reputational | Reputation Guardian | broken demos, low-quality outputs |
 | Legal/Compliance | Compliance Agent | data privacy, terms violations |
 

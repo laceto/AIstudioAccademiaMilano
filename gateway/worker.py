@@ -23,9 +23,11 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
+from config.brand import b, fmt
+
 logger = logging.getLogger(__name__)
 
-_STACY_SYSTEM = """You are Stacy, intake agent for AI Studio Accademia Milano.
+_STACY_SYSTEM = fmt(b("agent_personas.stacy_system_prompt_prefix")) + """
 Classify the request and return ONLY a valid JSON object — no prose, no markdown:
 {
   "intent": "<brief snake_case intent name>",

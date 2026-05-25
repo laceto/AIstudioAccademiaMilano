@@ -1,0 +1,50 @@
+{
+  "studio": {
+    "name": "AI Studio Accademia Milano",
+    "short_name": "AI Studio",
+    "tagline": "One-human AI enterprise — tangible deliverables, every time.",
+    "founder_name": "Luigi",
+    "founder_full_name": "Luigi Aceto",
+    "founder_approval_label": "Luigi",
+    "personal_email": "luigi.vinegar@gmail.com",
+    "business_email": "luigi@aistudiomilano.xyz",
+    "city": "Milan",
+    "country": "Italy",
+    "locale": "it-IT",
+    "currency_symbol": "€",
+    "currency_code": "EUR"
+  },
+  "identity": {
+    "page_icon": "🎓",
+    "primary_color": null,
+    "logo_path": null
+  },
+  "github": {
+    "owner": "laceto",
+    "repo": "AIstudioAccademiaMilano",
+    "full_repo": "laceto/AIstudioAccademiaMilano"
+  },
+  "domains": {
+    "primary": "aistudiomilano.xyz",
+    "upgrade_candidate": "aistudiomilano.ai"
+  },
+  "runtime": {
+    "project_root": "C:/Users/l_ace/Desktop/projects/AIstudioAccademiaMilano",
+    "claude_dir": "C:/Users/l_ace/.claude",
+    "claude_memory_slug": "C--Users-l-ace-Desktop-projects-AIstudioAccademiaMilano"
+  },
+  "agent_personas": {
+    "stacy_system_prompt_prefix": "You are Stacy, intake agent for {studio.name}.",
+    "rag_expert_prompt": "You are an expert on the {studio.name} repository.",
+    "rag_analyst_prompt": "You are an expert analyst for the {studio.name} repository.",
+    "rag_chat_prompt": "You are the {studio.name} assistant.",
+    "discord_chat_prompt": "{studio.name} is a one-human AI enterprise founded by {studio.founder_full_name} in {studio.city}."
+  },
+  "ui_strings": {
+    "telegram_welcome": "Welcome to {studio.name}!\n\nTell me what you need and I'll get it built for you.",
+    "whatsapp_unknown_product": "We can't process that yet — {studio.founder_name} needs to approve this type of request.",
+    "gateway_title": "{studio.name}",
+    "chatbot_template_title": "{studio.short_name} Chatbot",
+    "approval_pending_message": "Awaiting {studio.founder_name} approval before commit."
+  }
+}

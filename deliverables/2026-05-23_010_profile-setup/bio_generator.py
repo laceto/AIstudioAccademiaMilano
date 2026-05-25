@@ -64,6 +64,7 @@ Asset types: AI chatbots, RAG knowledge bases, automation pipelines, data dashbo
 Implementation: no stack limitations — we use AI to build whatever the project requires.
 Positioning: we are the first studio in this space. We were shipping working AI products before the market knew it needed them.
 Philosophy: implementation over hype. Every engagement ends with deployed, working software.
+Tagline: Presenza con valore.
 """
 
 _SYSTEM = f"""You write platform bios for AI Studio Accademia Milano.

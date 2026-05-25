@@ -1,0 +1,50 @@
+{
+  "studio": {
+    "name": "YOUR_STUDIO_NAME",
+    "short_name": "YOUR_SHORT_NAME",
+    "tagline": "YOUR_TAGLINE",
+    "founder_name": "YOUR_FIRST_NAME",
+    "founder_full_name": "YOUR_FULL_NAME",
+    "founder_approval_label": "YOUR_FIRST_NAME",
+    "personal_email": "YOUR_PERSONAL_EMAIL",
+    "business_email": "YOUR_BUSINESS_EMAIL",
+    "city": "YOUR_CITY",
+    "country": "YOUR_COUNTRY",
+    "locale": "YOUR_LOCALE",
+    "currency_symbol": "YOUR_CURRENCY_SYMBOL",
+    "currency_code": "YOUR_CURRENCY_CODE"
+  },
+  "identity": {
+    "page_icon": "YOUR_PAGE_ICON_EMOJI",
+    "primary_color": null,
+    "logo_path": null
+  },
+  "github": {
+    "owner": "YOUR_GITHUB_USERNAME",
+    "repo": "YOUR_REPO_NAME",
+    "full_repo": "YOUR_GITHUB_USERNAME/YOUR_REPO_NAME"
+  },
+  "domains": {
+    "primary": "YOUR_PRIMARY_DOMAIN",
+    "upgrade_candidate": "YOUR_UPGRADE_DOMAIN"
+  },
+  "runtime": {
+    "project_root": "YOUR_PROJECT_ROOT_PATH",
+    "claude_dir": "YOUR_CLAUDE_DIR_PATH",
+    "claude_memory_slug": "YOUR_CLAUDE_MEMORY_SLUG"
+  },
+  "agent_personas": {
+    "stacy_system_prompt_prefix": "You are Stacy, intake agent for {studio.name}.",
+    "rag_expert_prompt": "You are an expert on the {studio.name} repository.",
+    "rag_analyst_prompt": "You are an expert analyst for the {studio.name} repository.",
+    "rag_chat_prompt": "You are the {studio.name} assistant.",
+    "discord_chat_prompt": "{studio.name} is a one-human AI enterprise founded by {studio.founder_full_name} in {studio.city}."
+  },
+  "ui_strings": {
+    "telegram_welcome": "Welcome to {studio.name}!\n\nTell me what you need and I'll get it built for you.",
+    "whatsapp_unknown_product": "We can't process that yet — {studio.founder_name} needs to approve this type of request.",
+    "gateway_title": "{studio.name}",
+    "chatbot_template_title": "{studio.short_name} Chatbot",
+    "approval_pending_message": "Awaiting {studio.founder_name} approval before commit."
+  }
+}

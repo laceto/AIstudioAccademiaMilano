@@ -10,14 +10,20 @@ are materialized as SKILL.md files in ~/.claude/skills/.
 """
 
 import argparse
-import json
+import os
 import re
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
 
 import yaml  # pip install pyyaml
+
+from config.brand import b, fmt
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from scripts.settings_io import load_settings, save_settings, settings_lock  # noqa: E402
 
 
 # ── Tiered thresholds ────────────────────────────────────────────────────────
@@ -85,46 +91,6 @@ def validate_advisory_output(text: str, min_words: int = 0) -> bool:
     return True
 
 
-# ── Settings helpers ─────────────────────────────────────────────────────────
-
-# Mojibake patterns that corrupt JSON parsing, applied in order.
-# Rule: fix garbled em-dash variants BEFORE replacing curly quotes, because
-# garbled em-dashes can contain curly-quote bytes as part of the garbage.
-_MOJIBAKE_BYTES = [
-    # â€" where the trailing byte was already replaced with ASCII "
-    (b"\xc3\xa2\xe2\x82\xac\"", b" \xe2\x80\x94 "),
-    # â€" followed by UTF-8 left/right curly quote
-    (b"\xc3\xa2\xe2\x82\xac\xe2\x80\x9c", b" \xe2\x80\x94 "),
-    (b"\xc3\xa2\xe2\x82\xac\xe2\x80\x9d", b" \xe2\x80\x94 "),
-    # â€" followed by cp1252 right-quote byte 0x94
-    (b"\xc3\xa2\xe2\x82\xac\x94", b" \xe2\x80\x94 "),
-    # Curly/smart quotes used as JSON structural delimiters
-    (b"\xe2\x80\x9c", b"\""),  # U+201C left double quotation mark
-    (b"\xe2\x80\x9d", b"\""),  # U+201D right double quotation mark
-]
-
-
-def _sanitize_json_bytes(raw: bytes) -> bytes:
-    for bad, good in _MOJIBAKE_BYTES:
-        raw = raw.replace(bad, good)
-    return raw
-
-
-def load_settings(settings_path: str) -> dict:
-    raw = Path(settings_path).read_bytes()
-    try:
-        return json.loads(raw.decode("utf-8"))
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        fixed = _sanitize_json_bytes(raw)
-        return json.loads(fixed.decode("utf-8", errors="replace"))
-
-
-def save_settings(settings: dict, settings_path: str) -> None:
-    with open(settings_path, "w", encoding="utf-8") as f:
-        json.dump(settings, f, indent=2, ensure_ascii=False)
-    print(f"[learning_loop] Settings saved to {settings_path}")
-
-
 _AUDIT_LOG_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_\d+_.+\.md$")
 
 
@@ -137,7 +103,10 @@ def latest_audit_log(audit_dir: str) -> Path:
 
 
 def parse_audit_log(log_path: Path) -> dict:
-    text = log_path.read_text(encoding="utf-8")
+    try:
+        text = log_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        text = log_path.read_text(encoding="utf-8", errors="replace")
     # fenced code block: ```yaml ... ```
     match = re.search(r"```yaml\n(.+?)```", text, re.DOTALL)
     if match:
@@ -235,7 +204,7 @@ def check_pattern_hooks(settings: dict, audit: dict) -> int:
                     "description": (
                         f"Auto-promoted: pre-load {skill} context after {threshold} uses"
                     ),
-                    "command": f"python3 scripts/preload_{skill}.py 2>&1",
+                    "command": f'"{sys.executable}" scripts/preload_{skill}.py 2>&1',
                     "added": datetime.now().strftime("%Y-%m-%d"),
                     "promoted_from_pattern": True,
                     "times_fired": 0,
@@ -259,7 +228,7 @@ def _generate_skill_md(skill_name: str, skill_data: dict) -> str:
     intent_str = ", ".join(f"`{i}`" for i in intents) if intents else "general purpose"
 
     description = (
-        f"AI Studio Accademia Milano skill: {skill_name.replace('_', ' ')}. "
+        f"{b('studio.name')} skill: {skill_name.replace('_', ' ')}. "
         f"Owner: {agent}. Intents: {', '.join(intents) or 'general'}. "
         f"Auto-promoted after {times_used} successful uses."
     )
@@ -438,15 +407,13 @@ def update_studio_wiki(audit: dict, settings: dict) -> int:
     return 1
 
 
-def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
-    files = [settings_path, ".claude/settings.json", "wiki/studio/01_deliverables.md"]
 def update_requirements_registry(registry_path: str, audit: dict) -> int:
     """Add new product types from audit learning_flags to requirements_registry.yaml."""
     changes = 0
     new_types = audit.get("learning_flags", {}).get("new_product_types", {})
     if not new_types:
         return 0
-    with open(registry_path) as f:
+    with open(registry_path, encoding="utf-8") as f:
         registry = yaml.safe_load(f)
     new_pricing = audit.get("learning_flags", {}).get("new_pricing", {})
     for product_type, spec in new_types.items():
@@ -457,7 +424,7 @@ def update_requirements_registry(registry_path: str, audit: dict) -> int:
             print(f"[learning_loop] New product type in requirements registry: {product_type}")
             changes += 1
     if changes:
-        with open(registry_path, "w") as f:
+        with open(registry_path, "w", encoding="utf-8") as f:
             yaml.dump(registry, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
     return changes
 
@@ -468,7 +435,7 @@ def update_intent_registry(intent_registry_path: str, audit: dict) -> int:
     new_intents = audit.get("learning_flags", {}).get("new_intents", [])
     if not new_intents:
         return 0
-    with open(intent_registry_path) as f:
+    with open(intent_registry_path, encoding="utf-8") as f:
         registry = yaml.safe_load(f) or {}
     for intent in new_intents:
         if intent not in registry:
@@ -479,42 +446,53 @@ def update_intent_registry(intent_registry_path: str, audit: dict) -> int:
             print(f"[learning_loop] New intent registered: {intent}")
             changes += 1
     if changes:
-        with open(intent_registry_path, "w") as f:
+        with open(intent_registry_path, "w", encoding="utf-8") as f:
             yaml.dump(registry, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
     return changes
 
 
 def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
+    result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True, text=True, check=False,
+    )
+    branch = (result.stdout or "").strip()
+    if not branch or branch in ("main", "master", "HEAD"):
+        print(f"[learning_loop] WARNING: on branch '{branch or 'unknown'}' — skipping auto-commit to protect main/detached HEAD.")
+        return
+
     files = [
         settings_path,
         ".claude/settings.json",
         "config/requirements_registry.yaml",
         "process/intent_registry.yaml",
-        "CLAUDE.md",
     ]
     for f in files:
         subprocess.run(["git", "add", f], check=False)
     subprocess.run(["git", "add", audit_dir], check=False)
-    # Don't commit a no-op: if nothing is actually staged-different, bail.
-    # `git diff --cached --quiet` exits 0 when there's no diff, 1 when there is.
     diff = subprocess.run(["git", "diff", "--cached", "--quiet"], check=False)
     if diff.returncode == 0:
         print("[learning_loop] No staged changes — skipping commit.")
         return
     msg = f"learn: update global settings from request {request_id}"
     subprocess.run(["git", "commit", "-m", msg], check=False)
-    subprocess.run(["git", "push"], check=False)
-    print(f"[learning_loop] Committed: {msg}")
+    push = subprocess.run(["git", "push"], capture_output=True, text=True, check=False)
+    if push.returncode != 0:
+        print(f"[learning_loop] WARNING: git push failed — commit is local only.\n{push.stderr.strip()}")
+    else:
+        print(f"[learning_loop] Committed and pushed: {msg}")
 
 
 def save_to_claude_memory(settings: dict, audit, claude_dir: str) -> None:
     """Write live project state to Claude Code memory for future session context."""
-    memory_dir = (
-        Path(claude_dir)
-        / "projects"
-        / "C--Users-l-ace-Desktop-projects-AIstudioAccademiaMilano"
-        / "memory"
-    )
+    slug = (
+        str(Path.cwd())
+        .replace("\\", "-")
+        .replace("/", "-")
+        .replace(":", "-")
+        .replace("_", "-")
+    ).lstrip("-")
+    memory_dir = Path(claude_dir) / "projects" / slug / "memory"
     memory_dir.mkdir(parents=True, exist_ok=True)
 
     meta = settings.get("_meta", {})
@@ -587,45 +565,50 @@ def main():
         print("[learning_loop] No audit logs found. Nothing to learn.")
         return
 
-    settings = load_settings(args.settings)
-
-    # Idempotency: don't reprocess the same audit log on every Stop event.
-    # Several mutators (update_agent_stats avg, check_pattern_hooks counters)
-    # touch settings without bumping the `changes` counter, which made every
-    # rerun look like new work and produced duplicate `learn:` commits.
-    last_processed = settings.get("_meta", {}).get("last_processed_audit_log")
-    if last_processed == log_path.name and not args.force:
-        print(
-            f"[learning_loop] {log_path.name} already processed "
-            f"(set _meta.last_processed_audit_log). Pass --force to override."
-        )
-        return
-
     print(f"[learning_loop] Processing: {log_path.name}")
     audit = parse_audit_log(log_path)
 
-    risk_score = audit.get("learning_flags", {}).get("risk_score", 1)
-    skills_dir = Path.home() / ".claude" / "skills"
-    changes = 0
-    changes += update_skills(settings, audit)
-    changes += update_mcp(settings, audit)
-    changes += update_agent_stats(settings, audit)
-    changes += check_pattern_hooks(settings, audit)
-    changes += promote_skills_to_files(settings, skills_dir)
-    changes += check_template_candidates(settings)
-    changes += update_studio_wiki(audit, settings)
-    changes += update_requirements_registry(args.requirements_registry, audit)
-    changes += update_intent_registry(args.intent_registry, audit)
+    with settings_lock(args.settings):
+        settings = load_settings(args.settings)
 
-    settings["_meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
-    settings["_meta"]["last_request_id"] = audit["request_id"]
-    settings["_meta"]["last_processed_audit_log"] = log_path.name
-    settings["_meta"]["total_requests_processed"] = (
-        settings["_meta"].get("total_requests_processed", 0) + 1
-    )
+        # Idempotency: guard by request_id (not filename) so slug renames don't re-trigger.
+        # Migration shim: old format was a filename; strip to bare request_id on first run.
+        last_processed_raw = settings.get("_meta", {}).get("last_processed_audit_log", "")
+        last_processed = last_processed_raw.split("_")[2].split(".")[0] if "_" in str(last_processed_raw) else last_processed_raw
+        if last_processed == audit.get("request_id") and not args.force:
+            print(
+                f"[learning_loop] request {audit['request_id']} already processed. "
+                f"Pass --force to override."
+            )
+            if args.claude_dir:
+                try:
+                    save_to_claude_memory(settings, audit, args.claude_dir)
+                except Exception as exc:
+                    print(f"[learning_loop] Memory save failed (non-fatal): {exc}")
+            return
 
-    save_settings(settings, args.settings)
-    print(f"[learning_loop] {changes} changes. Risk score: {risk_score}")
+        risk_score = audit.get("learning_flags", {}).get("risk_score", 1)
+        skills_dir = Path.home() / ".claude" / "skills"
+        changes = 0
+        changes += update_skills(settings, audit)
+        changes += update_mcp(settings, audit)
+        changes += update_agent_stats(settings, audit)
+        changes += check_pattern_hooks(settings, audit)
+        changes += promote_skills_to_files(settings, skills_dir)
+        changes += check_template_candidates(settings)
+        changes += update_studio_wiki(audit, settings)
+        changes += update_requirements_registry(args.requirements_registry, audit)
+        changes += update_intent_registry(args.intent_registry, audit)
+
+        settings["_meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
+        settings["_meta"]["last_request_id"] = audit["request_id"]
+        settings["_meta"]["last_processed_audit_log"] = audit["request_id"]
+        settings["_meta"]["total_requests_processed"] = (
+            settings["_meta"].get("total_requests_processed", 0) + 1
+        )
+
+        save_settings(settings, args.settings)
+        print(f"[learning_loop] {changes} changes. Risk score: {risk_score}")
 
     if args.claude_dir:
         try:
@@ -640,7 +623,7 @@ def main():
     else:
         print(
             f"[learning_loop] Risk score {risk_score} >= 3. "
-            "Awaiting Luigi approval before commit."
+            + fmt(b("ui_strings.approval_pending_message"))
         )
 
 

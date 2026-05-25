@@ -31,6 +31,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
+from config.brand import b, fmt
 from kitai.batch import (
     download_batch_results,
     poll_until_complete,
@@ -93,12 +94,12 @@ def _strict_in_place(node: dict) -> None:
 
 STRICT_SCHEMA = _make_strict(RepoAnswer.model_json_schema())
 
-SYSTEM_PROMPT = """\
-You are an expert analyst for the AI Studio Accademia Milano repository.
-Answer the question using ONLY the provided context excerpts from the repo.
-If the context is insufficient, reflect that in the confidence field.
-Return ONLY valid JSON matching the schema. No extra text outside JSON.
-"""
+SYSTEM_PROMPT = (
+    fmt(b("agent_personas.rag_analyst_prompt")) + "\n"
+    "Answer the question using ONLY the provided context excerpts from the repo.\n"
+    "If the context is insufficient, reflect that in the confidence field.\n"
+    "Return ONLY valid JSON matching the schema. No extra text outside JSON.\n"
+)
 
 
 # ── Task building ─────────────────────────────────────────────────────────────

@@ -73,7 +73,7 @@ def fake_repo(tmp_path: Path):
     audit_dir = tmp_path / "audit"
     audit_dir.mkdir()
     audit_path = audit_dir / "2026-05-24_999_test.md"
-    audit_path.write_text(MINIMAL_AUDIT_MD)
+    audit_path.write_text(MINIMAL_AUDIT_MD, encoding="utf-8")
 
     settings_path = tmp_path / "global_settings.json"
     settings_path.write_text(json.dumps(MINIMAL_SETTINGS, indent=2))
@@ -117,14 +117,14 @@ def test_first_run_processes_and_marks_audit_log(fake_repo):
     """Fresh settings → process → marker written."""
     _run_main(fake_repo)
     settings = json.loads(Path(fake_repo["settings_path"]).read_text())
-    assert settings["_meta"].get("last_processed_audit_log") == "2026-05-24_999_test.md"
+    assert settings["_meta"].get("last_processed_audit_log") == "999"
 
 
 def test_second_run_with_same_audit_log_is_a_noop(fake_repo):
     """Marker matches latest log → loop exits early, no mutation."""
     # Seed the marker so we look "already processed"
     settings = json.loads(Path(fake_repo["settings_path"]).read_text())
-    settings["_meta"]["last_processed_audit_log"] = "2026-05-24_999_test.md"
+    settings["_meta"]["last_processed_audit_log"] = "999"
     Path(fake_repo["settings_path"]).write_text(json.dumps(settings, indent=2))
     before_mtime = Path(fake_repo["settings_path"]).stat().st_mtime_ns
 
@@ -142,9 +142,9 @@ def test_second_run_with_same_audit_log_is_a_noop(fake_repo):
 def test_force_flag_reprocesses_even_if_marker_matches(fake_repo):
     """--force overrides the idempotency guard."""
     settings = json.loads(Path(fake_repo["settings_path"]).read_text())
-    settings["_meta"]["last_processed_audit_log"] = "2026-05-24_999_test.md"
+    settings["_meta"]["last_processed_audit_log"] = "999"
     settings["_meta"]["total_requests_processed"] = 5
-    Path(fake_repo["settings_path"]).write_text(json.dumps(settings, indent=2))
+    Path(fake_repo["settings_path"]).write_text(json.dumps(settings, indent=2), encoding="utf-8")
 
     _run_main(fake_repo, argv_extra=["--force"])
 
