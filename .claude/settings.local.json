@@ -42,7 +42,8 @@
       "Bash(gh auth *)",
       "Bash(gh repo *)",
       "Bash(python3 -c \"import sys,json; issues=json.load\\(sys.stdin\\); [print\\(f'#{i[\\\\\"number\\\\\"]} {i[\\\\\"title\\\\\"]}'\\) for i in issues]\")",
-      "Bash(python3 -c \"import json,sys; issues=json.load\\(sys.stdin\\); [print\\(f'#{i[\\\\\"number\\\\\"]}: {i[\\\\\"title\\\\\"]}'\\) for i in issues]\")"
+      "Bash(python3 -c \"import json,sys; issues=json.load\\(sys.stdin\\); [print\\(f'#{i[\\\\\"number\\\\\"]}: {i[\\\\\"title\\\\\"]}'\\) for i in issues]\")",
+      "Skill(update-config)"
     ]
   }
 }
