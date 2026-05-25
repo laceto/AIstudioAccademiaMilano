@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"C:/Users/l_ace/Desktop/projects/AIstudioAccademiaMilano\" && python scripts/learning_loop.py --event session_end --audit-dir process/audit --settings config/global_settings.json --claude-dir C:\\Users\\l_ace\\.claude"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && python scripts/learning_loop.py --event session_end --audit-dir process/audit --settings config/global_settings.json --claude-dir \"$HOME/.claude\""
           }
         ]
       }
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"C:/Users/l_ace/Desktop/projects/AIstudioAccademiaMilano\" && python scripts/learning_loop.py --event delivery_complete --audit-dir process/audit --settings config/global_settings.json --claude-dir C:\\Users\\l_ace\\.claude"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && python scripts/learning_loop.py --event delivery_complete --audit-dir process/audit --settings config/global_settings.json --claude-dir \"$HOME/.claude\""
           }
         ]
       }
