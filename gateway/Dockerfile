@@ -12,5 +12,3 @@ ENV GATEWAY_QUEUE_DIR=/tmp/queue
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8080
-
-CMD ["uvicorn", "gateway.api:app", "--host", "0.0.0.0", "--port", "8080"]
