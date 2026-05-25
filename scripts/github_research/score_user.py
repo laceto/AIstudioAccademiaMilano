@@ -11,7 +11,7 @@ Reachability gate: if reachability < 20, cap tier at B regardless of total.
 """
 
 from dataclasses import dataclass
-from .search_users import UserProfile
+from search_users import UserProfile
 
 TIER_THRESHOLDS = {"S": 80, "A": 60, "B": 40}  # mirrors evaluate_repo.py
 

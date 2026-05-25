@@ -268,6 +268,10 @@ See `agents/research/README.md`.
 | —   | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) — internal tooling, no audit log assigned | 0.00 |
 | 014 | 2026-05-24 | Dispenser input v1 — QR/Streamlit form, Stripe, WhatsApp+Telegram delivery | 0.00 (internal infra) |
 | 015 | 2026-05-25 | Logo Generator — circle/square/minimal styles, configurable size + accent color | 0.00 (internal) |
+| 016 | 2026-05-25 | AI Studio LangGraph assistant — multi-agent graph with parallel department nodes | 0.00 (internal) |
+| 017 | 2026-05-25 | Lawyer LangGraph + Mindful Bot — white-label legal assistant + psychology entry product | 0.00 (internal) |
+| 018 | 2026-05-25 | SOAP Note Generator — psychology vertical Streamlit app (Diletta pilot) | 0.00 (internal) |
+| 019 | 2026-05-25 | Studio Digital Twin — LangGraph parallel simulation of the 6-agent pipeline | 0.00 (internal) |
 
 ---
 
