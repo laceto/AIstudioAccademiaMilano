@@ -1,0 +1,33 @@
+{
+  "counts": {
+    "commit": 0,
+    "pr_open": 9,
+    "pr_close": 0,
+    "pr_merge": 0,
+    "issue_open": 14,
+    "issue_close": 4,
+    "issue_comment": 4,
+    "review": 0,
+    "branch_create": 7,
+    "branch_delete": 1,
+    "release": 0,
+    "deploy": 0
+  },
+  "actors": {},
+  "date": "2026-05-25",
+  "event_count_raw": 92,
+  "delta": {
+    "commit": 0,
+    "pr_open": 9,
+    "pr_close": 0,
+    "pr_merge": 0,
+    "issue_open": 14,
+    "issue_close": 4,
+    "issue_comment": 4,
+    "review": 0,
+    "branch_create": 7,
+    "branch_delete": 1,
+    "release": 0,
+    "deploy": 0
+  }
+}

@@ -63,6 +63,7 @@ INCLUDE_GLOBS = [
     "tests/**/*.py",
     "wiki/**/*.md",
     "wiki/**/*.py",
+    "process/deltas/**/*.json",
     "CLAUDE.md",
     "README.md",
 ]

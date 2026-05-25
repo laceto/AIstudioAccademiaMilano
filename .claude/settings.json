@@ -28,6 +28,10 @@
           {
             "type": "command",
             "command": "cd \"$CLAUDE_PROJECT_DIR\" && python scripts/learning_loop.py --event session_end --audit-dir process/audit --settings config/global_settings.json --claude-dir \"$HOME/.claude\""
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && python scripts/delta_collector.py --date today --audit-dir process/audit --output process/deltas 2>&1 || true"
           }
         ]
       }
@@ -63,6 +67,8 @@
       "Bash(python -m scripts.rag.retrieve_repo:*)",
       "Bash(python -m scripts.rag.synthesize:*)",
       "Bash(python scripts/learning_loop.py:*)",
+      "Bash(python -m scripts.github_delta.collect:*)",
+      "Bash(python scripts/sync_issues.py:*)",
       "Bash(python scripts/post_delivery_update.py:*)",
       "Bash(python scripts/check_oauth.py:*)",
       "Bash(git add process/audit/*)",
