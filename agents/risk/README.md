@@ -34,6 +34,18 @@ Luigi (Founder Layer — final approvals)
 - [`reputation_guardian.md`](reputation_guardian.md)
 - [`compliance_agent.md`](compliance_agent.md)
 
+## Mistake Log Obligation
+
+All five risk agents are **primary contributors** to `process/mistake_log.md`. Risk agents are positioned to observe failures before anyone else — that makes logging non-optional.
+
+- **Technical Auditor**: log every security flag, broken deploy, or architectural divergence that caused rework.
+- **Financial Controller**: log every pricing block, runaway cost event, or invoice error.
+- **Operational Monitor**: log every pipeline failure, missed cron, concurrent session conflict, or hook regression.
+- **Reputation Guardian**: log every quality flag that reached a client or broke a demo.
+- **Compliance Agent**: log every ToS violation found or data handling gap discovered.
+
+Entries go to `process/mistake_log.md` immediately upon discovery.
+
 ## Architecture Reference
 
 [`framework/ai_risk_management_team.md`](../../framework/ai_risk_management_team.md)
