@@ -5,9 +5,13 @@
 !.env.example
 credentials.json
 token.json
+google_token.json
 secrets.toml
 *.pem
 *.key
+
+# Streamlit secrets
+.streamlit/secrets.toml
 
 # Python
 __pycache__/
@@ -31,6 +35,8 @@ data/index/
 *.faiss
 *.pkl
 data/*.npy
+data/raw/
+process/research/
 
 # Logs
 logs/
@@ -46,9 +52,6 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
-
-# Streamlit
-.streamlit/secrets.toml
 
 # IDE
 .vscode/

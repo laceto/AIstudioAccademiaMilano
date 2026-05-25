@@ -1,12 +1,11 @@
 """
-embed_index.py — Walk the repo, chunk every file, generate embeddings, save index.
+embed_index.py — Thin wrapper. Delegates to scripts.rag.embed_repo.
 
-Usage:
-    python -m scripts.embed_index [--provider local|openai] [--model MODEL]
+The RAG Indexer agent (scripts/rag/embed_repo.py) is now the canonical
+implementation: kitai batch API, FAISS vectorstore, incremental registry.
 
-Providers:
-    local   — sentence-transformers all-MiniLM-L6-v2  (no API key, runs offline)
-    openai  — text-embedding-3-small                  (requires OPENAI_API_KEY)
+Usage (unchanged — backward compatible):
+    python -m scripts.embed_index [--provider local|openai]
 """
 
 import argparse

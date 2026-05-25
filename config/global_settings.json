@@ -757,6 +757,41 @@
       "avg_latency_sec": 4,
       "times_used": 1,
       "failure_rate": 0.0
+    },
+    "alpaca_paper_trading_api": {
+      "auth": "api_key",
+      "write_access": true,
+      "avg_latency_sec": 3,
+      "times_used": 1,
+      "failure_rate": 0.0
+    },
+    "anthropic_messages_api": {
+      "auth": "api_key",
+      "write_access": false,
+      "avg_latency_sec": 2,
+      "times_used": 2,
+      "failure_rate": 0.0
+    },
+    "twitter_api_v2": {
+      "auth": "oauth1a",
+      "write_access": true,
+      "avg_latency_sec": 2,
+      "times_used": 1,
+      "failure_rate": 0.0
+    },
+    "discord_webhook": {
+      "auth": "webhook_url",
+      "write_access": true,
+      "avg_latency_sec": 1,
+      "times_used": 1,
+      "failure_rate": 0.0
+    },
+    "reddit_praw": {
+      "auth": "oauth2",
+      "write_access": true,
+      "avg_latency_sec": 2,
+      "times_used": 1,
+      "failure_rate": 0.0
     }
   },
   "pattern_thresholds": {

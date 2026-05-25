@@ -9,6 +9,7 @@
       "Bash(gh run *)",
       "Bash(gh issue *)",
       "Bash(gh label *)",
+      "Bash(gh api *)",
       "Bash(python -m pytest tests/test_gateway_pablo.py tests/test_gateway_sofia.py tests/test_gateway_carlos.py -v)",
       "Bash(pip install *)",
       "Bash(python -c \"import scripts.learning_loop\")"

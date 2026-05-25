@@ -1,0 +1,90 @@
+name: Digital Presence Pipeline
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'   # every Monday 09:00 UTC — weekly content drop
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Activity look-back window (days)'
+        required: false
+        default: '7'
+        type: string
+      platforms:
+        description: 'Auto-publish targets (comma-separated: telegram,twitter_x,discord)'
+        required: false
+        default: 'telegram'
+        type: string
+      dry_run:
+        description: 'Dry run — generate post but skip publishing'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # commit generated post back to repo
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install anthropic requests tweepy pyperclip
+
+      - name: Resolve inputs
+        id: cfg
+        run: |
+          DAYS="${{ github.event.inputs.days || '7' }}"
+          PLATFORMS="${{ github.event.inputs.platforms || 'telegram' }}"
+          DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
+          echo "days=$DAYS"         >> "$GITHUB_OUTPUT"
+          echo "platforms=$PLATFORMS" >> "$GITHUB_OUTPUT"
+          echo "dry_run=$DRY_RUN"   >> "$GITHUB_OUTPUT"
+
+      - name: Run Digital Presence Pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          DRY_FLAG=""
+          if [ "${{ steps.cfg.outputs.dry_run }}" = "true" ]; then
+            DRY_FLAG="--dry-run"
+          fi
+          python scripts/digital_presence_pipeline.py \
+            --repo laceto/AIstudioAccademiaMilano \
+            --days ${{ steps.cfg.outputs.days }} \
+            --platforms ${{ steps.cfg.outputs.platforms }} \
+            $DRY_FLAG
+
+      - name: Commit generated post to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add process/digital-presence/
+          git diff --staged --quiet || git commit -m "content: weekly LinkedIn post $(date +%Y-%m-%d) [skip ci]"
+          git push
+
+      - name: Upload LinkedIn post as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linkedin-post-${{ github.run_number }}
+          path: process/digital-presence/*_linkedin_post.txt
+          retention-days: 30
