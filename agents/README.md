@@ -4,6 +4,22 @@ This folder contains the profiles and roles for all AI agents operating within A
 
 ---
 
+## Standing Protocol — Mistake Log (All Agents)
+
+**Every agent, staff member, and team is required to update `process/mistake_log.md` the moment a mistake is discovered.**
+
+- Do not wait for a retrospective or a review cycle.
+- Do not wait for Luigi to ask.
+- Log it immediately using the template at the top of the file.
+- One entry per incident. Newest at the top.
+- The log covers systems and processes — not people.
+
+Trigger: any time you observe an unexpected outcome, a broken assumption, a near-miss, or a rule that didn't exist when it should have — that is a mistake worth logging.
+
+See `process/mistake_log.md`.
+
+---
+
 ## Staff Agents — Delivery Pipeline
 
 Every user request flows through these six agents in sequence. No step is skipped.

@@ -38,7 +38,9 @@
       "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\deliverables\\\\2026-05-25_017_mindful-bot\")",
       "Bash(mkdir -p \"C:\\\\Users\\\\l_ace\\\\Desktop\\\\projects\\\\AIstudioAccademiaMilano\\\\deliverables\\\\2026-05-25_018_psy-assist\")",
       "Bash(xargs grep -l \"User\\\\|contributor\\\\|author\")",
-      "Bash(GIT_EDITOR=true git rebase *)"
+      "Bash(GIT_EDITOR=true git rebase *)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)"
     ]
   }
 }
