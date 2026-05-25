@@ -43,24 +43,6 @@ from gateway.pipeline_adapter import PipelineAdapter
 
 _queue_dir = os.environ.get("GATEWAY_QUEUE_DIR", "gateway/queue")
 _adapter = PipelineAdapter(queue_dir=_queue_dir)
-_tg_app = None
-
-
-async def _get_tg_app():
-    """Lazy-init Telegram Application for webhook mode."""
-    global _tg_app
-    if _tg_app is not None:
-        return _tg_app
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    if not token:
-        return None
-    from telegram.ext import Application, CommandHandler, MessageHandler, filters
-    from gateway.bot_telegram import cmd_start, handle_message
-    _tg_app = Application.builder().token(token).build()
-    _tg_app.add_handler(CommandHandler("start", cmd_start))
-    _tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    await _tg_app.initialize()
-    return _tg_app
 
 
 @asynccontextmanager
@@ -74,8 +56,7 @@ async def lifespan(app: FastAPI):
         await task
     except asyncio.CancelledError:
         pass
-    if _tg_app:
-        await _tg_app.shutdown()
+    pass
 
 
 app = FastAPI(title="AI Studio Input Gateway", version="1.0.0", lifespan=lifespan)
@@ -144,12 +125,68 @@ async def get_status(job_id: str):
 
 @app.post("/webhook/telegram")
 async def telegram_webhook(request: Request):
-    """Telegram update webhook — registered with setWebhook after Cloud Run deploy."""
-    from telegram import Update
-    tg = await _get_tg_app()
-    if not tg:
+    """Telegram update webhook — receives updates from Telegram servers."""
+    from telegram import Bot
+    from gateway.bot_telegram import _normalize
+
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    if not token:
         raise HTTPException(status_code=503, detail="TELEGRAM_BOT_TOKEN not configured")
-    data = await request.json()
-    update = Update.de_json(data, tg.bot)
-    await tg.process_update(update)
+
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": True}
+
+    message = data.get("message") or data.get("edited_message")
+    if not message:
+        return {"ok": True}
+
+    text = message.get("text", "").strip()
+    chat_id = message.get("chat", {}).get("id")
+    user_id = message.get("from", {}).get("id", "anonymous")
+
+    if not text or not chat_id:
+        return {"ok": True}
+
+    bot = Bot(token=token)
+
+    if text.startswith("/start"):
+        await bot.send_message(
+            chat_id=chat_id,
+            text=(
+                "Benvenuto in AI Studio Accademia Milano!\n\n"
+                "Dimmi cosa ti serve e lo costruiamo per te.\n\n"
+                "Esempi:\n"
+                "• Ho bisogno di un sito per il mio ristorante\n"
+                "• Crea una fattura PDF da 500€\n"
+                "• Voglio un chatbot per il mio sito\n\n"
+                "Scrivi la tua richiesta e penso io al resto."
+            ),
+        )
+        return {"ok": True}
+
+    normalized = _normalize(text)
+    if not normalized:
+        await bot.send_message(chat_id=chat_id, text="Invia un messaggio di testo con la tua richiesta.")
+        return {"ok": True}
+
+    result = _adapter.submit(
+        text=normalized,
+        channel="telegram",
+        metadata={"user_id": user_id, "chat_id": chat_id},
+    )
+
+    if result["status"] == "error":
+        await bot.send_message(
+            chat_id=chat_id,
+            text="Non riesco a elaborare questa richiesta. Prova con una diversa.",
+        )
+    else:
+        await bot.send_message(
+            chat_id=chat_id,
+            text=f"Ricevuto! La tua richiesta è in elaborazione.\n\nJob ID: `{result['job_id']}`",
+            parse_mode="Markdown",
+        )
+
     return {"ok": True}
