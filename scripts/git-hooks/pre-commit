@@ -2,9 +2,9 @@
 # Pre-commit secret scanner. Block the commit if staged content looks like
 # credentials. Portable bash — works in Git Bash on Windows and Linux.
 #
-# Install (one-time, per clone):
-#   ln -sf ../../scripts/precommit_secret_scan.sh .git/hooks/pre-commit
-#   chmod +x .git/hooks/pre-commit
+# Auto-activated by the SessionStart hook in .claude/settings.json, which
+# runs: git config core.hooksPath scripts/git-hooks
+# No manual install needed when using Claude Code.
 #
 # Bypass (use sparingly, only when you understand the false positive):
 #   git commit --no-verify ...

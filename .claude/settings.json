@@ -2,6 +2,16 @@
   "_comment": "Claude Code settings for AI Studio Accademia Milano. Hooks auto-updated by learning_loop.py and post_delivery_update.py.",
 
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && git config core.hooksPath scripts/git-hooks && chmod +x scripts/git-hooks/pre-commit 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [
