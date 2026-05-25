@@ -116,6 +116,7 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
   "calendar_integration":    "14.90",
   "weather_dashboard":       "9.90",
   "agent_deploy_streamlit":  "19.90",
+  "algo_trading":            "24.90",
   "unknown_product":         null
 }
 ```
@@ -255,11 +256,12 @@ See `agents/research/README.md`.
 | 005 | 2026-05-23 | Streamlit chatbot + OpenAI streaming | 19.90 |
 | 006 | 2026-05-23 | RAG system: embed all code + agents | 29.90 |
 | 007 | 2026-05-23 | WhatsApp/Telegram -> Apple/Outlook/Gmail calendar sync | 14.90 |
-| 008 | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) | 0.00 |
+| 008 | 2026-05-23 | Algo Trading Bot — Alpaca paper (paper=True hardcoded), SMA(20/50)+RSI, 5% position cap, Streamlit/Plotly dashboard | 24.90 |
 | 009 | 2026-05-23 | LinkedIn Post Generator from GitHub activity (Claude claude-sonnet-4-6) | 4.90 |
 | 010 | 2026-05-23 | Profile Setup & Publishing — bio + first post for 9 platforms | 14.90 |
 | 011 | 2026-05-24 | Milan Weather Dashboard (Streamlit + OpenWeatherMap) | 9.90 |
 | 013 | 2026-05-24 | techa Streamlit deploy (LangGraph trading agents + TA-Lib, HF Spaces / Cloud Run) | 19.90 |
+| —   | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) — internal tooling, no audit log assigned | 0.00 |
 | 014 | 2026-05-24 | Dispenser input v1 — QR/Streamlit form, Stripe, WhatsApp+Telegram delivery | 0.00 (internal infra) |
 | 015 | 2026-05-25 | Logo Generator — circle/square/minimal styles, configurable size + accent color | 0.00 (internal) |
 

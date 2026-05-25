@@ -617,6 +617,7 @@
     "calendar_integration": "\u20ac14.90",
     "weather_dashboard": "\u20ac9.90",
     "agent_deploy_streamlit": "\u20ac19.90",
+    "algo_trading": "\u20ac24.90",
     "unknown_product": null
   },
   "hooks": [
