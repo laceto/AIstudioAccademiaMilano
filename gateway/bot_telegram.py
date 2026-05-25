@@ -16,6 +16,16 @@ Commands:
 import logging
 import os
 import re
+from pathlib import Path
+
+# Load .env from repo root so TELEGRAM_BOT_TOKEN is available without manual export
+_env_file = Path(__file__).resolve().parent.parent / ".env"
+if _env_file.exists():
+    for _line in _env_file.read_text(encoding="utf-8").splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _, _v = _line.partition("=")
+            os.environ.setdefault(_k.strip(), _v.strip())
 
 from telegram import Update
 from telegram.constants import ChatAction
