@@ -31,7 +31,7 @@
           },
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && python -m scripts.github_delta.collect 2>&1 || true"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && python scripts/delta_collector.py --date today --audit-dir process/audit --output process/deltas 2>&1 || true"
           }
         ]
       }
