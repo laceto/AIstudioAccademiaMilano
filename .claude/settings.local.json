@@ -32,7 +32,8 @@
       "Bash(python -m streamlit run deliverables/rag/streamlit_rag_app.py)",
       "Bash(python -m scripts.rag.api_server)",
       "Bash(curl *)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(gh pr *)"
     ]
   }
 }
