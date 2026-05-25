@@ -18,7 +18,21 @@
       "Bash(python -c \"import kitai; print\\('kitai ok'\\)\")",
       "Bash(python -m pytest tests/test_gateway_pablo.py tests/test_gateway_sofia.py tests/test_gateway_carlos.py tests/test_gateway_worker.py -v)",
       "Bash(grep -i \"settings.local\" .gitignore)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(pip show *)",
+      "Bash(python -m pytest tests/test_gateway_worker.py -v)",
+      "Bash(python main.py --generate --platform linkedin)",
+      "Bash(gcloud version *)",
+      "Bash(gcloud config list *)",
+      "Bash(powershell *)",
+      "Bash(python logo_generator.py --size 300)",
+      "Bash(python -m scripts.rag.retrieve_repo \"how does Marco price unknown products?\" --no-llm)",
+      "Bash(streamlit run *)",
+      "Bash(ping -n 4 127.0.0.1)",
+      "Bash(python -m streamlit run deliverables/rag/streamlit_rag_app.py)",
+      "Bash(python -m scripts.rag.api_server)",
+      "Bash(curl *)",
+      "Bash(python *)"
     ]
   }
 }

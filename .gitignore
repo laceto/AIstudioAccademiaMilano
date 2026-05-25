@@ -29,6 +29,9 @@ build/
 venv/
 env/
 
+# Runtime queue (gateway job files — ephemeral)
+gateway/queue/
+
 # Data & indexes (binary artifacts — use Actions cache instead)
 data/vectorstore/
 data/index/
