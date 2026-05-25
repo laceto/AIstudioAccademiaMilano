@@ -457,8 +457,8 @@ def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
         capture_output=True, text=True, check=False,
     )
     branch = (result.stdout or "").strip()
-    if not branch or branch in ("main", "master", "HEAD"):
-        print(f"[learning_loop] WARNING: on branch '{branch or 'unknown'}' — skipping auto-commit to protect main/detached HEAD.")
+    if branch in ("main", "master", "HEAD"):
+        print(f"[learning_loop] WARNING: on branch '{branch}' — skipping auto-commit to protect main/detached HEAD.")
         return
 
     files = [
