@@ -138,6 +138,7 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
   "weather_dashboard":       "9.90",
   "agent_deploy_streamlit":  "19.90",
   "algo_trading":            "24.90",
+  "mind_dashboard_journal":  "9.90",
   "unknown_product":         null
 }
 ```
@@ -290,6 +291,7 @@ See `agents/research/README.md`.
 | 017 | 2026-05-25 | Lawyer LangGraph + Mindful Bot — white-label legal assistant + psychology entry product | 0.00 (internal) |
 | 018 | 2026-05-25 | SOAP Note Generator — psychology vertical Streamlit app (Diletta pilot) | 0.00 (internal) |
 | 019 | 2026-05-25 | Studio Digital Twin — LangGraph parallel simulation of the 6-agent pipeline | 0.00 (internal) |
+| 020 | 2026-05-26 | Mind Dashboard — daily AI briefing from raw journal text (JSON-contract, Markdown/HTML) | 9.90 |
 
 ---
 
