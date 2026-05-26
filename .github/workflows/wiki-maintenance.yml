@@ -1,0 +1,71 @@
+name: Wiki Maintenance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wiki/**'
+  pull_request:
+    paths:
+      - 'wiki/**'
+  schedule:
+    - cron: '0 10 * * 0'   # weekly Sunday 10:00 UTC — full sweep
+  workflow_dispatch:
+
+jobs:
+  wiki-checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install code-example deps
+        run: pip install numpy
+
+      - name: Syntax-check wiki code examples
+        run: |
+          python - <<'PY'
+          import ast, pathlib, sys
+          bad = []
+          for p in pathlib.Path("wiki").rglob("*.py"):
+              try:
+                  ast.parse(p.read_text())
+              except SyntaxError as e:
+                  bad.append(f"{p}: {e}")
+          if bad:
+              print("\n".join(bad)); sys.exit(1)
+          print("ok")
+          PY
+
+      - name: Execute wiki code examples
+        run: |
+          for f in wiki/llm/code/*.py; do
+            echo "--- $f"
+            python "$f"
+          done
+
+      - name: Check internal markdown links
+        run: |
+          python - <<'PY'
+          import re, pathlib, sys
+          link_re = re.compile(r'\[[^\]]+\]\(([^)#]+)(?:#[^)]*)?\)')
+          broken = []
+          for md in pathlib.Path("wiki").rglob("*.md"):
+              for m in link_re.finditer(md.read_text()):
+                  target = m.group(1)
+                  if target.startswith(("http://", "https://", "mailto:")):
+                      continue
+                  resolved = (md.parent / target).resolve()
+                  if not resolved.exists():
+                      broken.append(f"{md}: -> {target}")
+          if broken:
+              print("\n".join(broken)); sys.exit(1)
+          print("ok")
+          PY
