@@ -139,6 +139,7 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
   "agent_deploy_streamlit":  "19.90",
   "algo_trading":            "24.90",
   "mind_dashboard_journal":  "9.90",
+  "micro_syllabus_flashcards": "14.90",
   "unknown_product":         null
 }
 ```
@@ -292,6 +293,7 @@ See `agents/research/README.md`.
 | 018 | 2026-05-25 | SOAP Note Generator — psychology vertical Streamlit app (Diletta pilot) | 0.00 (internal) |
 | 019 | 2026-05-25 | Studio Digital Twin — LangGraph parallel simulation of the 6-agent pipeline | 0.00 (internal) |
 | 020 | 2026-05-26 | Mind Dashboard — daily AI briefing from raw journal text (JSON-contract, Markdown/HTML) | 9.90 |
+| 021 | 2026-05-26 | Micro-Syllabus & Flashcard Generator — 7-day plan + 10 Anki-ready cards from goal+minutes (OpenAI gpt-4o) | 14.90 |
 
 ---
 
