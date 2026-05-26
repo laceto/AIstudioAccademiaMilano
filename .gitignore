@@ -39,7 +39,6 @@ data/index/
 *.pkl
 data/*.npy
 data/raw/
-process/research/
 
 # Logs
 logs/
