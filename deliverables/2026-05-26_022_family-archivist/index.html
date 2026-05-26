@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Family Archivist — Weekly Storyteller</title>
+<style>
+  :root {
+    --paper: #fbf6ec;
+    --ink: #2b2118;
+    --accent: #8a3324;
+    --accent-soft: #c47d63;
+    --gold: #b08d3c;
+    --rule: #d8c9ad;
+    --shadow: rgba(60, 40, 20, 0.18);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Georgia", "Iowan Old Style", "Times New Roman", serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 19px;
+    line-height: 1.55;
+    padding: 0;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 36px 28px 80px;
+  }
+  header {
+    text-align: center;
+    border-bottom: 2px solid var(--rule);
+    padding-bottom: 24px;
+    margin-bottom: 36px;
+  }
+  header h1 {
+    font-size: 2.4rem;
+    margin: 0 0 6px;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+  header p.sub {
+    margin: 0;
+    color: #6b5840;
+    font-style: italic;
+    font-size: 1.05rem;
+  }
+  section.card {
+    background: #fffdf7;
+    border: 1px solid var(--rule);
+    box-shadow: 0 2px 0 var(--shadow);
+    padding: 24px 28px;
+    border-radius: 6px;
+    margin-bottom: 22px;
+  }
+  section.card h2 {
+    margin: 0 0 14px;
+    color: var(--accent);
+    font-size: 1.35rem;
+    border-bottom: 1px dotted var(--rule);
+    padding-bottom: 8px;
+  }
+  label {
+    display: block;
+    font-weight: bold;
+    margin: 14px 0 6px;
+    font-size: 1.02rem;
+  }
+  label small {
+    font-weight: normal;
+    color: #7c6b4c;
+    font-style: italic;
+  }
+  input[type="text"], input[type="password"], textarea, select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 1.05rem;
+    line-height: 1.5;
+  }
+  textarea {
+    min-height: 160px;
+    resize: vertical;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 1px;
+  }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 200px; }
+  button {
+    font-family: inherit;
+    font-size: 1.05rem;
+    padding: 12px 22px;
+    background: var(--accent);
+    color: #fffdf7;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    letter-spacing: 0.02em;
+    transition: background 0.15s;
+  }
+  button:hover:not(:disabled) { background: #6e2719; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 1.5px solid var(--accent);
+  }
+  button.secondary:hover:not(:disabled) {
+    background: var(--accent);
+    color: #fffdf7;
+  }
+  button.record { background: var(--gold); }
+  button.record.recording { background: #d33; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { opacity: 0.7; } }
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+  .photo-preview {
+    margin-top: 12px;
+    max-width: 100%;
+    max-height: 240px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    display: block;
+  }
+  .photo-preview.hidden { display: none; }
+  .status {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: #f4ead4;
+    border-left: 4px solid var(--gold);
+    font-size: 0.98rem;
+    color: #5d4a26;
+    border-radius: 0 4px 4px 0;
+  }
+  .status.error { background: #f7d7d2; border-left-color: var(--accent); color: #6e2719; }
+  .status.success { background: #dde9d2; border-left-color: #4a6e2a; color: #2d4416; }
+  .status.hidden { display: none; }
+  .preview-box {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 28px 32px;
+    border-radius: 4px;
+    margin-top: 18px;
+    font-family: "Iowan Old Style", "Georgia", serif;
+  }
+  .preview-box h1.title {
+    font-size: 1.8rem;
+    color: var(--accent);
+    margin: 0 0 18px;
+    text-align: center;
+    font-style: italic;
+  }
+  .preview-box h3 {
+    color: var(--gold);
+    border-bottom: 1px dotted var(--rule);
+    padding-bottom: 4px;
+    margin-top: 24px;
+  }
+  .preview-box .context, .preview-box .wisdom {
+    background: #fffdf7;
+    border-left: 3px solid var(--gold);
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-style: italic;
+  }
+  .preview-box .wisdom { border-left-color: var(--accent-soft); }
+  .preview-box img.attached {
+    max-width: 320px;
+    display: block;
+    margin: 18px auto;
+    border: 6px solid #fff;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  .empty-state {
+    color: #8a785a;
+    text-align: center;
+    padding: 32px 12px;
+    font-style: italic;
+  }
+  .help-toggle {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.95rem;
+    padding: 0;
+    margin-left: 6px;
+    text-decoration: underline;
+  }
+  .help-text {
+    background: #f4ead4;
+    border-left: 3px solid var(--gold);
+    padding: 10px 14px;
+    margin-top: 8px;
+    font-size: 0.95rem;
+    color: #5d4a26;
+    border-radius: 0 4px 4px 0;
+  }
+  .help-text.hidden { display: none; }
+  footer {
+    text-align: center;
+    color: #8a785a;
+    margin-top: 40px;
+    font-size: 0.92rem;
+    font-style: italic;
+  }
+  @media (max-width: 600px) {
+    body { font-size: 17px; }
+    header h1 { font-size: 1.9rem; }
+    section.card { padding: 18px 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>The Family Archivist</h1>
+    <p class="sub">Turn a memory into a keepsake — one story a week, for the people who come after you.</p>
+  </header>
+
+  <section class="card">
+    <h2>1 &middot; Your Memory</h2>
+    <label for="storyText">
+      Tell the story
+      <small> — type it, or press "Speak the memory" and just talk.</small>
+    </label>
+    <textarea id="storyText" placeholder="Talk or type as it comes — no need to make it neat. The Archivist will do the polishing.
+
+For example: &quot;The summer of 1974 we drove from Milano to Naples in a beat-up Fiat 500, the windows wouldn't roll up so we got soaked in the rain near Rome...&quot;"></textarea>
+    <div class="actions">
+      <button id="recordBtn" class="record" type="button">🎙️  Speak the memory</button>
+      <button id="clearTextBtn" class="secondary" type="button">Clear text</button>
+    </div>
+    <div id="recStatus" class="status hidden"></div>
+  </section>
+
+  <section class="card">
+    <h2>2 &middot; Details (optional but lovely)</h2>
+    <div class="row">
+      <div>
+        <label for="storyYear">Year of the memory</label>
+        <input type="text" id="storyYear" placeholder="e.g. 1974" maxlength="4" />
+      </div>
+      <div>
+        <label for="storyLocation">Place</label>
+        <input type="text" id="storyLocation" placeholder="e.g. Milano, Italy" />
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="storyTheme">Who or what is it about?</label>
+        <input type="text" id="storyTheme" placeholder="e.g. my grandmother, the Fiat, our summer trips" />
+      </div>
+      <div>
+        <label for="storyTeller">Storyteller's name</label>
+        <input type="text" id="storyTeller" placeholder="e.g. Nonno Luigi" />
+      </div>
+    </div>
+    <label for="photoInput">A photo from that era (optional)</label>
+    <input type="file" id="photoInput" accept="image/*" />
+    <img id="photoPreview" class="photo-preview hidden" alt="Memory photo" />
+  </section>
+
+  <section class="card">
+    <h2>3 &middot; The Archivist
+      <button class="help-toggle" id="helpToggle" type="button">what's this?</button>
+    </h2>
+    <div id="helpText" class="help-text hidden">
+      <strong>Two ways to work:</strong><br>
+      &mdash; <em>Local mode</em> (default): runs entirely on this page. Cleans up your story, adds a title and a wisdom takeaway, and embeds the photo. No internet, no account.<br>
+      &mdash; <em>AI mode</em>: paste a Claude or OpenAI API key. The Archivist will write a richer narrative and look up real historical context for the year. Your key stays in this browser — it's never sent anywhere except directly to your chosen AI provider.
+    </div>
+    <div class="row">
+      <div>
+        <label for="aiProvider">Mode</label>
+        <select id="aiProvider">
+          <option value="local">Local (no API key needed)</option>
+          <option value="anthropic">AI — Claude (Anthropic)</option>
+          <option value="openai">AI — GPT (OpenAI)</option>
+        </select>
+      </div>
+      <div>
+        <label for="apiKey">API key <small>(only if using AI mode)</small></label>
+        <input type="password" id="apiKey" placeholder="sk-ant-... or sk-..." autocomplete="off" />
+      </div>
+    </div>
+    <div class="actions">
+      <button id="generateBtn" type="button">✨  Compose the keepsake</button>
+    </div>
+    <div id="genStatus" class="status hidden"></div>
+  </section>
+
+  <section class="card">
+    <h2>4 &middot; The Keepsake</h2>
+    <div id="previewArea">
+      <div class="empty-state">Once you compose the keepsake, the polished story will appear here — ready to download as a Markdown file and a metadata file you can keep forever.</div>
+    </div>
+    <div class="actions" id="downloadActions" style="display:none;">
+      <button id="dlMdBtn" type="button">⬇  Download story_archive.md</button>
+      <button id="dlJsonBtn" type="button">⬇  Download memory_metadata.json</button>
+      <button id="dlBothBtn" class="secondary" type="button">⬇  Download both</button>
+    </div>
+  </section>
+
+  <footer>
+    AI Studio Accademia Milano &middot; The Family Archivist &middot; Request 022 &middot; €14.90
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+// ----- Element refs -----
+const $ = (id) => document.getElementById(id);
+const els = {
+  storyText: $("storyText"),
+  recordBtn: $("recordBtn"),
+  clearTextBtn: $("clearTextBtn"),
+  recStatus: $("recStatus"),
+  storyYear: $("storyYear"),
+  storyLocation: $("storyLocation"),
+  storyTheme: $("storyTheme"),
+  storyTeller: $("storyTeller"),
+  photoInput: $("photoInput"),
+  photoPreview: $("photoPreview"),
+  aiProvider: $("aiProvider"),
+  apiKey: $("apiKey"),
+  generateBtn: $("generateBtn"),
+  genStatus: $("genStatus"),
+  previewArea: $("previewArea"),
+  downloadActions: $("downloadActions"),
+  dlMdBtn: $("dlMdBtn"),
+  dlJsonBtn: $("dlJsonBtn"),
+  dlBothBtn: $("dlBothBtn"),
+  helpToggle: $("helpToggle"),
+  helpText: $("helpText"),
+};
+
+let currentArtifact = null; // { markdown, metadata, photoDataUrl }
+let photoDataUrl = null;
+
+// ----- Help toggle -----
+els.helpToggle.addEventListener("click", () => {
+  els.helpText.classList.toggle("hidden");
+});
+
+// ----- Photo upload -----
+els.photoInput.addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) {
+    photoDataUrl = null;
+    els.photoPreview.classList.add("hidden");
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    photoDataUrl = evt.target.result;
+    els.photoPreview.src = photoDataUrl;
+    els.photoPreview.classList.remove("hidden");
+  };
+  reader.readAsDataURL(file);
+});
+
+// ----- Voice recognition (Web Speech API) -----
+let recognition = null;
+let isRecording = false;
+function setupRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
+  r.continuous = true;
+  r.interimResults = true;
+  r.lang = navigator.language || "en-US";
+  return r;
+}
+
+els.recordBtn.addEventListener("click", () => {
+  if (!recognition) recognition = setupRecognition();
+  if (!recognition) {
+    showStatus(els.recStatus, "error", "Voice input isn't available in this browser. Chrome, Edge, or Safari work best. You can still type the story below.");
+    return;
+  }
+
+  if (isRecording) {
+    recognition.stop();
+    return;
+  }
+
+  let finalSoFar = els.storyText.value ? els.storyText.value.trim() + " " : "";
+  recognition.onresult = (event) => {
+    let interim = "";
+    let final = "";
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) final += transcript + " ";
+      else interim += transcript;
+    }
+    if (final) finalSoFar += final;
+    els.storyText.value = (finalSoFar + interim).trim();
+  };
+  recognition.onerror = (e) => {
+    showStatus(els.recStatus, "error", "Microphone error: " + e.error + ". Make sure you've allowed microphone access.");
+    stopRec();
+  };
+  recognition.onend = () => stopRec();
+
+  try {
+    recognition.start();
+    isRecording = true;
+    els.recordBtn.classList.add("recording");
+    els.recordBtn.textContent = "⏹  Stop recording";
+    showStatus(els.recStatus, "info", "Listening… speak naturally. Press Stop when you're done.");
+  } catch (e) {
+    showStatus(els.recStatus, "error", "Couldn't start microphone: " + e.message);
+  }
+});
+
+function stopRec() {
+  isRecording = false;
+  els.recordBtn.classList.remove("recording");
+  els.recordBtn.textContent = "🎙️  Speak the memory";
+  hideStatus(els.recStatus);
+}
+
+els.clearTextBtn.addEventListener("click", () => {
+  if (els.storyText.value && !confirm("Clear what you've written?")) return;
+  els.storyText.value = "";
+});
+
+// ----- Status helpers -----
+function showStatus(el, kind, msg) {
+  el.className = "status " + (kind === "error" ? "error" : kind === "success" ? "success" : "");
+  el.textContent = msg;
+  el.classList.remove("hidden");
+}
+function hideStatus(el) { el.classList.add("hidden"); }
+
+// ----- Compose: dispatch by mode -----
+els.generateBtn.addEventListener("click", async () => {
+  const raw = els.storyText.value.trim();
+  if (raw.length < 30) {
+    showStatus(els.genStatus, "error", "Please share at least a few sentences before composing.");
+    return;
+  }
+  els.generateBtn.disabled = true;
+  showStatus(els.genStatus, "info", "Composing the keepsake… this can take a few seconds.");
+
+  const ctx = collectContext(raw);
+  const provider = els.aiProvider.value;
+
+  try {
+    let result;
+    if (provider === "local") {
+      result = composeLocal(ctx);
+    } else if (provider === "anthropic") {
+      result = await composeAnthropic(ctx, els.apiKey.value.trim());
+    } else if (provider === "openai") {
+      result = await composeOpenAI(ctx, els.apiKey.value.trim());
+    }
+    renderResult(result, ctx);
+    showStatus(els.genStatus, "success", "Done. Scroll down to read the keepsake, then download both files.");
+  } catch (err) {
+    console.error(err);
+    showStatus(els.genStatus, "error", "Something went wrong: " + (err.message || err) + ". You can switch to Local mode and try again.");
+  } finally {
+    els.generateBtn.disabled = false;
+  }
+});
+
+function collectContext(raw) {
+  return {
+    raw,
+    year: els.storyYear.value.trim() || null,
+    location: els.storyLocation.value.trim() || null,
+    theme: els.storyTheme.value.trim() || null,
+    teller: els.storyTeller.value.trim() || null,
+    hasPhoto: !!photoDataUrl,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+// ----- LOCAL mode: deterministic narrative polish + canned context -----
+function composeLocal(ctx) {
+  const cleaned = polishProse(ctx.raw);
+  const paragraphs = splitParagraphs(cleaned);
+  const title = makeTitle(ctx, cleaned);
+  const wisdom = makeWisdom(cleaned);
+  const context = makeHistoricalContext(ctx.year, ctx.location);
+  return { title, paragraphs, wisdom, context, source: "local" };
+}
+
+function polishProse(text) {
+  // Remove common verbal fillers and stutters, normalize whitespace.
+  // Preserves the speaker's voice — only removes filler words and obvious repetitions.
+  let t = text;
+  // Standalone filler interjections (with optional trailing comma)
+  t = t.replace(/\b(uh+|um+|er+|ehm+|eh+)\b[,]?/gi, "");
+  // Filler phrases (with optional trailing comma and space)
+  t = t.replace(/\b(you know|i mean|sort of|kind of|you see|basically|like)\b[,]?\s?/gi, "");
+  // collapse repeated word stutters: "the the" -> "the", "he he" -> "he"
+  t = t.replace(/\b(\w+)(\s+\1\b)+/gi, "$1");
+  // tidy spacing/punctuation
+  t = t.replace(/\s+([,.!?;:])/g, "$1");
+  t = t.replace(/\s{2,}/g, " ");
+  t = t.replace(/\s+\n/g, "\n").trim();
+  // capitalize sentence starts
+  t = t.replace(/(^|[.!?]\s+)([a-z])/g, (_, p, c) => p + c.toUpperCase());
+  return t;
+}
+
+function splitParagraphs(text) {
+  // Split on existing newlines first; otherwise group sentences ~3 per paragraph.
+  if (/\n\s*\n/.test(text)) return text.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
+  const sentences = (text.match(/[^.!?]+[.!?]+/g) || [text]).map(s => s.trim());
+  const paragraphs = [];
+  for (let i = 0; i < sentences.length; i += 3) {
+    paragraphs.push(sentences.slice(i, i + 3).join(" ").trim());
+  }
+  return paragraphs.filter(Boolean);
+}
+
+function makeTitle(ctx, cleaned) {
+  if (ctx.theme && ctx.year) return capitalizeWords(ctx.theme) + ": " + ctx.year;
+  if (ctx.theme) return capitalizeWords(ctx.theme);
+  // Pull a striking noun phrase from the first sentence.
+  const first = (cleaned.split(/[.!?]/)[0] || cleaned).trim();
+  const words = first.split(/\s+/).slice(0, 7).join(" ");
+  return ctx.year ? words + " — " + ctx.year : words;
+}
+
+function capitalizeWords(s) {
+  return s.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function makeWisdom(cleaned) {
+  // Heuristic: look for emotional or value-laden keywords and emit a generic but warm takeaway.
+  const lower = cleaned.toLowerCase();
+  const themes = [
+    { kw: ["family", "famiglia", "mother", "father", "grandmother", "grandfather", "nonna", "nonno", "children"], line: "The people we love give ordinary days their weight — and ordinary days are what we remember." },
+    { kw: ["work", "job", "factory", "office", "shop"], line: "Dignity comes from doing honest work and refusing to let setbacks have the last word." },
+    { kw: ["travel", "trip", "drove", "drive", "car", "fiat", "train", "road"], line: "The journey, not the destination, is where the stories live." },
+    { kw: ["war", "soldier", "army", "battle"], line: "Hard times reveal who we really are — and remind us never to take peace for granted." },
+    { kw: ["love", "married", "wedding", "wife", "husband"], line: "Love isn't loud; it's the patience to keep showing up, year after year." },
+    { kw: ["food", "kitchen", "meal", "ragù", "cooking", "bread", "wine"], line: "A shared table is a small monument to family — built daily, one meal at a time." },
+    { kw: ["learn", "school", "study", "book"], line: "Curiosity is the one inheritance no one can take from you." },
+  ];
+  for (const t of themes) {
+    if (t.kw.some(k => lower.includes(k))) return t.line;
+  }
+  return "Small moments, remembered honestly, become the truest history a family owns.";
+}
+
+function makeHistoricalContext(year, location) {
+  // Curated snippets — modest by design; the AI mode does the real lookups.
+  if (!year) return null;
+  const y = parseInt(year, 10);
+  if (isNaN(y)) return null;
+  const decade = Math.floor(y / 10) * 10;
+  const buckets = {
+    1940: "Europe was emerging from the Second World War; rationing was still common, and the first transistor was invented in 1947.",
+    1950: "Television was new, rock and roll was being born, and the Italian economic miracle (`miracolo economico`) was reshaping daily life.",
+    1960: "The decade of the moon landing, the Beatles, and the Fiat 500 becoming an icon. Long-distance calls were a luxury.",
+    1970: "A liter of petrol cost roughly 200 lire, ABBA won Eurovision (1974), and the first home computers were just appearing.",
+    1980: "Personal computers were entering homes, the Walkman changed how people heard music, and Italy won the 1982 World Cup.",
+    1990: "The Cold War ended, mobile phones became affordable, and the World Wide Web was opened to the public in 1991.",
+    2000: "The euro replaced the lira (2002), broadband internet spread, and digital cameras began to replace film.",
+    2010: "Smartphones became ubiquitous, social media reshaped news, and high-speed rail connected most of Europe.",
+  };
+  const bucket = buckets[decade] || null;
+  const loc = location ? ` In ${location}, life would have been shaped by these same currents.` : "";
+  return bucket ? `In ${year}, ${bucket}${loc}` : null;
+}
+
+// ----- ANTHROPIC mode -----
+async function composeAnthropic(ctx, apiKey) {
+  if (!apiKey) throw new Error("Please paste your Anthropic API key, or switch to Local mode.");
+  const prompt = buildAIPrompt(ctx);
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 2000,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error("Anthropic API: " + res.status + " — " + body.slice(0, 200));
+  }
+  const data = await res.json();
+  const text = (data.content && data.content[0] && data.content[0].text) || "";
+  return parseAIResponse(text, "anthropic");
+}
+
+// ----- OPENAI mode -----
+async function composeOpenAI(ctx, apiKey) {
+  if (!apiKey) throw new Error("Please paste your OpenAI API key, or switch to Local mode.");
+  const prompt = buildAIPrompt(ctx);
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "authorization": "Bearer " + apiKey,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: "You are a respectful oral historian. You polish spoken memories while strictly preserving the storyteller's voice, idioms, and phrasing." },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" },
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error("OpenAI API: " + res.status + " — " + body.slice(0, 200));
+  }
+  const data = await res.json();
+  const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+  return parseAIResponse(text, "openai");
+}
+
+function buildAIPrompt(ctx) {
+  return `You are an oral historian preparing a family keepsake.
+
+A retiree has shared this raw memory (verbatim, possibly with verbal fillers):
+---
+${ctx.raw}
+---
+
+Optional details they provided:
+- Year: ${ctx.year || "(not provided)"}
+- Place: ${ctx.location || "(not provided)"}
+- Subject: ${ctx.theme || "(not provided)"}
+- Storyteller: ${ctx.teller || "(not provided)"}
+
+Your task: produce a keepsake. Return ONLY a JSON object with exactly these keys:
+
+{
+  "title": "A short, evocative title (max 8 words). Classic, dignified, not clickbait.",
+  "paragraphs": ["First polished paragraph", "Second...", "..."],
+  "historical_context": "2-3 sentences of accurate historical context from that exact year and place (music, prices, news, daily life). If the year is unknown, return null.",
+  "wisdom": "1-2 sentences naming the value or lesson embedded in the story — patience, family, resourcefulness, etc. Specific, not generic."
+}
+
+Strict rules for paragraphs:
+- Remove only filler words ("um", "uh", "you know", repeated stutters). PRESERVE the storyteller's actual phrasing, idioms, dialect, and word choices — do NOT rewrite into your own voice.
+- Multiple paragraphs (3-6), each 2-5 sentences. Keep the chronological order as told.
+- No invented details. If the speaker was vague, stay vague.
+- Write in the storyteller's first person if they spoke in first person.
+
+Return only the JSON. No markdown fences, no commentary.`;
+}
+
+function parseAIResponse(text, provider) {
+  // strip code fences if present
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(json)?/i, "").replace(/```$/, "").trim();
+  }
+  let obj;
+  try {
+    obj = JSON.parse(cleaned);
+  } catch (e) {
+    throw new Error("The AI returned something that wasn't valid JSON. Try again, or use Local mode.");
+  }
+  if (!obj.title || !Array.isArray(obj.paragraphs)) {
+    throw new Error("The AI response was missing required fields.");
+  }
+  return {
+    title: obj.title,
+    paragraphs: obj.paragraphs,
+    wisdom: obj.wisdom || "",
+    context: obj.historical_context || null,
+    source: provider,
+  };
+}
+
+// ----- Render the keepsake -----
+function renderResult(result, ctx) {
+  const photoBlock = ctx.hasPhoto
+    ? `<img class="attached" src="${photoDataUrl}" alt="Memory photograph" />`
+    : "";
+
+  const paragraphsHtml = result.paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join("");
+  const contextHtml = result.context
+    ? `<h3>🌍 In Those Days</h3><div class="context">${escapeHtml(result.context)}</div>`
+    : "";
+  const wisdomHtml = result.wisdom
+    ? `<h3>💡 The Takeaway</h3><div class="wisdom">${escapeHtml(result.wisdom)}</div>`
+    : "";
+
+  els.previewArea.innerHTML = `
+    <div class="preview-box">
+      <h1 class="title">${escapeHtml(result.title)}</h1>
+      ${photoBlock}
+      ${paragraphsHtml}
+      ${contextHtml}
+      ${wisdomHtml}
+    </div>
+  `;
+
+  currentArtifact = buildArtifact(result, ctx);
+  els.downloadActions.style.display = "flex";
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[c]);
+}
+
+// ----- Build the deliverable artifacts -----
+function buildArtifact(result, ctx) {
+  const md = buildMarkdown(result, ctx);
+  const meta = buildMetadata(result, ctx);
+  return { markdown: md, metadata: meta };
+}
+
+function buildMarkdown(result, ctx) {
+  const lines = [];
+  lines.push(`# ✨ ${result.title}`);
+  lines.push("");
+  if (ctx.teller || ctx.year || ctx.location) {
+    const subParts = [];
+    if (ctx.teller) subParts.push(`*as told by ${ctx.teller}*`);
+    if (ctx.year) subParts.push(`*${ctx.year}*`);
+    if (ctx.location) subParts.push(`*${ctx.location}*`);
+    lines.push(subParts.join(" &middot; "));
+    lines.push("");
+  }
+  if (ctx.hasPhoto) {
+    lines.push(`*[A photograph accompanies this story — see the original .png in this folder]*`);
+    lines.push("");
+  }
+  lines.push("## 📜 The Story");
+  lines.push("");
+  result.paragraphs.forEach(p => { lines.push(p); lines.push(""); });
+  if (result.context) {
+    lines.push("## 🌍 In Those Days");
+    lines.push("");
+    lines.push("> " + result.context);
+    lines.push("");
+  }
+  if (result.wisdom) {
+    lines.push("## 💡 The Takeaway");
+    lines.push("");
+    lines.push("> " + result.wisdom);
+    lines.push("");
+  }
+  lines.push("---");
+  lines.push("");
+  lines.push(`*Archived ${new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })} via The Family Archivist.*`);
+  return lines.join("\n");
+}
+
+function buildMetadata(result, ctx) {
+  return {
+    schema_version: "1.0",
+    archived_at: ctx.timestamp,
+    storyteller: ctx.teller || null,
+    title: result.title,
+    year: ctx.year || null,
+    location: ctx.location || null,
+    subject: ctx.theme || null,
+    has_photo: ctx.hasPhoto,
+    paragraph_count: result.paragraphs.length,
+    word_count: result.paragraphs.reduce((n, p) => n + p.split(/\s+/).length, 0),
+    has_historical_context: !!result.context,
+    has_wisdom_takeaway: !!result.wisdom,
+    composition_mode: result.source,
+    tags: buildTags(ctx, result),
+    raw_input_excerpt: ctx.raw.slice(0, 200),
+  };
+}
+
+function buildTags(ctx, result) {
+  const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const tags = [];
+  if (ctx.year) {
+    const y = parseInt(ctx.year, 10);
+    if (!isNaN(y)) {
+      tags.push(`decade:${Math.floor(y / 10) * 10}s`);
+      tags.push(`year:${y}`);
+    }
+  }
+  if (ctx.location) tags.push(`location:${slug(ctx.location)}`);
+  if (ctx.teller) tags.push(`storyteller:${slug(ctx.teller)}`);
+  if (ctx.theme) tags.push(`subject:${slug(ctx.theme)}`);
+  return tags;
+}
+
+// ----- Downloads -----
+function download(name, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+function slugify(s) {
+  return (s || "memory").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50);
+}
+
+els.dlMdBtn.addEventListener("click", () => {
+  if (!currentArtifact) return;
+  download("story_archive.md", currentArtifact.markdown, "text/markdown;charset=utf-8");
+});
+
+els.dlJsonBtn.addEventListener("click", () => {
+  if (!currentArtifact) return;
+  download("memory_metadata.json", JSON.stringify(currentArtifact.metadata, null, 2), "application/json;charset=utf-8");
+});
+
+els.dlBothBtn.addEventListener("click", () => {
+  if (!currentArtifact) return;
+  download("story_archive.md", currentArtifact.markdown, "text/markdown;charset=utf-8");
+  setTimeout(() => {
+    download("memory_metadata.json", JSON.stringify(currentArtifact.metadata, null, 2), "application/json;charset=utf-8");
+  }, 300);
+});
+</script>
+</body>
+</html>
