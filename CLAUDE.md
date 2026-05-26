@@ -141,6 +141,7 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
   "mind_dashboard_journal":  "9.90",
   "micro_syllabus_flashcards": "14.90",
   "family_archivist":        "14.90",
+  "mediterranean_meal_planner": "14.90",
   "unknown_product":         null
 }
 ```
@@ -296,6 +297,7 @@ See `agents/research/README.md`.
 | 020 | 2026-05-26 | Mind Dashboard — daily AI briefing from raw journal text (JSON-contract, Markdown/HTML) | 9.90 |
 | 021 | 2026-05-26 | Micro-Syllabus & Flashcard Generator — 7-day plan + 10 Anki-ready cards from goal+minutes (OpenAI gpt-4o) | 14.90 |
 | 022 | 2026-05-26 | Family Archivist — single-file HTML for retirees, voice/text → story_archive.md + memory_metadata.json, local + Claude/OpenAI modes | 14.90 |
+| 023 | 2026-05-26 | Mediterranean Meal Planner — favourites + season → Weekly_Menu_<Season>.md with 7-day batch-cook matrix + categorised grocery list (OpenAI gpt-4o) | 14.90 |
 
 ---
 
