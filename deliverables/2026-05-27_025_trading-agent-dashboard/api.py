@@ -122,6 +122,50 @@ class RunRequest(BaseModel):
     dry_run: bool = True
 
 
+@app.get("/api/analysis/{symbol}", tags=["execution"], dependencies=[Depends(_auth)])
+def techa_analysis(symbol: str, lookback_days: int = 365, benchmark: str = "^GSPC") -> dict:
+    """
+    Run the techa LangGraph Orchestrator on a symbol and return the GPT-4o report.
+
+    Requires `techa` to be installed and `OPENAI_API_KEY` to be set.
+    See deliverables/2026-05-24_013_techa-streamlit/ for the originating deliverable.
+    """
+    openai_key = os.environ.get("OPENAI_API_KEY", "")
+    if not openai_key:
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY not set on this server")
+    os.environ["OPENAI_API_KEY"] = openai_key
+
+    try:
+        from techa.agents.orchestrator import create_orchestrator
+    except ImportError:
+        raise HTTPException(
+            status_code=501,
+            detail=(
+                "techa is not installed. "
+                "Run: pip install 'techa @ git+https://github.com/laceto/techa.git@main'"
+            ),
+        )
+
+    try:
+        graph = create_orchestrator(
+            symbol=symbol,
+            data_source="live",
+            analysis_date=None,
+            lookback_days=lookback_days,
+            benchmark=benchmark,
+            relative=False,
+        )
+        result = graph.invoke(graph._initial_state)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"techa failed: {type(exc).__name__}: {exc}")
+
+    report = next(
+        (result[k] for k in ("final_output", "report", "output", "summary") if k in result and isinstance(result[k], str)),
+        None,
+    )
+    return {"symbol": symbol, "report": report, "raw": {k: v for k, v in result.items() if k != "final_output"}}
+
+
 @app.post("/api/run", tags=["execution"], dependencies=[Depends(_auth)])
 def trigger_run(req: RunRequest) -> dict:
     """

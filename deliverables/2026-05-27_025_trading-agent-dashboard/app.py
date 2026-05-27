@@ -224,6 +224,65 @@ except Exception as exc:
 
 st.divider()
 
+# ── Techa Deep Analysis (deliverable 013 integration) ─────────────────────────
+try:
+    from techa.agents.orchestrator import create_orchestrator as _create_orch
+    _TECHA_AVAILABLE = True
+except ImportError:
+    _TECHA_AVAILABLE = False
+
+with st.expander("🔬 Deep Analysis — techa Orchestrator (deliverable 013)"):
+    if not _TECHA_AVAILABLE:
+        st.info(
+            "**techa** is not installed. Install it to unlock GPT-4o candlestick pattern analysis:\n\n"
+            "```bash\npip install 'techa @ git+https://github.com/laceto/techa.git@main'\n```\n\n"
+            "Requires TA-Lib C library. See `deliverables/2026-05-24_013_techa-streamlit/`."
+        )
+    else:
+        openai_key = os.environ.get("OPENAI_API_KEY", "")
+        try:
+            openai_key = openai_key or st.secrets.get("OPENAI_API_KEY", "")
+        except Exception:
+            pass
+
+        if not openai_key:
+            st.warning("Set `OPENAI_API_KEY` to run techa (needs GPT-4o for synthesis).")
+        else:
+            os.environ["OPENAI_API_KEY"] = openai_key
+            techa_symbol = st.selectbox(
+                "Symbol for deep analysis",
+                all_symbols,
+                key="techa_sym",
+                help="Runs the techa LangGraph Orchestrator: indicators + patterns + TA → GPT-4o report",
+            )
+            techa_lookback = st.slider("Lookback days", 90, 730, 365, key="techa_lb")
+            techa_run = st.button("▶ Run techa Orchestrator", key="techa_btn")
+
+            if techa_run:
+                with st.spinner(f"Running techa Orchestrator on {techa_symbol} ({techa_lookback}d)…"):
+                    try:
+                        graph = _create_orch(
+                            symbol=techa_symbol,
+                            data_source="live",
+                            analysis_date=None,
+                            lookback_days=techa_lookback,
+                            benchmark="^GSPC",
+                            relative=False,
+                        )
+                        result = graph.invoke(graph._initial_state)
+                        report = next(
+                            (result[k] for k in ("final_output", "report", "output", "summary") if k in result and isinstance(result[k], str)),
+                            None,
+                        )
+                        if report:
+                            st.markdown(report)
+                        with st.expander("Raw techa result"):
+                            st.json({k: v for k, v in result.items() if k != "final_output"})
+                    except Exception as exc:
+                        st.error(f"techa failed: {type(exc).__name__}: {exc}")
+
+st.divider()
+
 # ── API Reference ─────────────────────────────────────────────────────────────
 with st.expander("REST API Reference"):
     st.markdown("""
@@ -241,6 +300,7 @@ uvicorn api:app --host 0.0.0.0 --port 8000
 | `GET` | `/api/portfolio` | Portfolio snapshot (equity, cash, P&L) |
 | `GET` | `/api/positions` | Open positions |
 | `POST` | `/api/run` | Trigger strategy run |
+| `GET` | `/api/analysis/{symbol}` | techa Orchestrator report (needs techa + OPENAI_API_KEY) |
 
 **Authentication:** `X-API-Key: <value>` header — set `TRADING_API_KEY` env var.
 
