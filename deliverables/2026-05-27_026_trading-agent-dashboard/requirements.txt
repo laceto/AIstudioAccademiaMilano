@@ -1,0 +1,15 @@
+alpaca-py>=0.14
+streamlit>=1.35
+pandas>=2.0
+plotly>=5.20
+fastapi>=0.111
+uvicorn[standard]>=0.29
+pydantic>=2.0
+yfinance>=0.2
+
+# Optional — enables Deep Analysis panel + /api/analysis/* endpoints + Patterns column
+# Requires TA-Lib C library (see packages.txt / Dockerfile)
+# techa @ git+https://github.com/laceto/techa.git@main
+# openai>=1.40
+# langchain-openai>=0.2
+# langgraph>=0.2

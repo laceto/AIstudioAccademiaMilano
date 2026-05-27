@@ -571,6 +571,17 @@
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
+    "multi_agent_trading_team": {
+      "description": "Auto-discovered from request 026",
+      "intent_mappings": [
+        "algo_trading"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-27",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
     "whatsapp_chat_parser": {
       "description": "Auto-discovered from request 025",
       "intent_mappings": [
@@ -582,10 +593,32 @@
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
+    "shared_json_store_pattern": {
+      "description": "Auto-discovered from request 026",
+      "intent_mappings": [
+        "algo_trading"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-27",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
     "rss_2_0_xml_builder": {
       "description": "Auto-discovered from request 025",
       "intent_mappings": [
         "chat_analysis_rss_pipeline"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-27",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "fastapi_streamlit_split_architecture": {
+      "description": "Auto-discovered from request 026",
+      "intent_mappings": [
+        "algo_trading"
       ],
       "agent": "unknown",
       "first_seen": "2026-05-27",
@@ -938,8 +971,8 @@
           "success_rate": 1.0
         },
         "algo_trading": {
-          "count": 1,
-          "avg_sec": 3.0,
+          "count": 2,
+          "avg_sec": 2.5,
           "success_rate": 1.0
         },
         "linkedin_post_generator": {
@@ -984,8 +1017,8 @@
           "success_rate": 1.0
         },
         "algo_trading": {
-          "count": 1,
-          "avg_sec": 90.0,
+          "count": 2,
+          "avg_sec": 50.0,
           "success_rate": 1.0
         },
         "linkedin_post_generator": {
@@ -1030,8 +1063,8 @@
           "success_rate": 1.0
         },
         "algo_trading": {
-          "count": 1,
-          "avg_sec": 10.0,
+          "count": 2,
+          "avg_sec": 5.5,
           "success_rate": 1.0
         },
         "linkedin_post_generator": {
@@ -1076,8 +1109,8 @@
           "success_rate": 1.0
         },
         "algo_trading": {
-          "count": 1,
-          "avg_sec": 5.0,
+          "count": 2,
+          "avg_sec": 3.0,
           "success_rate": 1.0
         },
         "linkedin_post_generator": {
@@ -1122,8 +1155,8 @@
           "success_rate": 1.0
         },
         "algo_trading": {
-          "count": 1,
-          "avg_sec": 8.0,
+          "count": 2,
+          "avg_sec": 5.0,
           "success_rate": 1.0
         },
         "linkedin_post_generator": {
@@ -1184,6 +1217,11 @@
       "roles": [],
       "capabilities": [],
       "task_stats": {
+        "algo_trading": {
+          "count": 1,
+          "avg_sec": 1.0,
+          "success_rate": 1.0
+        },
         "chat_analysis_rss_pipeline": {
           "count": 1,
           "avg_sec": 5.0,
@@ -1230,12 +1268,16 @@
     "multiline_message_reassembly": 1,
     "ascii_folded_filename_generation": 1,
     "markdown_table_rendering_python": 1,
+    "streamlit_dashboard": 2,
+    "fastapi_rest_api": 1,
+    "alpaca_trading": 1,
+    "sma_rsi_strategy": 1,
+    "shared_state_store": 1,
     "whatsapp_chat_parser": 1,
     "rss_2_0_xml_builder": 1,
     "opml_exporter": 1,
     "keyword_frequency_analysis": 1,
-    "sentiment_proxy": 1,
-    "streamlit_dashboard": 1
+    "sentiment_proxy": 1
   },
   "github_activity_counters": {
     "commit": 0,
