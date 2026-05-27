@@ -302,6 +302,7 @@ See `agents/research/README.md`.
 | 024 | 2026-05-26 | The Niccolò Chronicles — WhatsApp time-capsule chat (voice notes + photos + 5-word texts) → monthly `Niccolo_Age_5_Month_<Month>.md` with 4 sections (Quote Board / Art Catalog / Habit Tracker / Letter to Future Niccolò), OpenAI gpt-4o JSON mode | 14.90 |
 | 025 | 2026-05-27 | Chat-to-Insights RSS Pipeline — parses Claude sessions + WhatsApp exports + audit logs as RSS feeds; keyword/timeline/heatmap/author/sentiment analysis; RSS 2.0 + OPML export; Streamlit dashboard | 0.00 (internal) |
 | 026 | 2026-05-27 | Trading Agent Team Dashboard + API — 4 agents (Alpha/Beta/Gamma US Alpaca + Delta Italian yfinance), shared JSON store, Streamlit dashboard, FastAPI (9 endpoints), techa deep-analysis integration | 24.90 |
+| 027 | 2026-05-27 | DIY Electrical Brainstorm — affinity groups + API landscape for cantina 3×4 assistant (Reddit/WhatsApp/Leroy Merlin funnel) | 4.90 |
 
 ---
 
