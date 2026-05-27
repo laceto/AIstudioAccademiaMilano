@@ -300,6 +300,7 @@ See `agents/research/README.md`.
 | 022 | 2026-05-26 | Family Archivist — single-file HTML for retirees, voice/text → story_archive.md + memory_metadata.json, local + Claude/OpenAI modes | 14.90 |
 | 023 | 2026-05-26 | Mediterranean Meal Planner — favourites + season → Weekly_Menu_<Season>.md with 7-day batch-cook matrix + categorised grocery list (OpenAI gpt-4o) | 14.90 |
 | 024 | 2026-05-26 | The Niccolò Chronicles — WhatsApp time-capsule chat (voice notes + photos + 5-word texts) → monthly `Niccolo_Age_5_Month_<Month>.md` with 4 sections (Quote Board / Art Catalog / Habit Tracker / Letter to Future Niccolò), OpenAI gpt-4o JSON mode | 14.90 |
+| 025 | 2026-05-27 | Trading Agent Team Dashboard + API — 3 named agents (Alpha/Beta/Gamma), shared JSON state store, Streamlit team dashboard, FastAPI REST API (7 endpoints, X-API-Key auth) | 24.90 |
 
 ---
 
