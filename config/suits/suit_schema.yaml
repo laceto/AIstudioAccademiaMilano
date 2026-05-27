@@ -1,0 +1,57 @@
+# Suit configuration schema — one file per deployed instance.
+#
+# Suit 1 = AI Studio Accademia Milano (origin).
+# Suit 2..N = white-label replicas with identical pipeline logic,
+#             different brand/pricing/credentials/owner.
+#
+# A suit_id is injected into every audit log, learning-loop entry,
+# and metric so data from N suits can be aggregated without collision.
+
+# ── Identity ──────────────────────────────────────────────────────
+suit_id:        "S001"            # globally unique, never reused
+suit_name:      "AI Studio Accademia Milano"
+owner_name:     "Luigi Aceto"
+owner_email:    "luigi.vinegar@gmail.com"
+founded:        "2026-05-23"
+locale:         "it_IT"
+currency:       "EUR"
+
+# ── Agent personas ─────────────────────────────────────────────────
+# Override any agent's display name/voice without touching pipeline logic.
+# Leave blank to inherit the canonical name from agents/README.md.
+agent_personas:
+  stacy:      "Stacy"
+  gianni:     "Gianni"
+  chiara:     "Chiara"
+  marco:      "Marco"
+  francesca:  "Francesca"
+  lorenzo:    "Lorenzo"
+  valentina:  "Valentina"
+
+# ── Pricing table ──────────────────────────────────────────────────
+# Override individual prices for this suit; unset keys inherit global_settings.json.
+pricing_overrides: {}
+
+# ── Credential namespace ───────────────────────────────────────────
+# All env vars for this suit are prefixed with SUIT_ID_ to avoid collision
+# when running multiple suits on the same host (e.g. S001_OPENAI_API_KEY).
+# Set to "" to use unprefixed names (single-suit deployments).
+env_prefix:     ""
+
+# ── Deployment targets ─────────────────────────────────────────────
+hosting:
+  static:     "vercel"          # vercel | netlify | github-pages
+  apps:       "streamlit-cloud" # streamlit-cloud | cloud-run | hf-spaces
+  repo_org:   "laceto"
+
+# ── Audit & learning loop ──────────────────────────────────────────
+audit_dir:      "process/audit"
+learning_loop:
+  claude_dir:   "$HOME/.claude"  # never hardcode absolute paths
+  auto_commit_risk_threshold: 3
+
+# ── White-label license tracking ──────────────────────────────────
+license:
+  origin_suit:  "S001"          # S001 = the master; derived suits set this to S001
+  issued_date:  null
+  licensed_to:  null
