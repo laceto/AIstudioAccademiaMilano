@@ -3,10 +3,10 @@
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
     "last_updated": "2026-05-27",
-    "last_request_id": "025",
-    "total_requests_processed": 19,
+    "last_request_id": "026",
+    "total_requests_processed": 20,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "025"
+    "last_processed_audit_log": "026"
   },
   "skills": {
     "html_tailwind_css": {
@@ -578,7 +578,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-27",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -600,7 +600,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-27",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -622,7 +622,7 @@
       ],
       "agent": "unknown",
       "first_seen": "2026-05-27",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -630,6 +630,28 @@
       "description": "Auto-discovered from request 025",
       "intent_mappings": [
         "chat_analysis_rss_pipeline"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-27",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "yfinance_global_markets": {
+      "description": "Auto-discovered from request 026",
+      "intent_mappings": [
+        "algo_trading"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-27",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "techa_pattern_enrichment": {
+      "description": "Auto-discovered from request 026",
+      "intent_mappings": [
+        "algo_trading"
       ],
       "agent": "unknown",
       "first_seen": "2026-05-27",
@@ -807,6 +829,17 @@
       "promoted_from_pattern": true,
       "times_fired": 0,
       "risk_score": 3
+    },
+    {
+      "id": "auto_preload_streamlit_dashboard",
+      "event": "PreToolUse",
+      "matcher": "streamlit_dashboard",
+      "description": "Auto-promoted: pre-load streamlit_dashboard context after 3 uses",
+      "command": "\"/usr/local/bin/python\" scripts/preload_streamlit_dashboard.py 2>&1",
+      "added": "2026-05-27",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 3
     }
   ],
   "mcp": {
@@ -971,8 +1004,8 @@
           "success_rate": 1.0
         },
         "algo_trading": {
-          "count": 2,
-          "avg_sec": 2.5,
+          "count": 3,
+          "avg_sec": 2.3,
           "success_rate": 1.0
         },
         "linkedin_post_generator": {
@@ -1017,8 +1050,8 @@
           "success_rate": 1.0
         },
         "algo_trading": {
-          "count": 2,
-          "avg_sec": 50.0,
+          "count": 3,
+          "avg_sec": 36.7,
           "success_rate": 1.0
         },
         "linkedin_post_generator": {
@@ -1063,8 +1096,8 @@
           "success_rate": 1.0
         },
         "algo_trading": {
-          "count": 2,
-          "avg_sec": 5.5,
+          "count": 3,
+          "avg_sec": 4.0,
           "success_rate": 1.0
         },
         "linkedin_post_generator": {
@@ -1109,8 +1142,8 @@
           "success_rate": 1.0
         },
         "algo_trading": {
-          "count": 2,
-          "avg_sec": 3.0,
+          "count": 3,
+          "avg_sec": 2.3,
           "success_rate": 1.0
         },
         "linkedin_post_generator": {
@@ -1155,8 +1188,8 @@
           "success_rate": 1.0
         },
         "algo_trading": {
-          "count": 2,
-          "avg_sec": 5.0,
+          "count": 3,
+          "avg_sec": 4.0,
           "success_rate": 1.0
         },
         "linkedin_post_generator": {
@@ -1218,7 +1251,7 @@
       "capabilities": [],
       "task_stats": {
         "algo_trading": {
-          "count": 1,
+          "count": 2,
           "avg_sec": 1.0,
           "success_rate": 1.0
         },
@@ -1268,16 +1301,18 @@
     "multiline_message_reassembly": 1,
     "ascii_folded_filename_generation": 1,
     "markdown_table_rendering_python": 1,
-    "streamlit_dashboard": 2,
-    "fastapi_rest_api": 1,
-    "alpaca_trading": 1,
-    "sma_rsi_strategy": 1,
-    "shared_state_store": 1,
+    "streamlit_dashboard": 3,
+    "fastapi_rest_api": 2,
+    "alpaca_trading": 2,
+    "sma_rsi_strategy": 2,
+    "shared_state_store": 2,
     "whatsapp_chat_parser": 1,
     "rss_2_0_xml_builder": 1,
     "opml_exporter": 1,
     "keyword_frequency_analysis": 1,
-    "sentiment_proxy": 1
+    "sentiment_proxy": 1,
+    "yfinance_data": 1,
+    "techa_integration": 1
   },
   "github_activity_counters": {
     "commit": 0,
@@ -1349,6 +1384,30 @@
         "interactive_app",
         "knowledge_query",
         "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "multi_agent_trading_team": {
+      "flagged_date": "2026-05-27",
+      "times_used": 2,
+      "intent_mappings": [
+        "algo_trading"
+      ],
+      "status": "pending"
+    },
+    "shared_json_store_pattern": {
+      "flagged_date": "2026-05-27",
+      "times_used": 2,
+      "intent_mappings": [
+        "algo_trading"
+      ],
+      "status": "pending"
+    },
+    "fastapi_streamlit_split_architecture": {
+      "flagged_date": "2026-05-27",
+      "times_used": 2,
+      "intent_mappings": [
+        "algo_trading"
       ],
       "status": "pending"
     }
