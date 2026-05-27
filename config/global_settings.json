@@ -2,11 +2,11 @@
   "_meta": {
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
-    "last_updated": "2026-05-25",
-    "last_request_id": "016",
-    "total_requests_processed": 17,
+    "last_updated": "2026-05-27",
+    "last_request_id": "024",
+    "total_requests_processed": 18,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "016"
+    "last_processed_audit_log": "024"
   },
   "skills": {
     "html_tailwind_css": {
@@ -537,6 +537,39 @@
       "requires_user_auth": true,
       "auth_method": "gcloud_application_default",
       "security_note": "OPENAI_API_KEY in Secret Manager, never baked into image layers"
+    },
+    "whatsapp_export_parsing": {
+      "description": "Auto-discovered from request 024",
+      "intent_mappings": [
+        "niccolo_chronicles"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-27",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "multiline_message_reassembly": {
+      "description": "Auto-discovered from request 024",
+      "intent_mappings": [
+        "niccolo_chronicles"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-27",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "ascii_folded_filename_generation": {
+      "description": "Auto-discovered from request 024",
+      "intent_mappings": [
+        "niccolo_chronicles"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-27",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
     }
   },
   "intent_to_skill_map": {
@@ -895,6 +928,11 @@
           "count": 1,
           "avg_sec": 0.0,
           "success_rate": 1.0
+        },
+        "niccolo_chronicles": {
+          "count": 1,
+          "avg_sec": 5.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -931,6 +969,11 @@
           "count": 1,
           "avg_sec": 120.0,
           "success_rate": 1.0
+        },
+        "niccolo_chronicles": {
+          "count": 1,
+          "avg_sec": 95.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -965,6 +1008,11 @@
         },
         "internal_bugfix": {
           "count": 1,
+          "avg_sec": 10.0,
+          "success_rate": 1.0
+        },
+        "niccolo_chronicles": {
+          "count": 2,
           "avg_sec": 10.0,
           "success_rate": 1.0
         }
@@ -1003,6 +1051,11 @@
           "count": 1,
           "avg_sec": 0.0,
           "success_rate": 1.0
+        },
+        "niccolo_chronicles": {
+          "count": 1,
+          "avg_sec": 4.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1038,6 +1091,11 @@
         "internal_bugfix": {
           "count": 1,
           "avg_sec": 0.0,
+          "success_rate": 0.0
+        },
+        "niccolo_chronicles": {
+          "count": 1,
+          "avg_sec": 12.0,
           "success_rate": 0.0
         }
       }
@@ -1094,7 +1152,15 @@
     "pytest_tdd": 1,
     "python_subprocess_mocking": 1,
     "git_diff_cached_quiet": 1,
-    "argparse_force_flag": 1
+    "argparse_force_flag": 1,
+    "openai_chat_completions_json_mode": 1,
+    "json_schema_contract_for_llm_output": 1,
+    "dryrun_offline_stub_pattern": 1,
+    "validator_owns_invariants_pattern": 1,
+    "whatsapp_export_parsing": 1,
+    "multiline_message_reassembly": 1,
+    "ascii_folded_filename_generation": 1,
+    "markdown_table_rendering_python": 1
   },
   "github_activity_counters": {
     "commit": 0,
@@ -1109,5 +1175,65 @@
     "branch_delete": 4,
     "release": 0,
     "deploy": 0
+  },
+  "template_candidates": {
+    "fpdf2_pdf_generation": {
+      "flagged_date": "2026-05-27",
+      "times_used": 2,
+      "intent_mappings": [
+        "pdf_creation",
+        "invoice_generation"
+      ],
+      "status": "pending"
+    },
+    "gmail_api_oauth": {
+      "flagged_date": "2026-05-27",
+      "times_used": 2,
+      "intent_mappings": [
+        "email_delivery"
+      ],
+      "status": "pending"
+    },
+    "gmail_api_send": {
+      "flagged_date": "2026-05-27",
+      "times_used": 2,
+      "intent_mappings": [
+        "email_delivery"
+      ],
+      "status": "pending"
+    },
+    "streamlit_app_generation": {
+      "flagged_date": "2026-05-27",
+      "times_used": 3,
+      "intent_mappings": [
+        "chatbot_creation",
+        "interactive_app",
+        "knowledge_query",
+        "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "openai_api_integration": {
+      "flagged_date": "2026-05-27",
+      "times_used": 3,
+      "intent_mappings": [
+        "chatbot_creation",
+        "ai_integration",
+        "knowledge_query",
+        "calendar_integration"
+      ],
+      "status": "pending"
+    },
+    "streamlit_cloud_deploy": {
+      "flagged_date": "2026-05-27",
+      "times_used": 3,
+      "intent_mappings": [
+        "chatbot_creation",
+        "interactive_app",
+        "knowledge_query",
+        "calendar_integration"
+      ],
+      "status": "pending"
+    }
   }
 }

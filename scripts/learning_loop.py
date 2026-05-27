@@ -126,12 +126,12 @@ def update_skills(settings: dict, audit: dict) -> int:
     for skill in audit.get("learning_flags", {}).get("new_skills", []) or []:
         if skill not in settings["skills"]:
             settings["skills"][skill] = {
-                "description": f"Auto-discovered from request {audit['request_id']}",
-                "intent_mappings": [audit["intent"]],
+                "description": f"Auto-discovered from request {audit.get('request_id', 'unknown')}",
+                "intent_mappings": [audit.get("intent", "unknown")],
                 "agent": "unknown",
                 "first_seen": today,
                 "times_used": 1,
-                "success_rate": 1.0 if audit["outcome"] == "success" else 0.0,
+                "success_rate": 1.0 if audit.get("outcome", "success") == "success" else 0.0,
                 "avg_duration_sec": 0,
             }
             print(f"[learning_loop] New skill: {skill}")
@@ -149,7 +149,7 @@ def update_mcp(settings: dict, audit: dict) -> int:
     for tool in audit.get("learning_flags", {}).get("new_mcp", []) or []:
         if tool not in settings["mcp"]:
             settings["mcp"][tool] = {
-                "description": f"Auto-discovered from request {audit['request_id']}",
+                "description": f"Auto-discovered from request {audit.get('request_id', 'unknown')}",
                 "endpoint": "unknown",
                 "auth": "unknown",
                 "write_access": False,
@@ -601,8 +601,8 @@ def main():
         changes += update_intent_registry(args.intent_registry, audit)
 
         settings["_meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
-        settings["_meta"]["last_request_id"] = audit["request_id"]
-        settings["_meta"]["last_processed_audit_log"] = audit["request_id"]
+        settings["_meta"]["last_request_id"] = audit.get("request_id", "unknown")
+        settings["_meta"]["last_processed_audit_log"] = audit.get("request_id", "unknown")
         settings["_meta"]["total_requests_processed"] = (
             settings["_meta"].get("total_requests_processed", 0) + 1
         )
@@ -619,7 +619,7 @@ def main():
     if args.no_commit:
         print("[learning_loop] --no-commit set — skipping git commit.")
     elif risk_score < 3:
-        commit_changes(args.settings, args.audit_dir, audit["request_id"])
+        commit_changes(args.settings, args.audit_dir, audit.get("request_id", "unknown"))
     else:
         print(
             f"[learning_loop] Risk score {risk_score} >= 3. "
