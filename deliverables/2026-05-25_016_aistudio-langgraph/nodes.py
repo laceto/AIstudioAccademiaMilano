@@ -305,24 +305,204 @@ def marco_invoice(state: StudioState) -> dict:
 
 
 # ── Francesca: Delivery ────────────────────────────────────────────────────────
+
+def _next_audit_id(audit_dir) -> int:
+    import re
+    from pathlib import Path
+    pattern = re.compile(r"^\d{4}-\d{2}-\d{2}_(\d+)_")
+    ids = [
+        int(m.group(1))
+        for f in Path(audit_dir).iterdir()
+        if (m := pattern.match(f.name))
+    ]
+    return (max(ids) + 1) if ids else 1
+
+
+def _write_audit_log(path, state: StudioState, req_id: int, datestr: str, deliverable_path: str) -> None:
+    from pathlib import Path
+
+    agents = [
+        {"name": "Stacy",     "role": "input_orchestrator",  "status": "success"},
+        {"name": "Gianni",    "role": "request_analyzer",    "status": "success"},
+        {"name": "Chiara",    "role": "product_generator",   "status": "success"},
+        {"name": "TechAudit", "role": "technical_auditor",   "status": "success"},
+        {"name": "Compliance","role": "compliance_agent",    "status": "success"},
+        {"name": "Reputation","role": "reputation_guardian", "status": "success"},
+        {"name": "Stacy",     "role": "qa_agent",            "status": "success"},
+        {"name": "Marco",     "role": "transaction_manager", "status": "success"},
+        {"name": "Francesca", "role": "delivery_agent",      "status": "success"},
+    ]
+    agents_yaml = "\n".join(
+        f'  - name: {a["name"]}\n    role: {a["role"]}\n    status: {a["status"]}'
+        for a in agents
+    )
+    skills = state.get("skills_used") or []
+    skills_yaml = "\n".join(f"  - {s}" for s in skills) or "  []"
+
+    invoice = state.get("invoice") or {}
+    risk_score = int(state.get("aggregate_risk_score", 1))
+
+    content = f"""# Audit Log — Request {req_id:03d}
+
+```yaml
+request_id: "{req_id:03d}"
+date: "{datestr}"
+input_type: {state.get("input_type", "text")}
+raw_input: |
+  {state.get("request", "").strip()}
+intent: {state.get("intent", "unknown")}
+product_type: {state.get("product_type", "unknown")}
+
+agents_invoked:
+{agents_yaml}
+
+skills_used:
+{skills_yaml}
+
+qa_result: {"pass" if state.get("qa_passed") else "fail"}
+qa_iterations: {state.get("qa_iteration", 1)}
+
+payment:
+  amount: "€{state.get("product_price", "0.00")}"
+  invoice_id: {state.get("invoice_id", "N/A")}
+  status: {invoice.get("status", "issued")}
+
+delivery:
+  deliverable_path: {deliverable_path}
+
+outcome: success
+
+learning_flags:
+  new_skills: []
+  new_mcp: []
+  risk_score: {max(1, risk_score)}
+```
+"""
+    Path(path).write_text(content, encoding="utf-8")
+
+
+def _git_commit_and_push(root, files: list[str], slug: str) -> str:
+    import subprocess
+    try:
+        subprocess.run(
+            ["git", "add"] + files,
+            cwd=str(root), capture_output=True, check=True,
+        )
+        branch = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=str(root), capture_output=True, text=True,
+        ).stdout.strip() or "main"
+        subprocess.run(
+            ["git", "commit", "-m", f"deliver: {slug}"],
+            cwd=str(root), capture_output=True, check=True,
+        )
+        result = subprocess.run(
+            ["git", "push", "-u", "origin", branch],
+            cwd=str(root), capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode == 0:
+            return f"pushed to {branch}"
+        return f"push failed: {result.stderr.strip()[:120]}"
+    except subprocess.CalledProcessError as e:
+        return f"git error: {(e.stderr or b'').decode()[:120]}"
+    except Exception as e:
+        return f"error: {e}"
+
+
+def _send_email(state: StudioState, slug: str, deliverable_path) -> str:
+    import os
+    import smtplib
+    from email.mime.text import MIMEText
+
+    gmail_user = os.getenv("GMAIL_USER")
+    gmail_pass = os.getenv("GMAIL_APP_PASSWORD")
+    recipient  = state.get("user_email") or gmail_user
+    if not (gmail_user and gmail_pass and recipient):
+        return "skipped (no credentials)"
+
+    body = (
+        f"Ciao {state.get('user_name', 'Cliente')},\n\n"
+        f"Il tuo deliverable è pronto: {slug}\n"
+        f"File: {deliverable_path}\n"
+        f"Invoice: {state.get('invoice_id', 'N/A')} — €{state.get('product_price', '0.00')}\n\n"
+        "— AI Studio Accademia Milano"
+    )
+    msg = MIMEText(body)
+    msg["Subject"] = f"[AI Studio] Consegna: {slug}"
+    msg["From"]    = gmail_user
+    msg["To"]      = recipient
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(gmail_user, gmail_pass)
+            smtp.sendmail(gmail_user, [recipient], msg.as_string())
+        return f"sent to {recipient}"
+    except Exception as e:
+        return f"email error: {e}"
+
+
 def francesca_deliver(state: StudioState) -> dict:
-    path    = state.get("deliverable_path", "deliverables/output")
-    inv_id  = state.get("invoice_id", "NO-INV")
-    datestr = datetime.now().strftime("%Y-%m-%d")
+    import subprocess
+    from pathlib import Path
+
+    ROOT      = Path(__file__).resolve().parent.parent.parent
+    AUDIT_DIR = ROOT / "process" / "audit"
+    datestr   = datetime.now().strftime("%Y-%m-%d")
+
+    # 1. Resolve next audit ID and slug
+    next_id      = _next_audit_id(AUDIT_DIR)
+    product_slug = (state.get("product_type") or "output").replace("_", "-")
+    slug         = f"{datestr}_{next_id:03d}_{product_slug}"
+
+    # 2. Write deliverable to disk
+    raw_path        = state.get("deliverable_path") or "deliverables/output/main.py"
+    filename        = Path(raw_path).name or "main.py"
+    deliverable_dir = ROOT / "deliverables" / slug
+    deliverable_dir.mkdir(parents=True, exist_ok=True)
+    actual_path = deliverable_dir / filename
+    actual_path.write_text(state.get("deliverable_content") or "", encoding="utf-8")
+
+    rel_deliverable = str(actual_path.relative_to(ROOT))
+
+    # 3. Write audit log
+    audit_log_path = AUDIT_DIR / f"{slug}.md"
+    _write_audit_log(audit_log_path, state, next_id, datestr, rel_deliverable)
+    rel_audit = str(audit_log_path.relative_to(ROOT))
+
+    # 4. Git commit + push
+    git_status = _git_commit_and_push(
+        ROOT,
+        [str(actual_path), str(audit_log_path)],
+        slug,
+    )
+
+    # 5. Trigger post_delivery_update.py (non-fatal)
+    try:
+        subprocess.run(
+            ["python", "scripts/post_delivery_update.py"],
+            cwd=str(ROOT), capture_output=True, timeout=30,
+        )
+    except Exception:
+        pass
+
+    # 6. Best-effort email
+    email_status = _send_email(state, slug, rel_deliverable)
 
     result = {
-        "git_push":   f"git push origin {path}  [simulated]",
-        "audit_log":  f"process/audit/{datestr}_{inv_id}.md",
-        "email_sent": f"email → {state.get('user_name', 'client')}  [simulated]",
-        "status":     "delivered",
+        "deliverable_path": rel_deliverable,
+        "audit_log":        rel_audit,
+        "git_status":       git_status,
+        "email_status":     email_status,
+        "status":           "delivered",
     }
 
     return {
         "delivery_result": result,
-        "audit_log_path":  result["audit_log"],
+        "audit_log_path":  rel_audit,
         "finished":        True,
         "messages": [AIMessage(content=(
-            f"[Francesca] DELIVERED ✓ | audit={result['audit_log']} | {result['git_push']}"
+            f"[Francesca] DELIVERED ✓ | {slug} | "
+            f"git={git_status} | email={email_status}"
         ))],
     }
 

@@ -64,6 +64,7 @@ class StudioState(TypedDict):
     invoice_id: Optional[str]
 
     # ── Francesca ────────────────────────────────────────────────────────
+    user_email: Optional[str]
     delivery_result: Optional[dict]
     audit_log_path: Optional[str]
 

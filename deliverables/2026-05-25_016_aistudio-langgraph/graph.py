@@ -124,13 +124,14 @@ studio_graph = build_studio_graph()
 
 # ── Helper for Streamlit streaming ────────────────────────────────────────────
 
-def run_pipeline(request: str, user_name: str = "Cliente", config: dict | None = None) -> list[dict]:
+def run_pipeline(request: str, user_name: str = "Cliente", user_email: str | None = None, config: dict | None = None) -> list[dict]:
     """Stream the pipeline and return a list of step dicts for the UI."""
     from .state import PRICING_TABLE
 
     initial: StudioState = {
         "request":            request,
         "user_name":          user_name,
+        "user_email":         user_email,
         "input_type":         "text",
         "intent":             None,
         "product_type":       None,
