@@ -58,7 +58,7 @@ def main() -> int:
     parser.add_argument("--request",    required=True,  help="The client request")
     parser.add_argument("--user-name",  default="Cliente")
     parser.add_argument("--user-email", default=None)
-    parser.add_argument("--provider",   default="anthropic", choices=["anthropic", "openai"])
+    parser.add_argument("--provider",   default="openai", choices=["anthropic", "openai"])
     args = parser.parse_args()
 
     _banner("AI Studio Accademia Milano — Pipeline Run")

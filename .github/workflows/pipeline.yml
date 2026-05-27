@@ -10,7 +10,7 @@ on:
       request:
         description: "Client request (what to build)"
         required: true
-        default: "Create a Streamlit chatbot with Anthropic Claude streaming"
+        default: "Create a Streamlit chatbot with OpenAI streaming"
       user_name:
         description: "Client name"
         required: false
@@ -22,9 +22,9 @@ on:
       provider:
         description: "LLM provider"
         required: false
-        default: "anthropic"
+        default: "openai"
         type: choice
-        options: [anthropic, openai]
+        options: [openai, anthropic]
 
   issues:
     types: [opened]
@@ -89,7 +89,7 @@ jobs:
             echo "request=$ISSUE_BODY"       >> "$GITHUB_OUTPUT"
             echo "user_name=$ISSUE_USER"     >> "$GITHUB_OUTPUT"
             echo "user_email="               >> "$GITHUB_OUTPUT"
-            echo "provider=anthropic"        >> "$GITHUB_OUTPUT"
+            echo "provider=openai"            >> "$GITHUB_OUTPUT"
           else
             echo "request=$DISPATCH_REQUEST" >> "$GITHUB_OUTPUT"
             echo "user_name=$DISPATCH_USER"  >> "$GITHUB_OUTPUT"
