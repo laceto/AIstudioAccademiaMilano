@@ -39,6 +39,7 @@ class ShowcaseCard:
     product_type: str
     price_eur: float
     title: str
+    live_url: str | None = None  # set in audit YAML or via <PRODUCT_TYPE_upper>_URL env var
 
 
 def _load_pricing(path: Path = _PRICING_PATH) -> dict[str, float]:
@@ -90,6 +91,7 @@ def _humanize(product_type: str) -> str:
 
 
 def _build_card(audit: dict[str, Any], pricing: dict[str, float]) -> ShowcaseCard | None:
+    import os
     outcome = str(audit.get("outcome", "")).strip().lower()
     if outcome.startswith("fail"):
         return None
@@ -102,6 +104,10 @@ def _build_card(audit: dict[str, Any], pricing: dict[str, float]) -> ShowcaseCar
     intent = str(audit.get("intent", "")).strip()
     if not (request_id and date and product_type):
         return None
+    # live_url: from audit YAML, then env var <PRODUCT_TYPE_UPPER>_URL, then None
+    live_url = audit.get("live_url") or os.environ.get(
+        product_type.upper() + "_URL"
+    ) or None
     return ShowcaseCard(
         request_id=request_id,
         date=date,
@@ -109,6 +115,7 @@ def _build_card(audit: dict[str, Any], pricing: dict[str, float]) -> ShowcaseCar
         product_type=product_type,
         price_eur=price,
         title=_humanize(product_type),
+        live_url=live_url if live_url and str(live_url).lower() not in ("null", "none", "") else None,
     )
 
 

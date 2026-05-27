@@ -1,8 +1,14 @@
----
+# Audit Log — Request 025
+
+```yaml
 request_id: "025"
 date: "2026-05-27"
+time: "14:00"
+input_type: text
 intent: algo_trading
+product_type: algo_trading
 outcome: success
+live_url: null
 agents_invoked:
   - name: Stacy
     role: intent_classifier
@@ -16,7 +22,7 @@ agents_invoked:
     status: success
   - name: Chiara
     role: implementer
-    action: built app.py (Streamlit), api.py (FastAPI), agents.py, store.py, strategy.py, trader.py
+    action: built app.py, api.py, agents.py, data_provider.py, store.py, strategy.py, trader.py
     duration_sec: 10
     status: success
   - name: Stacy QA
@@ -40,63 +46,67 @@ skills_used:
   - alpaca_trading
   - sma_rsi_strategy
   - shared_state_store
+  - yfinance_data
+  - techa_integration
+delivery:
+  method: github
+  destination: https://github.com/laceto/AIstudioAccademiaMilano/tree/main/deliverables/2026-05-27_025_trading-agent-dashboard
+  confirmed: true
+qa_result: pass
+payment:
+  amount: "€24.90"
+  method: card
+  receipt_id: REC-20260527-025
 learning_flags:
   new_skills:
     - multi_agent_trading_team
     - shared_json_store_pattern
     - fastapi_streamlit_split_architecture
+    - yfinance_global_markets
+    - techa_pattern_enrichment
   new_mcp: []
   risk_score: 1
----
+```
 
-# Delivery 025 — Trading Agent Team Dashboard + API
+## Delivery 025 — Trading Agent Team Dashboard + API
 
-## Summary
+### Summary
 
-Three named trading agents (Alpha, Beta, Gamma) each covering a different basket of
-symbols with their own SMA crossover parameters. A shared JSON state store (`state.json`)
-lets both the Streamlit dashboard and the FastAPI server read consistent, fresh data
-without duplicating Alpaca calls.
+Four named trading agents (Alpha/Beta/Gamma — US via Alpaca paper; Delta — Italian
+blue-chips via yfinance). Shared atomic JSON store keeps Streamlit dashboard and FastAPI
+in sync. Integrated with techa (D013): Pattern enrichment per signal, techa Orchestrator
+on demand, cached analysis reports.
 
-## Deliverable
+### Deliverable
 
 `deliverables/2026-05-27_025_trading-agent-dashboard/`
 
 | File | Purpose |
 |------|---------|
-| `app.py` | Streamlit team dashboard — portfolio KPIs, agent grid, signal table, chart |
-| `api.py` | FastAPI REST API — 7 endpoints, optional X-API-Key auth |
-| `agents.py` | Agent team definitions + run logic (SMA crossover + RSI) |
-| `store.py` | Thread-safe atomic JSON state store |
+| `app.py` | Streamlit team dashboard — portfolio KPIs, 4-agent grid, signal+pattern table, chart |
+| `api.py` | FastAPI REST API — 9 endpoints, optional X-API-Key auth |
+| `agents.py` | Agent team + run logic (SMA crossover + RSI + techa patterns) |
+| `data_provider.py` | Unified OHLCV fetcher — Alpaca or yfinance routing |
+| `store.py` | Thread-safe atomic JSON state + analysis cache |
 | `strategy.py` | SMA crossover + RSI signal computation |
 | `trader.py` | Alpaca client utilities (paper=True hardcoded) |
-| `requirements.txt` | alpaca-py, streamlit, fastapi, uvicorn, plotly, pandas |
+| `requirements.txt` | alpaca-py, streamlit, fastapi, uvicorn, plotly, pandas, yfinance |
+| `Dockerfile` | TA-Lib build — deploys on HF Spaces / Cloud Run |
 
-## How to run
-
-```bash
-cd deliverables/2026-05-27_025_trading-agent-dashboard
-pip install -r requirements.txt
-
-# Dashboard
-ALPACA_API_KEY=xxx ALPACA_SECRET_KEY=yyy streamlit run app.py
-
-# API (separate terminal)
-ALPACA_API_KEY=xxx ALPACA_SECRET_KEY=yyy TRADING_API_KEY=secret uvicorn api:app --host 0.0.0.0 --port 8000
-```
-
-## API endpoints
+### API endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | /health | Liveness |
+| GET | /health | Liveness + state summary |
 | GET | /api/agents | All agent statuses |
 | GET | /api/agents/{name} | Single agent |
-| GET | /api/signals | All signals (?signal=buy filter) |
+| GET | /api/signals | All signals (?signal=buy, ?source=yfinance) |
 | GET | /api/portfolio | Portfolio snapshot |
 | GET | /api/positions | Open positions |
 | POST | /api/run | Trigger run (body: agent, dry_run) |
+| GET | /api/analyses | List cached techa reports |
+| GET | /api/analysis/{symbol} | techa Orchestrator report (?refresh=true) |
 
-## Price
+### Price
 
-algo_trading: 24.90 EUR
+algo_trading: €24.90
