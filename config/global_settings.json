@@ -3,10 +3,10 @@
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
     "last_updated": "2026-05-27",
-    "last_request_id": "024",
-    "total_requests_processed": 18,
+    "last_request_id": "025",
+    "total_requests_processed": 19,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "024"
+    "last_processed_audit_log": "025"
   },
   "skills": {
     "html_tailwind_css": {
@@ -570,6 +570,39 @@
       "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 0
+    },
+    "whatsapp_chat_parser": {
+      "description": "Auto-discovered from request 025",
+      "intent_mappings": [
+        "chat_analysis_rss_pipeline"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-27",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "rss_2_0_xml_builder": {
+      "description": "Auto-discovered from request 025",
+      "intent_mappings": [
+        "chat_analysis_rss_pipeline"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-27",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "opml_exporter": {
+      "description": "Auto-discovered from request 025",
+      "intent_mappings": [
+        "chat_analysis_rss_pipeline"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-05-27",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
     }
   },
   "intent_to_skill_map": {
@@ -933,6 +966,11 @@
           "count": 1,
           "avg_sec": 5.0,
           "success_rate": 1.0
+        },
+        "chat_analysis_rss_pipeline": {
+          "count": 1,
+          "avg_sec": 2.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -974,6 +1012,11 @@
           "count": 1,
           "avg_sec": 95.0,
           "success_rate": 1.0
+        },
+        "chat_analysis_rss_pipeline": {
+          "count": 1,
+          "avg_sec": 120.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1015,6 +1058,11 @@
           "count": 2,
           "avg_sec": 10.0,
           "success_rate": 1.0
+        },
+        "chat_analysis_rss_pipeline": {
+          "count": 1,
+          "avg_sec": 1.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1056,6 +1104,11 @@
           "count": 1,
           "avg_sec": 4.0,
           "success_rate": 1.0
+        },
+        "chat_analysis_rss_pipeline": {
+          "count": 1,
+          "avg_sec": 1.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1097,6 +1150,11 @@
           "count": 1,
           "avg_sec": 12.0,
           "success_rate": 0.0
+        },
+        "chat_analysis_rss_pipeline": {
+          "count": 1,
+          "avg_sec": 3.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1118,6 +1176,17 @@
         "internal_bugfix": {
           "count": 1,
           "avg_sec": 0.0,
+          "success_rate": 0.0
+        }
+      }
+    },
+    "Stacy QA": {
+      "roles": [],
+      "capabilities": [],
+      "task_stats": {
+        "chat_analysis_rss_pipeline": {
+          "count": 1,
+          "avg_sec": 5.0,
           "success_rate": 0.0
         }
       }
@@ -1160,7 +1229,13 @@
     "whatsapp_export_parsing": 1,
     "multiline_message_reassembly": 1,
     "ascii_folded_filename_generation": 1,
-    "markdown_table_rendering_python": 1
+    "markdown_table_rendering_python": 1,
+    "whatsapp_chat_parser": 1,
+    "rss_2_0_xml_builder": 1,
+    "opml_exporter": 1,
+    "keyword_frequency_analysis": 1,
+    "sentiment_proxy": 1,
+    "streamlit_dashboard": 1
   },
   "github_activity_counters": {
     "commit": 0,
