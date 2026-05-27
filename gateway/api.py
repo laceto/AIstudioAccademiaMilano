@@ -35,12 +35,14 @@ if _env_file.exists():
             os.environ.setdefault(_k.strip(), _v.strip())
 
 from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, field_validator
 
 from config.brand import b
 from gateway.bot_whatsapp import router as whatsapp_router
 from gateway.middleware import check_rate_limit
 from gateway.pipeline_adapter import PipelineAdapter
+from gateway.showcase import ShowcaseCard, load_cards
 
 _queue_dir = os.environ.get("GATEWAY_QUEUE_DIR", "gateway/queue")
 _adapter = PipelineAdapter(queue_dir=_queue_dir)
@@ -91,6 +93,96 @@ class SubmitRequest(BaseModel):
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
+
+def _render_showcase(cards: list[ShowcaseCard]) -> str:
+    """Inline HTML gallery — no Jinja2 dependency for a single-page render."""
+    studio_name = b("studio.name")
+    tagline = b("studio.tagline")
+    card_html = "\n".join(
+        f"""<article class="card">
+  <header>
+    <h3>{c.title}</h3>
+    <span class="price">€{c.price_eur:.2f}</span>
+  </header>
+  <p class="meta">#{c.request_id} · delivered {c.date}</p>
+  <form method="post" action="/submit" onsubmit="return submitIntent(event, '{c.product_type}')">
+    <button type="submit">Order this</button>
+  </form>
+</article>"""
+        for c in cards
+    )
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{studio_name}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {{ color-scheme: light dark; --fg: #1a1a1a; --muted: #666; --accent: #c83e2c; --bg: #fafaf7; --card: #fff; --border: #e5e3dd; }}
+    @media (prefers-color-scheme: dark) {{ :root {{ --fg: #f0ede5; --muted: #999; --bg: #161410; --card: #1f1d18; --border: #2c2a24; }} }}
+    * {{ box-sizing: border-box; }}
+    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--fg); line-height: 1.5; }}
+    header.hero {{ padding: 4rem 2rem 2rem; max-width: 1100px; margin: 0 auto; }}
+    header.hero h1 {{ font-size: clamp(2rem, 5vw, 3rem); margin: 0 0 0.5rem; }}
+    header.hero p {{ color: var(--muted); font-size: 1.15rem; margin: 0; max-width: 38rem; }}
+    main {{ max-width: 1100px; margin: 0 auto; padding: 1rem 2rem 4rem; }}
+    h2 {{ font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 2rem 0 1rem; font-weight: 600; }}
+    .grid {{ display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }}
+    .card {{ background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }}
+    .card header {{ display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }}
+    .card h3 {{ font-size: 1.1rem; margin: 0; }}
+    .price {{ color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }}
+    .meta {{ color: var(--muted); font-size: 0.85rem; margin: 0; }}
+    .card button {{ margin-top: auto; background: var(--fg); color: var(--bg); border: 0; border-radius: 8px; padding: 0.6rem 1rem; font-weight: 600; cursor: pointer; }}
+    .card button:hover {{ background: var(--accent); color: #fff; }}
+    footer {{ max-width: 1100px; margin: 0 auto; padding: 2rem; color: var(--muted); font-size: 0.85rem; }}
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <h1>{studio_name}</h1>
+    <p>{tagline}</p>
+  </header>
+  <main>
+    <h2>Live catalogue · {len(cards)} products</h2>
+    <div class="grid">
+{card_html}
+    </div>
+  </main>
+  <footer>Every card is a real delivery — the catalogue is built from <code>process/audit/</code> at request time.</footer>
+  <script>
+    async function submitIntent(event, productType) {{
+      event.preventDefault();
+      const btn = event.target.querySelector("button");
+      btn.disabled = true; btn.textContent = "Sending…";
+      try {{
+        const res = await fetch("/submit", {{
+          method: "POST", headers: {{ "Content-Type": "application/json" }},
+          body: JSON.stringify({{ text: "I would like to order: " + productType, channel: "api", metadata: {{ source: "showcase", product_type: productType }} }})
+        }});
+        const data = await res.json();
+        btn.textContent = res.ok ? "Job " + (data.job_id || "queued") : "Try again";
+      }} catch (e) {{ btn.textContent = "Try again"; }}
+      setTimeout(() => {{ btn.disabled = false; btn.textContent = "Order this"; }}, 4000);
+      return false;
+    }}
+  </script>
+</body>
+</html>"""
+
+
+@app.get("/", response_class=HTMLResponse)
+async def showcase():
+    return _render_showcase(load_cards())
+
+
+@app.get("/api/showcase")
+async def showcase_json():
+    return {
+        "count": len(cards := load_cards()),
+        "cards": [c.__dict__ for c in cards],
+    }
+
 
 @app.get("/health")
 async def health():
