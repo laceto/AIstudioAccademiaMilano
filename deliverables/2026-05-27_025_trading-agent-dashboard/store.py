@@ -12,7 +12,7 @@ from pathlib import Path
 STATE_FILE = Path(__file__).parent / "state.json"
 _lock = threading.Lock()
 
-_DEFAULT: dict = {"last_run": None, "agents": {}, "portfolio": {}}
+_DEFAULT: dict = {"last_run": None, "agents": {}, "portfolio": {}, "analyses": {}}
 
 
 def load() -> dict:
@@ -48,3 +48,19 @@ def update_portfolio(portfolio: dict) -> None:
         state["portfolio"] = portfolio
         state["last_run"] = datetime.now().isoformat()
         _atomic_write(state)
+
+
+def update_analysis(symbol: str, data: dict) -> None:
+    """Cache a techa Orchestrator report keyed by symbol."""
+    with _lock:
+        state = load()
+        state.setdefault("analyses", {})[symbol.upper()] = {
+            **data,
+            "cached_at": datetime.now().isoformat(),
+        }
+        _atomic_write(state)
+
+
+def get_analysis(symbol: str) -> dict | None:
+    state = load()
+    return state.get("analyses", {}).get(symbol.upper())
