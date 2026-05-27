@@ -1,0 +1,51 @@
+{
+  "company": "Diabetologia & Endocrinologia — Fabrizia Aceto",
+  "founder": "Fabrizia Aceto",
+  "domain": "diabetologia-endocrinologia",
+  "version": "0.1.0",
+  "created": "2026-05-27",
+
+  "pricing": {
+    "soap_note_generator":     "4.90",
+    "cgm_analysis_report":     "9.90",
+    "patient_monitoring_app":  "19.90",
+    "clinical_chatbot":        "19.90",
+    "therapy_plan_pdf":        "3.90",
+    "endocrine_dashboard":     "14.90",
+    "pubmed_researcher_app":   "14.90",
+    "unknown_product":         null
+  },
+
+  "agents": {
+    "dottoressa_fabrizia": { "role": "clinical_decision_maker", "active": true },
+    "nurse_agent":          { "role": "triage_reminder",         "active": true },
+    "data_agent":           { "role": "cgm_lab_analysis",        "active": true },
+    "report_agent":         { "role": "soap_pdf_generator",      "active": true },
+    "compliance_agent":     { "role": "gdpr_hipaa_check",        "active": true }
+  },
+
+  "stack": {
+    "llm_primary":    "gpt-4o",
+    "llm_secondary":  "claude-sonnet-4-6",
+    "framework":      "langgraph",
+    "frontend":       "streamlit",
+    "pdf":            "fpdf2",
+    "cgm_apis":       ["dexcom", "libreview"],
+    "fhir_version":   "R4"
+  },
+
+  "security": {
+    "gdpr":              true,
+    "hipaa_aware":       true,
+    "disclaimer_required": true,
+    "pii_in_logs":       false,
+    "data_pseudonymization": true
+  },
+
+  "meta": {
+    "total_deliverables": 1,
+    "total_revenue_eur":  14.90,
+    "skills_active":      ["pubmed_fetcher", "ai_analyzer"],
+    "last_updated":       "2026-05-27"
+  }
+}
