@@ -44,6 +44,7 @@ Obiettivo: prodotti SaaS e agenti AI per pazienti, colleghi e strutture sanitari
   "clinical_chatbot":           "19.90",
   "therapy_plan_pdf":           "3.90",
   "endocrine_dashboard":        "14.90",
+  "pubmed_researcher_app":      "14.90",
   "unknown_product":            null
 }
 ```
@@ -79,7 +80,7 @@ Obiettivo: prodotti SaaS e agenti AI per pazienti, colleghi e strutture sanitari
 
 | ID | Data | Prodotto | Prezzo |
 |----|------|---------|--------|
-| — | — | (da costruire) | — |
+| F001 | 2026-05-27 | PubMed Researcher — ricerca AI-powered su letteratura diabetologica | 14.90 |
 
 ---
 

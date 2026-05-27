@@ -12,6 +12,7 @@
     "clinical_chatbot":        "19.90",
     "therapy_plan_pdf":        "3.90",
     "endocrine_dashboard":     "14.90",
+    "pubmed_researcher_app":   "14.90",
     "unknown_product":         null
   },
 
@@ -42,9 +43,9 @@
   },
 
   "meta": {
-    "total_deliverables": 0,
-    "total_revenue_eur":  0,
-    "skills_active":      [],
+    "total_deliverables": 1,
+    "total_revenue_eur":  14.90,
+    "skills_active":      ["pubmed_fetcher", "ai_analyzer"],
     "last_updated":       "2026-05-27"
   }
 }
