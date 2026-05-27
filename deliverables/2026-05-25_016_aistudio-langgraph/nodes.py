@@ -10,6 +10,7 @@ The provider is read from config["configurable"]["provider"] (default: "anthropi
 import json
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 from langchain_core.messages import AIMessage
 from langchain_core.output_parsers import JsonOutputParser
@@ -18,6 +19,8 @@ from langchain_core.runnables import RunnableConfig
 
 from .llm_factory import get_llm
 from .state import PRICING_TABLE, StudioState
+
+_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def _provider(config: RunnableConfig) -> str:
@@ -102,39 +105,133 @@ Decompose the request into a full technical spec. Return ONLY valid JSON:
     }
 
 
-# ── Chiara: Implementer ────────────────────────────────────────────────────────
-def chiara_implement(state: StudioState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "smart", max_tokens=8192, temperature=0.2)
+# ── Chiara: strategy helpers ───────────────────────────────────────────────────
 
+def _chiara_invoice(state: StudioState, config: RunnableConfig, provider: str):
+    """Extract invoice params via LLM, emit a runnable Python script."""
+    llm = get_llm(provider, "fast", max_tokens=512, temperature=0)
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", 'Extract invoice fields. Return ONLY JSON with these exact keys: '
+                   '{"invoice_number":"INV-001","client_name":"...","amount":99.90,'
+                   '"service":"...","date":"YYYY-MM-DD"}'),
+        ("human", "{request}"),
+    ])
+    p = (prompt | llm | JsonOutputParser()).invoke({"request": state["request"]})
+    today = datetime.now().strftime("%Y-%m-%d")
+    script = (
+        '#!/usr/bin/env python3\n'
+        '"""Run this script to produce invoice.pdf"""\n'
+        'import sys, pathlib\n'
+        'sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))\n'
+        'from templates.pdf.invoice_standard import InvoiceTemplate\n\n'
+        f't = InvoiceTemplate(\n'
+        f'    invoice_number={json.dumps(p.get("invoice_number", "INV-001"))},\n'
+        f'    client_name={json.dumps(p.get("client_name", "Cliente"))},\n'
+        f'    amount={p.get("amount", 0.0)},\n'
+        f'    service={json.dumps(p.get("service", "Servizio"))},\n'
+        f'    date={json.dumps(p.get("date", today))},\n'
+        ')\n'
+        'out = pathlib.Path(__file__).parent / "invoice.pdf"\n'
+        'out.write_bytes(t.render())\n'
+        'print(f"invoice.pdf written to {out}")\n'
+    )
+    return script, "generate_invoice.py", ["fpdf2", "invoice_template"]
+
+
+def _chiara_chatbot(state: StudioState, config: RunnableConfig, provider: str):
+    """Render ChatbotTemplate — provider inferred from stack."""
+    stack = [s.lower() for s in (state.get("stack") or [])]
+    if any("openai" in s for s in stack):
+        tmpl_provider, model = "openai", "gpt-4o"
+    elif any("groq" in s for s in stack):
+        tmpl_provider, model = "groq", "llama-3.3-70b-versatile"
+    else:
+        tmpl_provider, model = "anthropic", "claude-sonnet-4-6"
+
+    from templates.streamlit.chatbot import ChatbotTemplate
+    content = ChatbotTemplate(tmpl_provider, model).render()
+    return content, "app.py", ["streamlit", f"{tmpl_provider}_api"]
+
+
+def _chiara_landing(state: StudioState, config: RunnableConfig, provider: str):
+    """Fill landing_page_base.html with LLM-extracted tokens."""
+    llm = get_llm(provider, "fast", max_tokens=1024, temperature=0.3)
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", 'Extract page metadata. Return ONLY JSON with these exact keys: '
+                   '{"TITLE":"...","DESCRIPTION":"...","SITE_NAME":"...","LANG":"it",'
+                   '"CANONICAL_URL":"https://example.com","OG_IMAGE_URL":"https://example.com/og.jpg",'
+                   '"OG_LOCALE":"it_IT"}'),
+        ("human", "{request}"),
+    ])
+    tokens: dict = (prompt | llm | JsonOutputParser()).invoke({"request": state["request"]})
+    template = (_ROOT / "templates" / "web" / "landing_page_base.html").read_text(encoding="utf-8")
+    for key, value in tokens.items():
+        template = template.replace("{{ " + key + " }}", str(value))
+    return template, "index.html", ["html_tailwind_css", "vercel_static_deploy"]
+
+
+def _chiara_llm_codegen(state: StudioState, config: RunnableConfig, provider: str):
+    """General code generation — LLM emits structured header + raw code (no JSON wrapping)."""
+    llm = get_llm(provider, "smart", max_tokens=8192, temperature=0.2)
     prompt = ChatPromptTemplate.from_messages([
         ("system", """You are Chiara, Product-Generator for AI Studio Accademia Milano.
-Implement the deliverable exactly per the technical spec. No scope creep.
-Return ONLY valid JSON:
-{{
-  "deliverable_content": "...full production-ready code or document...",
-  "deliverable_path": "deliverables/YYYY-MM-DD_NNN_slug/main.py",
-  "skills_used": ["streamlit", "openai_api", "fpdf2"]
-}}"""),
+Output format — three sections, no fencing:
+
+SKILLS: skill1,skill2,skill3
+FILE: filename.ext
+
+<complete production-ready code here — no truncation, no explanation>"""),
         ("human", "Request: {request}\nSpec: {spec}\nStack: {stack}"),
     ])
+    raw: str = llm.invoke(prompt.format_messages(
+        request=state["request"],
+        spec=json.dumps(state.get("technical_spec", {}), indent=2),
+        stack=str(state.get("stack", [])),
+    )).content
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke({
-        "request": state["request"],
-        "spec":    json.dumps(state.get("technical_spec", {}), indent=2),
-        "stack":   str(state.get("stack", [])),
-    })
+    skills, filename, content_start = [], "main.py", 0
+    for i, line in enumerate(raw.split("\n")):
+        if line.startswith("SKILLS:"):
+            skills = [s.strip() for s in line[7:].split(",") if s.strip()]
+        elif line.startswith("FILE:"):
+            filename = line[5:].strip()
+        elif not line.strip() and i > 1:
+            content_start = i + 1
+            break
 
+    content = "\n".join(raw.split("\n")[content_start:]) if content_start else raw
+    return content, filename, skills or (state.get("stack") or ["python"])
+
+
+# ── Chiara: Implementer ────────────────────────────────────────────────────────
+
+_CHIARA_STRATEGIES = {
+    "invoice_pdf":             _chiara_invoice,
+    "chatbot_app":             _chiara_chatbot,
+    "static_landing_page":     _chiara_landing,
+    "premium_landing_page":    _chiara_landing,
+    "commercial_landing_page": _chiara_landing,
+}
+
+
+def chiara_implement(state: StudioState, config: RunnableConfig) -> dict:
+    product_type = state.get("product_type") or "unknown_product"
+    provider     = _provider(config)
+    strategy     = _CHIARA_STRATEGIES.get(product_type, _chiara_llm_codegen)
+    via          = "template" if product_type in _CHIARA_STRATEGIES else "llm-codegen"
+
+    content, filename, skills = strategy(state, config, provider)
     iteration = state.get("qa_iteration", 0)
 
     return {
-        "deliverable_content": result.get("deliverable_content", ""),
-        "deliverable_path":    result.get("deliverable_path", "deliverables/output/main.py"),
-        "skills_used":         result.get("skills_used", []),
+        "deliverable_content": content,
+        "deliverable_path":    f"deliverables/output/{filename}",
+        "skills_used":         skills,
         "qa_iteration":        iteration + 1,
         "risk_reports":        [],
         "messages": [AIMessage(content=(
-            f"[Chiara] built {result.get('deliverable_path')} "
-            f"(attempt {iteration + 1}) | skills={result.get('skills_used')}"
+            f"[Chiara] {filename} via {via} "
+            f"(attempt {iteration + 1}) | skills={skills}"
         ))],
     }
 
