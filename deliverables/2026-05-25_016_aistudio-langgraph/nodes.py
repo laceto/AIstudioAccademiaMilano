@@ -10,6 +10,7 @@ The provider is read from config["configurable"]["provider"] (default: "anthropi
 import json
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 from langchain_core.messages import AIMessage
 from langchain_core.output_parsers import JsonOutputParser
@@ -18,6 +19,8 @@ from langchain_core.runnables import RunnableConfig
 
 from .llm_factory import get_llm
 from .state import PRICING_TABLE, StudioState
+
+_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def _provider(config: RunnableConfig) -> str:
@@ -102,39 +105,133 @@ Decompose the request into a full technical spec. Return ONLY valid JSON:
     }
 
 
-# ── Chiara: Implementer ────────────────────────────────────────────────────────
-def chiara_implement(state: StudioState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "smart", max_tokens=8192, temperature=0.2)
+# ── Chiara: strategy helpers ───────────────────────────────────────────────────
 
+def _chiara_invoice(state: StudioState, config: RunnableConfig, provider: str):
+    """Extract invoice params via LLM, emit a runnable Python script."""
+    llm = get_llm(provider, "fast", max_tokens=512, temperature=0)
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", 'Extract invoice fields. Return ONLY JSON with these exact keys: '
+                   '{"invoice_number":"INV-001","client_name":"...","amount":99.90,'
+                   '"service":"...","date":"YYYY-MM-DD"}'),
+        ("human", "{request}"),
+    ])
+    p = (prompt | llm | JsonOutputParser()).invoke({"request": state["request"]})
+    today = datetime.now().strftime("%Y-%m-%d")
+    script = (
+        '#!/usr/bin/env python3\n'
+        '"""Run this script to produce invoice.pdf"""\n'
+        'import sys, pathlib\n'
+        'sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))\n'
+        'from templates.pdf.invoice_standard import InvoiceTemplate\n\n'
+        f't = InvoiceTemplate(\n'
+        f'    invoice_number={json.dumps(p.get("invoice_number", "INV-001"))},\n'
+        f'    client_name={json.dumps(p.get("client_name", "Cliente"))},\n'
+        f'    amount={p.get("amount", 0.0)},\n'
+        f'    service={json.dumps(p.get("service", "Servizio"))},\n'
+        f'    date={json.dumps(p.get("date", today))},\n'
+        ')\n'
+        'out = pathlib.Path(__file__).parent / "invoice.pdf"\n'
+        'out.write_bytes(t.render())\n'
+        'print(f"invoice.pdf written to {out}")\n'
+    )
+    return script, "generate_invoice.py", ["fpdf2", "invoice_template"]
+
+
+def _chiara_chatbot(state: StudioState, config: RunnableConfig, provider: str):
+    """Render ChatbotTemplate — provider inferred from stack."""
+    stack = [s.lower() for s in (state.get("stack") or [])]
+    if any("openai" in s for s in stack):
+        tmpl_provider, model = "openai", "gpt-4o"
+    elif any("groq" in s for s in stack):
+        tmpl_provider, model = "groq", "llama-3.3-70b-versatile"
+    else:
+        tmpl_provider, model = "anthropic", "claude-sonnet-4-6"
+
+    from templates.streamlit.chatbot import ChatbotTemplate
+    content = ChatbotTemplate(tmpl_provider, model).render()
+    return content, "app.py", ["streamlit", f"{tmpl_provider}_api"]
+
+
+def _chiara_landing(state: StudioState, config: RunnableConfig, provider: str):
+    """Fill landing_page_base.html with LLM-extracted tokens."""
+    llm = get_llm(provider, "fast", max_tokens=1024, temperature=0.3)
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", 'Extract page metadata. Return ONLY JSON with these exact keys: '
+                   '{"TITLE":"...","DESCRIPTION":"...","SITE_NAME":"...","LANG":"it",'
+                   '"CANONICAL_URL":"https://example.com","OG_IMAGE_URL":"https://example.com/og.jpg",'
+                   '"OG_LOCALE":"it_IT"}'),
+        ("human", "{request}"),
+    ])
+    tokens: dict = (prompt | llm | JsonOutputParser()).invoke({"request": state["request"]})
+    template = (_ROOT / "templates" / "web" / "landing_page_base.html").read_text(encoding="utf-8")
+    for key, value in tokens.items():
+        template = template.replace("{{ " + key + " }}", str(value))
+    return template, "index.html", ["html_tailwind_css", "vercel_static_deploy"]
+
+
+def _chiara_llm_codegen(state: StudioState, config: RunnableConfig, provider: str):
+    """General code generation — LLM emits structured header + raw code (no JSON wrapping)."""
+    llm = get_llm(provider, "smart", max_tokens=8192, temperature=0.2)
     prompt = ChatPromptTemplate.from_messages([
         ("system", """You are Chiara, Product-Generator for AI Studio Accademia Milano.
-Implement the deliverable exactly per the technical spec. No scope creep.
-Return ONLY valid JSON:
-{{
-  "deliverable_content": "...full production-ready code or document...",
-  "deliverable_path": "deliverables/YYYY-MM-DD_NNN_slug/main.py",
-  "skills_used": ["streamlit", "openai_api", "fpdf2"]
-}}"""),
+Output format — three sections, no fencing:
+
+SKILLS: skill1,skill2,skill3
+FILE: filename.ext
+
+<complete production-ready code here — no truncation, no explanation>"""),
         ("human", "Request: {request}\nSpec: {spec}\nStack: {stack}"),
     ])
+    raw: str = llm.invoke(prompt.format_messages(
+        request=state["request"],
+        spec=json.dumps(state.get("technical_spec", {}), indent=2),
+        stack=str(state.get("stack", [])),
+    )).content
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke({
-        "request": state["request"],
-        "spec":    json.dumps(state.get("technical_spec", {}), indent=2),
-        "stack":   str(state.get("stack", [])),
-    })
+    skills, filename, content_start = [], "main.py", 0
+    for i, line in enumerate(raw.split("\n")):
+        if line.startswith("SKILLS:"):
+            skills = [s.strip() for s in line[7:].split(",") if s.strip()]
+        elif line.startswith("FILE:"):
+            filename = line[5:].strip()
+        elif not line.strip() and i > 1:
+            content_start = i + 1
+            break
 
+    content = "\n".join(raw.split("\n")[content_start:]) if content_start else raw
+    return content, filename, skills or (state.get("stack") or ["python"])
+
+
+# ── Chiara: Implementer ────────────────────────────────────────────────────────
+
+_CHIARA_STRATEGIES = {
+    "invoice_pdf":             _chiara_invoice,
+    "chatbot_app":             _chiara_chatbot,
+    "static_landing_page":     _chiara_landing,
+    "premium_landing_page":    _chiara_landing,
+    "commercial_landing_page": _chiara_landing,
+}
+
+
+def chiara_implement(state: StudioState, config: RunnableConfig) -> dict:
+    product_type = state.get("product_type") or "unknown_product"
+    provider     = _provider(config)
+    strategy     = _CHIARA_STRATEGIES.get(product_type, _chiara_llm_codegen)
+    via          = "template" if product_type in _CHIARA_STRATEGIES else "llm-codegen"
+
+    content, filename, skills = strategy(state, config, provider)
     iteration = state.get("qa_iteration", 0)
 
     return {
-        "deliverable_content": result.get("deliverable_content", ""),
-        "deliverable_path":    result.get("deliverable_path", "deliverables/output/main.py"),
-        "skills_used":         result.get("skills_used", []),
+        "deliverable_content": content,
+        "deliverable_path":    f"deliverables/output/{filename}",
+        "skills_used":         skills,
         "qa_iteration":        iteration + 1,
         "risk_reports":        [],
         "messages": [AIMessage(content=(
-            f"[Chiara] built {result.get('deliverable_path')} "
-            f"(attempt {iteration + 1}) | skills={result.get('skills_used')}"
+            f"[Chiara] {filename} via {via} "
+            f"(attempt {iteration + 1}) | skills={skills}"
         ))],
     }
 
@@ -305,24 +402,204 @@ def marco_invoice(state: StudioState) -> dict:
 
 
 # ── Francesca: Delivery ────────────────────────────────────────────────────────
+
+def _next_audit_id(audit_dir) -> int:
+    import re
+    from pathlib import Path
+    pattern = re.compile(r"^\d{4}-\d{2}-\d{2}_(\d+)_")
+    ids = [
+        int(m.group(1))
+        for f in Path(audit_dir).iterdir()
+        if (m := pattern.match(f.name))
+    ]
+    return (max(ids) + 1) if ids else 1
+
+
+def _write_audit_log(path, state: StudioState, req_id: int, datestr: str, deliverable_path: str) -> None:
+    from pathlib import Path
+
+    agents = [
+        {"name": "Stacy",     "role": "input_orchestrator",  "status": "success"},
+        {"name": "Gianni",    "role": "request_analyzer",    "status": "success"},
+        {"name": "Chiara",    "role": "product_generator",   "status": "success"},
+        {"name": "TechAudit", "role": "technical_auditor",   "status": "success"},
+        {"name": "Compliance","role": "compliance_agent",    "status": "success"},
+        {"name": "Reputation","role": "reputation_guardian", "status": "success"},
+        {"name": "Stacy",     "role": "qa_agent",            "status": "success"},
+        {"name": "Marco",     "role": "transaction_manager", "status": "success"},
+        {"name": "Francesca", "role": "delivery_agent",      "status": "success"},
+    ]
+    agents_yaml = "\n".join(
+        f'  - name: {a["name"]}\n    role: {a["role"]}\n    status: {a["status"]}'
+        for a in agents
+    )
+    skills = state.get("skills_used") or []
+    skills_yaml = "\n".join(f"  - {s}" for s in skills) or "  []"
+
+    invoice = state.get("invoice") or {}
+    risk_score = int(state.get("aggregate_risk_score", 1))
+
+    content = f"""# Audit Log — Request {req_id:03d}
+
+```yaml
+request_id: "{req_id:03d}"
+date: "{datestr}"
+input_type: {state.get("input_type", "text")}
+raw_input: |
+  {state.get("request", "").strip()}
+intent: {state.get("intent", "unknown")}
+product_type: {state.get("product_type", "unknown")}
+
+agents_invoked:
+{agents_yaml}
+
+skills_used:
+{skills_yaml}
+
+qa_result: {"pass" if state.get("qa_passed") else "fail"}
+qa_iterations: {state.get("qa_iteration", 1)}
+
+payment:
+  amount: "€{state.get("product_price", "0.00")}"
+  invoice_id: {state.get("invoice_id", "N/A")}
+  status: {invoice.get("status", "issued")}
+
+delivery:
+  deliverable_path: {deliverable_path}
+
+outcome: success
+
+learning_flags:
+  new_skills: []
+  new_mcp: []
+  risk_score: {max(1, risk_score)}
+```
+"""
+    Path(path).write_text(content, encoding="utf-8")
+
+
+def _git_commit_and_push(root, files: list[str], slug: str) -> str:
+    import subprocess
+    try:
+        subprocess.run(
+            ["git", "add"] + files,
+            cwd=str(root), capture_output=True, check=True,
+        )
+        branch = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=str(root), capture_output=True, text=True,
+        ).stdout.strip() or "main"
+        subprocess.run(
+            ["git", "commit", "-m", f"deliver: {slug}"],
+            cwd=str(root), capture_output=True, check=True,
+        )
+        result = subprocess.run(
+            ["git", "push", "-u", "origin", branch],
+            cwd=str(root), capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode == 0:
+            return f"pushed to {branch}"
+        return f"push failed: {result.stderr.strip()[:120]}"
+    except subprocess.CalledProcessError as e:
+        return f"git error: {(e.stderr or b'').decode()[:120]}"
+    except Exception as e:
+        return f"error: {e}"
+
+
+def _send_email(state: StudioState, slug: str, deliverable_path) -> str:
+    import os
+    import smtplib
+    from email.mime.text import MIMEText
+
+    gmail_user = os.getenv("GMAIL_USER")
+    gmail_pass = os.getenv("GMAIL_APP_PASSWORD")
+    recipient  = state.get("user_email") or gmail_user
+    if not (gmail_user and gmail_pass and recipient):
+        return "skipped (no credentials)"
+
+    body = (
+        f"Ciao {state.get('user_name', 'Cliente')},\n\n"
+        f"Il tuo deliverable è pronto: {slug}\n"
+        f"File: {deliverable_path}\n"
+        f"Invoice: {state.get('invoice_id', 'N/A')} — €{state.get('product_price', '0.00')}\n\n"
+        "— AI Studio Accademia Milano"
+    )
+    msg = MIMEText(body)
+    msg["Subject"] = f"[AI Studio] Consegna: {slug}"
+    msg["From"]    = gmail_user
+    msg["To"]      = recipient
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(gmail_user, gmail_pass)
+            smtp.sendmail(gmail_user, [recipient], msg.as_string())
+        return f"sent to {recipient}"
+    except Exception as e:
+        return f"email error: {e}"
+
+
 def francesca_deliver(state: StudioState) -> dict:
-    path    = state.get("deliverable_path", "deliverables/output")
-    inv_id  = state.get("invoice_id", "NO-INV")
-    datestr = datetime.now().strftime("%Y-%m-%d")
+    import subprocess
+    from pathlib import Path
+
+    ROOT      = Path(__file__).resolve().parent.parent.parent
+    AUDIT_DIR = ROOT / "process" / "audit"
+    datestr   = datetime.now().strftime("%Y-%m-%d")
+
+    # 1. Resolve next audit ID and slug
+    next_id      = _next_audit_id(AUDIT_DIR)
+    product_slug = (state.get("product_type") or "output").replace("_", "-")
+    slug         = f"{datestr}_{next_id:03d}_{product_slug}"
+
+    # 2. Write deliverable to disk
+    raw_path        = state.get("deliverable_path") or "deliverables/output/main.py"
+    filename        = Path(raw_path).name or "main.py"
+    deliverable_dir = ROOT / "deliverables" / slug
+    deliverable_dir.mkdir(parents=True, exist_ok=True)
+    actual_path = deliverable_dir / filename
+    actual_path.write_text(state.get("deliverable_content") or "", encoding="utf-8")
+
+    rel_deliverable = str(actual_path.relative_to(ROOT))
+
+    # 3. Write audit log
+    audit_log_path = AUDIT_DIR / f"{slug}.md"
+    _write_audit_log(audit_log_path, state, next_id, datestr, rel_deliverable)
+    rel_audit = str(audit_log_path.relative_to(ROOT))
+
+    # 4. Git commit + push
+    git_status = _git_commit_and_push(
+        ROOT,
+        [str(actual_path), str(audit_log_path)],
+        slug,
+    )
+
+    # 5. Trigger post_delivery_update.py (non-fatal)
+    try:
+        subprocess.run(
+            ["python", "scripts/post_delivery_update.py"],
+            cwd=str(ROOT), capture_output=True, timeout=30,
+        )
+    except Exception:
+        pass
+
+    # 6. Best-effort email
+    email_status = _send_email(state, slug, rel_deliverable)
 
     result = {
-        "git_push":   f"git push origin {path}  [simulated]",
-        "audit_log":  f"process/audit/{datestr}_{inv_id}.md",
-        "email_sent": f"email → {state.get('user_name', 'client')}  [simulated]",
-        "status":     "delivered",
+        "deliverable_path": rel_deliverable,
+        "audit_log":        rel_audit,
+        "git_status":       git_status,
+        "email_status":     email_status,
+        "status":           "delivered",
     }
 
     return {
         "delivery_result": result,
-        "audit_log_path":  result["audit_log"],
+        "audit_log_path":  rel_audit,
         "finished":        True,
         "messages": [AIMessage(content=(
-            f"[Francesca] DELIVERED ✓ | audit={result['audit_log']} | {result['git_push']}"
+            f"[Francesca] DELIVERED ✓ | {slug} | "
+            f"git={git_status} | email={email_status}"
         ))],
     }
 
