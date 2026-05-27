@@ -15,9 +15,10 @@ st.set_page_config(
 )
 
 pg = st.navigation([
-    st.Page("pages/home.py",   title="Home",            icon="🏠", default=True),
-    st.Page("pages/radar.py",  title="Research Radar",  icon="🛰️"),
-    st.Page("pages/pubmed.py", title="PubMed AI",       icon="🔬"),
-    st.Page("pages/avatar.py", title="Avatar & Community", icon="👤"),
+    st.Page("pages/home.py",   title="Home",              icon="🏠", default=True),
+    st.Page("pages/radar.py",  title="Research Radar",    icon="🛰️"),
+    st.Page("pages/pubmed.py", title="PubMed AI",         icon="🔬"),
+    st.Page("pages/meta.py",   title="Meta-Analysis",     icon="📊"),
+    st.Page("pages/avatar.py", title="Avatar & Community",icon="👤"),
 ])
 pg.run()

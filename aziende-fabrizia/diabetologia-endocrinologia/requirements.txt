@@ -1,6 +1,10 @@
 streamlit>=1.36.0
 openai>=1.30.0
 requests>=2.31.0
+numpy>=1.26.0
+scipy>=1.13.0
+plotly>=5.22.0
+pandas>=2.2.0
 telethon>=1.36.0
 google-api-python-client>=2.130.0
 google-auth-httplib2>=0.2.0

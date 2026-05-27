@@ -29,7 +29,7 @@ st.markdown("---")
 # ── Strumenti disponibili ──────────────────────────────────────────────────────
 st.subheader("🧰 Strumenti disponibili")
 
-col_a, col_b, col_c = st.columns(3)
+col_a, col_b, col_c, col_d = st.columns(4)
 
 with col_a:
     st.markdown("### 🛰️ Research Radar")
@@ -53,6 +53,16 @@ with col_b:
         st.switch_page("pages/pubmed.py")
 
 with col_c:
+    st.markdown("### 📊 Meta-Analysis")
+    st.markdown(
+        "Pipeline completa: cerca paper → **GPT-4o estrae le statistiche** → "
+        "DerSimonian-Laird random effects → **forest plot** + funnel plot → report PRISMA."
+    )
+    st.info("Richiede OpenAI API Key")
+    if st.button("Apri Meta-Analysis →", use_container_width=True):
+        st.switch_page("pages/meta.py")
+
+with col_d:
     st.markdown("### 👤 Avatar & Community")
     st.markdown(
         "Organizza **chat Telegram/WhatsApp**, genera bozze risposte e post LinkedIn "
