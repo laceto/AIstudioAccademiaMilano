@@ -1,7 +1,7 @@
 # Audit Log — Request 025
 
 ```yaml
-request_id: "025"
+request_id: "026"
 date: "2026-05-27"
 time: "14:00"
 input_type: text
@@ -56,7 +56,7 @@ qa_result: pass
 payment:
   amount: "€24.90"
   method: card
-  receipt_id: REC-20260527-025
+  receipt_id: REC-20260527-026
 learning_flags:
   new_skills:
     - multi_agent_trading_team
