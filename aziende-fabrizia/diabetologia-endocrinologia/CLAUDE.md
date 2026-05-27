@@ -45,6 +45,7 @@ Obiettivo: prodotti SaaS e agenti AI per pazienti, colleghi e strutture sanitari
   "therapy_plan_pdf":           "3.90",
   "endocrine_dashboard":        "14.90",
   "pubmed_researcher_app":      "14.90",
+  "avatar_digitale_community":  "19.90",
   "unknown_product":            null
 }
 ```
@@ -81,6 +82,7 @@ Obiettivo: prodotti SaaS e agenti AI per pazienti, colleghi e strutture sanitari
 | ID | Data | Prodotto | Prezzo |
 |----|------|---------|--------|
 | F001 | 2026-05-27 | PubMed Researcher — ricerca AI-powered su letteratura diabetologica | 14.90 |
+| F002 | 2026-05-27 | Avatar Digitale — Telegram+WhatsApp organizer, community AI, bozze post, sync Drive | 19.90 |
 
 ---
 
