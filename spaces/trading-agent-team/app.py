@@ -157,7 +157,10 @@ for col, cfg in zip(cols, agent_module.AGENT_CONFIGS):
                 if _err:
                     st.caption(f"⚠️ Brief unavailable: {_err}")
                 else:
-                    st.caption(f"📋 Brief {_date} · 🟦 {len(_brief['bull'])} long · 🟥 {len(_brief['bear'])} short")
+                    _flips = _brief.get("signal_flips", {})
+                    _n_long = sum(1 for f in _flips.values() if f["direction"] == "bull_flip")
+                    _n_short = sum(1 for f in _flips.values() if f["direction"] == "bear_flip")
+                    st.caption(f"📋 Brief {_date} · ⚡ {len(_flips)} flips · 🟦 {_n_long} long · 🟥 {_n_short} short")
             except Exception:
                 st.caption("📋 Brief: loading…")
         else:

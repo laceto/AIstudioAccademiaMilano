@@ -95,64 +95,77 @@ def run_delta_from_brief(cfg: dict) -> dict:
         if brief.get("error"):
             raise RuntimeError(f"Brief unavailable: {brief['error']}")
 
-        signal_flips = brief.get("signal_flips", {})   # {symbol: [methods]}
-        regime_flips = brief.get("regime_flips", {})   # {symbol: {date, rrg}}
+        # signal_flips is the primary source: {symbol: {direction, methods}}
+        signal_flips = brief.get("signal_flips", {})
+        regime_flips = brief.get("regime_flips", {})
+
+        # Build lookup maps from candidates for enrichment
+        bull_map = {c["symbol"]: c for c in brief.get("bull", [])}
+        bear_map = {c["symbol"]: c for c in brief.get("bear", [])}
 
         signals: list[dict] = []
 
-        for side, candidates, sig_name in (
-            ("long",  brief.get("bull", []), "buy"),
-            ("short", brief.get("bear", []), "sell"),
-        ):
-            for c in candidates:
-                symbol = c["symbol"]
-                methods = signal_flips.get(symbol, [])
-                regime = regime_flips.get(symbol)
-                regime_flip = regime is not None
+        for symbol, flip in signal_flips.items():
+            direction = flip["direction"]          # "bull_flip" or "bear_flip"
+            methods = flip["methods"]
+            side = "long" if direction == "bull_flip" else "short"
+            sig_name = "buy" if side == "long" else "sell"
 
-                # Best-effort current price from yfinance (non-blocking)
-                price: float | None = None
-                try:
-                    bars = data_provider.get_bars_yfinance(symbol, days=5)
-                    if not bars.empty:
-                        price = round(float(bars["close"].iloc[-1]), 2)
-                except Exception:
-                    pass
+            # Enrich from candidates if available
+            candidate = bull_map.get(symbol) or bear_map.get(symbol) or {}
+            conviction = candidate.get("conviction")
+            score_delta = candidate.get("score_delta", 0)
+            daily_return = candidate.get("daily_return")
+            momentum = candidate.get("momentum")
 
-                # Human-readable action summary
-                parts = [f"{'LONG' if side == 'long' else 'SHORT'} · conviction {c['conviction']:+.2f}"]
-                if c.get("score_delta"):
-                    parts.append(f"Δscore {c['score_delta']:+.0f}")
-                if methods:
-                    parts.append(f"methods: {', '.join(methods)}")
-                if regime_flip:
-                    rrg = regime.get("rrg", 0)
-                    parts.append(f"regime {'▲' if rrg > 0 else '▼'} ({regime['date']})")
-                action = " · ".join(parts) + " [analysis only]"
+            regime = regime_flips.get(symbol)
+            regime_flip = regime is not None
 
-                signals.append({
-                    "symbol": symbol,
-                    "side": side,
-                    "signal": sig_name,
-                    "conviction": c["conviction"],
-                    "score_delta": c.get("score_delta", 0),
-                    "daily_return": c.get("daily_return", 0),
-                    "momentum": c.get("momentum", 0),
-                    "methods": methods,
-                    "regime_flip": regime_flip,
-                    "price": price,
-                    "rsi": None,        # not computed — signal comes from brief
-                    "patterns": [],
-                    "action": action,
-                    "data_source": "yfinance",
-                    "timestamp": datetime.now().isoformat(),
-                })
+            # Best-effort current price from yfinance
+            price: float | None = None
+            try:
+                bars = data_provider.get_bars_yfinance(symbol, days=5)
+                if not bars.empty:
+                    price = round(float(bars["close"].iloc[-1]), 2)
+            except Exception:
+                pass
+
+            # Human-readable action summary
+            action_parts = [f"{'LONG' if side == 'long' else 'SHORT'}"]
+            action_parts.append(f"methods: {', '.join(methods)}")
+            if conviction is not None:
+                action_parts.append(f"conviction {conviction:+.2f}")
+            if score_delta:
+                action_parts.append(f"Δscore {score_delta:+.0f}")
+            if regime_flip:
+                rrg = regime.get("rrg", 0)
+                action_parts.append(f"regime {'▲' if rrg > 0 else '▼'} ({regime['date']})")
+            action = " · ".join(action_parts) + " [analysis only]"
+
+            signals.append({
+                "symbol": symbol,
+                "side": side,
+                "signal": sig_name,
+                "conviction": conviction,
+                "score_delta": score_delta,
+                "daily_return": daily_return,
+                "momentum": momentum,
+                "methods": methods,
+                "regime_flip": regime_flip,
+                "price": price,
+                "rsi": None,
+                "patterns": [],
+                "action": action,
+                "data_source": "yfinance",
+                "timestamp": datetime.now().isoformat(),
+            })
 
         summary = {
             "total": len(signals),
             "buy": sum(1 for s in signals if s["signal"] == "buy"),
             "sell": sum(1 for s in signals if s["signal"] == "sell"),
             "hold": 0,
+            "brief_date": brief.get("date", ""),
         }
         result = {
             "status": "done", "name": name,

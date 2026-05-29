@@ -124,21 +124,21 @@ def _parse_candidates(text: str) -> tuple[list[dict], list[dict]]:
     return bull, bear
 
 
-def _parse_signal_flips(text: str) -> dict[str, list[str]]:
-    """Return {symbol: [methods_that_fired]} from the SIGNAL FLIPS section."""
-    flips: dict[str, list[str]] = {}
+def _parse_signal_flips(text: str) -> dict[str, dict]:
+    """Return {symbol: {direction: 'bull_flip'|'bear_flip', methods: [...]}}
+    from the SIGNAL FLIPS — last bar section."""
+    flips: dict[str, dict] = {}
     in_section = False
     current_method: str | None = None
 
     for line in text.splitlines():
-        if "SIGNAL FLIPS" in line:
+        if "SIGNAL FLIPS" in line and "last bar" in line:
             in_section = True; continue
         if not in_section:
             continue
-        if "====" in line and in_section and current_method:
-            break  # end of section
+        if "====" in line:
+            break  # end of file separator
 
-        # method header like [rbo_20]
         m = re.match(r"\s*\[(\w+)\]", line)
         if m:
             current_method = m.group(1)
@@ -148,16 +148,19 @@ def _parse_signal_flips(text: str) -> dict[str, list[str]]:
             continue
 
         parts = line.split()
-        # data lines: direction  symbol  name...
         if len(parts) < 2:
             continue
-        if parts[0] not in ("bull_flip", "bear_flip"):
+        direction = parts[0]
+        if direction not in ("bull_flip", "bear_flip"):
             continue
 
         symbol = parts[1]
         if "." not in symbol:
             continue
-        flips.setdefault(symbol, []).append(current_method)
+
+        if symbol not in flips:
+            flips[symbol] = {"direction": direction, "methods": []}
+        flips[symbol]["methods"].append(current_method)
 
     return flips
 
