@@ -2,11 +2,18 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    TA_LIB_VERSION=0.4.0 \
     HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH
 
-RUN useradd -m -u 1000 user
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential wget ca-certificates curl \
+    && wget -qO- "https://prdownloads.sourceforge.net/ta-lib/ta-lib-${TA_LIB_VERSION}-src.tar.gz" \
+       | tar -xz -C /tmp \
+    && cd /tmp/ta-lib && ./configure --prefix=/usr && make && make install \
+    && rm -rf /tmp/ta-lib /var/lib/apt/lists/*
 
+RUN useradd -m -u 1000 user
 USER user
 WORKDIR $HOME/app
 

@@ -334,57 +334,65 @@ except Exception as exc:
 
 st.divider()
 
-# ── Techa Deep Analysis (deliverable 013) ─────────────────────────────────────
-st.subheader("🔬 Deep Analysis — techa (deliverable 013)")
+# ── Techa Deep Analysis ───────────────────────────────────────────────────────
+st.subheader("🔬 Deep Analysis — techa Orchestrator")
+
+# Collect all symbols: Delta signal-flip symbols first, then US symbols
+_brief_symbols: list[str] = []
+try:
+    from brief_loader import fetch_brief as _fb2
+    _b2 = _fb2()
+    _brief_symbols = list(_b2.get("signal_flips", {}).keys())
+except Exception:
+    pass
+_all_orch_symbols = _brief_symbols + all_symbols
+
+def _benchmark_for(symbol: str) -> str:
+    return "FTSEMIB.MI" if symbol.endswith(".MI") else "^GSPC"
 
 if not _TECHA:
     st.info(
-        "**techa** not installed — install it to unlock GPT-4o candlestick analysis "
-        "and the Patterns column above.\n\n"
-        "```bash\npip install 'techa @ git+https://github.com/laceto/techa.git@main'\n```\n\n"
-        "Requires TA-Lib C library. See `deliverables/2026-05-24_013_techa-streamlit/`."
+        "**techa** is being installed — refresh in a minute. "
+        "Requires TA-Lib + OpenAI."
     )
 else:
     tab_run, tab_cache = st.tabs(["Run Analysis", "Cached Reports"])
 
     with tab_run:
         if not openai_key:
-            st.warning("Set `OPENAI_API_KEY` to run techa Orchestrator (needs GPT-4o synthesis).")
+            st.warning("Set `OPENAI_API_KEY` in Space Secrets to run the Orchestrator.")
         else:
             os.environ["OPENAI_API_KEY"] = openai_key
-            t_sym = st.selectbox("Symbol", all_symbols, key="t_sym")
+            t_sym = st.selectbox("Symbol", _all_orch_symbols, key="t_sym")
+            t_bm = _benchmark_for(t_sym)
             t_lb = st.slider("Lookback days", 90, 730, 365, key="t_lb")
-            t_bm = st.text_input("Benchmark", value="^GSPC", key="t_bm",
-                                 help="Use FTSEMIB.MI for Delta (Italian) symbols")
-            t_run = st.button("▶ Run techa Orchestrator", key="t_btn")
+            st.caption(f"Benchmark: `{t_bm}` · data source: live (yfinance)")
+            t_run = st.button("▶ Run techa Orchestrator", type="primary", key="t_btn")
 
             if t_run:
-                with st.spinner(f"Running techa Orchestrator on {t_sym} ({t_lb}d)…"):
+                with st.spinner(
+                    f"Running Orchestrator on {t_sym} — "
+                    "indicators + patterns + ta in parallel…"
+                ):
                     try:
                         graph = _techa_orch(
                             symbol=t_sym,
                             data_source="live",
-                            analysis_date=None,
-                            lookback_days=t_lb,
                             benchmark=t_bm,
+                            lookback_days=t_lb,
                             relative=False,
                         )
                         result = graph.invoke(graph._initial_state)
-                        report = next(
-                            (result[k] for k in ("final_output", "report", "output", "summary")
-                             if k in result and isinstance(result[k], str)),
-                            None,
-                        )
-                        data_to_cache = {
+                        report = result.get("final_output", "")
+                        store.update_analysis(t_sym, {
                             "symbol": t_sym,
                             "report": report,
-                            "lookback_days": t_lb,
                             "benchmark": t_bm,
-                        }
-                        store.update_analysis(t_sym, data_to_cache)
+                            "lookback_days": t_lb,
+                        })
                         if report:
                             st.markdown(report)
-                        with st.expander("Raw techa output"):
+                        with st.expander("Raw output"):
                             st.json({k: v for k, v in result.items() if k != "final_output"})
                     except Exception as exc:
                         st.error(f"techa failed: {type(exc).__name__}: {exc}")
@@ -394,7 +402,7 @@ else:
             st.info("No cached reports yet — run an analysis above.")
         else:
             for sym, data in analyses.items():
-                with st.expander(f"**{sym}** — cached {data.get('cached_at', '')[:19]}"):
+                with st.expander(f"**{sym}** — {data.get('cached_at', '')[:19]}"):
                     if data.get("report"):
                         st.markdown(data["report"])
                     else:
