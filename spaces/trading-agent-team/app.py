@@ -148,7 +148,20 @@ for col, cfg in zip(cols, agent_module.AGENT_CONFIGS):
         st.markdown(f"### {icon} Agent {name}")
         st.caption(f"{src_badge}")
         st.caption(cfg.get("description", ""))
-        st.caption(f"Symbols: {', '.join(cfg['symbols'])}")
+        if cfg.get("brief_driven"):
+            try:
+                from brief_loader import fetch_brief as _fb
+                _brief = _fb()
+                _date = _brief.get("date", "")
+                _err = _brief.get("error")
+                if _err:
+                    st.caption(f"⚠️ Brief unavailable: {_err}")
+                else:
+                    st.caption(f"📋 Brief {_date} · 🟦 {len(_brief['bull'])} long · 🟥 {len(_brief['bear'])} short")
+            except Exception:
+                st.caption("📋 Brief: loading…")
+        else:
+            st.caption(f"Symbols: {', '.join(cfg['symbols'])}")
         st.caption(f"SMA {cfg['short_window']}/{cfg['long_window']}")
         if summary:
             b = summary.get("buy", 0)
@@ -169,12 +182,18 @@ if all_sigs:
     rows = []
     for sig in all_sigs:
         signal = sig.get("signal", "")
-        emoji = "🟢" if signal == "buy" else "🔴" if signal == "sell" else "⬜"
+        side = sig.get("side", "long")
+        side_badge = "🟦 LONG" if side == "long" else "🟥 SHORT"
+        if side == "long":
+            emoji = "🟢" if signal == "buy" else "🔴" if signal == "sell" else "⬜"
+        else:
+            emoji = "🔴" if signal == "sell" else "🟢" if signal == "buy" else "⬜"
         pats = sig.get("patterns", [])
         pat_str = ", ".join(pats[:3]) + ("…" if len(pats) > 3 else "") if pats else "—"
         rows.append({
             "Agent": sig.get("agent", ""),
             "Symbol": sig.get("symbol", ""),
+            "Side": side_badge,
             "Source": sig.get("data_source", "alpaca"),
             "Signal": f"{emoji} {signal.upper()}",
             "RSI": sig.get("rsi", ""),
