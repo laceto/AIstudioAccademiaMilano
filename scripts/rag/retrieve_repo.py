@@ -48,6 +48,7 @@ from langchain_openai import ChatOpenAI
 from openai import OpenAI as _OpenAIClient
 
 from config.brand import b, fmt
+from kitai.batch import download_batch_results, poll_until_complete, submit_batch_job
 from kitai.query_translation import decompose_query, expand_query, step_back_query
 from kitai.retriever import (
     create_BM25retriever_from_docs,
@@ -78,7 +79,11 @@ log = logging.getLogger(__name__)
 # ── Embeddings shim (avoids langchain_openai version conflicts) ───────────────
 
 class _OpenAIEmbeddings(Embeddings):
-    """Thin wrapper around the OpenAI client satisfying langchain_core.Embeddings."""
+    """Thin wrapper around the OpenAI client satisfying langchain_core.Embeddings.
+
+    Intentionally uses synchronous OpenAI calls — FAISS similarity search and
+    query embedding require immediate results and cannot use the async batch API.
+    """
 
     def __init__(self, model: str, client: _OpenAIClient) -> None:
         self._model  = model
@@ -327,11 +332,23 @@ def ask(
         f"Context:\n{context}\n\n"
         f"Question: {query}"
     )
-    response = res["openai_client"].chat.completions.create(
-        model=CHAT_MODEL, temperature=0,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    answer = response.choices[0].message.content
+    task = {
+        "custom_id": "ask-0",
+        "method":    "POST",
+        "url":       "/v1/chat/completions",
+        "body": {
+            "model":       CHAT_MODEL,
+            "temperature": 0,
+            "messages":    [{"role": "user", "content": prompt}],
+        },
+    }
+    client    = res["openai_client"]
+    job_id    = submit_batch_job(client, [task], endpoint="/v1/chat/completions")
+    completed = poll_until_complete(client, [job_id], poll_interval=10.0)
+    if job_id not in completed:
+        raise RuntimeError(f"Batch {job_id} did not complete — check OpenAI dashboard")
+    raw    = download_batch_results(client, job_id)
+    answer = raw[0]["response"]["body"]["choices"][0]["message"]["content"]
 
     sources = [
         {

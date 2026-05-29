@@ -163,6 +163,7 @@ def chat_stream(req: ChatRequest):
         context = "\n\n".join(doc.page_content for doc in ordered)
         prompt  = SYSTEM_PROMPT + f"Context:\n{context}\n\nQuestion: {req.query}"
 
+        # SSE streaming requires token-by-token delivery — batch API cannot be used here.
         stream = res["openai_client"].chat.completions.create(
             model=CHAT_MODEL,
             temperature=0,

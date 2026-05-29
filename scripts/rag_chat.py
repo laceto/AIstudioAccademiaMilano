@@ -22,19 +22,32 @@ SYSTEM_PROMPT = (
 
 
 def rag_answer(query: str, top_k: int = 5, chat_model: str = "gpt-4o-mini", embed_provider: str = "local") -> str:
-    from scripts.retrieve import retrieve
-    results = retrieve(query, top_k=top_k, provider=embed_provider)
-    context = "\n\n---\n\n".join(f"[{r['source']}]\n{r['text']}" for r in results)
-    from openai import OpenAI
-    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    resp = client.chat.completions.create(
-        model=chat_model,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query}"},
-        ],
+    from scripts.rag.retrieve_repo import retrieve
+    docs = retrieve(query, top_k=top_k)
+    context = "\n\n---\n\n".join(
+        f"[{doc.metadata.get('path', '')}]\n{doc.page_content}" for doc in docs
     )
-    return resp.choices[0].message.content
+    from openai import OpenAI
+    from kitai.batch import submit_batch_job, poll_until_complete, download_batch_results
+    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    task = {
+        "custom_id": "rag-chat-0",
+        "method":    "POST",
+        "url":       "/v1/chat/completions",
+        "body": {
+            "model":    chat_model,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": f"Context:\n{context}\n\nQuestion: {query}"},
+            ],
+        },
+    }
+    job_id    = submit_batch_job(client, [task], endpoint="/v1/chat/completions")
+    completed = poll_until_complete(client, [job_id], poll_interval=10.0)
+    if job_id not in completed:
+        raise RuntimeError(f"Batch {job_id} did not complete — check OpenAI dashboard")
+    raw = download_batch_results(client, job_id)
+    return raw[0]["response"]["body"]["choices"][0]["message"]["content"]
 
 
 def main() -> None:
