@@ -118,6 +118,15 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 | `wiki/llm/` | Karpathy-style LLM education wiki (7 chapters + code) |
 | `deliverables/rag/streamlit_rag_app.py` | Interactive semantic search UI |
 | `deliverables/github-research/streamlit_research_app.py` | GitHub AI Research dashboard |
+| `config/suits/` | White-label suit configs — S001 = origin (AI Studio), S002+ = replicas with own brand/pricing/creds |
+| `config/suits/suit_schema.yaml` | Canonical schema for all suit fields (identity, personas, pricing overrides, hosting, license) |
+| `scripts/suit_manager.py` | CLI: `list`, `show`, `create` suit instances; validates against suit_schema.yaml |
+| `scripts/run_pipeline_cli.py` | CLI entrypoint to run the full 6-agent pipeline locally or via GitHub Actions |
+| `scripts/log_analytics.py` | Delivery metrics + revenue analytics computed from audit logs |
+| `scripts/chat_analysis/` | Chat-to-RSS pipeline — WhatsApp/Claude session parsers, keyword/sentiment analyzer, RSS 2.0 + OPML builder |
+| `aziende-fabrizia/` | Fabrizia's digital companies vertical — `diabetologia-endocrinologia/` with 4 specialist deliverables (PubMed, Avatar, Research Radar, Meta-Analysis) |
+| `.github/workflows/pipeline.yml` | GitHub Actions: trigger full 6-agent pipeline via `workflow_dispatch` or GitHub issue-opened |
+| `.github/workflows/rag-bootstrap.yml` | GitHub Actions: rebuild FAISS index on push |
 
 ---
 
