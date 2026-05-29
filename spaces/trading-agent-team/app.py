@@ -162,7 +162,8 @@ for col, cfg in zip(cols, agent_module.AGENT_CONFIGS):
                 st.caption("📋 Brief: loading…")
         else:
             st.caption(f"Symbols: {', '.join(cfg['symbols'])}")
-        st.caption(f"SMA {cfg['short_window']}/{cfg['long_window']}")
+        if "short_window" in cfg:
+            st.caption(f"SMA {cfg['short_window']}/{cfg['long_window']}")
         if summary:
             b = summary.get("buy", 0)
             s = summary.get("sell", 0)
