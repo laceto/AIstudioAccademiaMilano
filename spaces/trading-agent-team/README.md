@@ -3,9 +3,8 @@ title: Trading Agent Team
 emoji: 📊
 colorFrom: blue
 colorTo: green
-sdk: streamlit
-sdk_version: 1.35.0
-app_file: app.py
+sdk: docker
+app_port: 7860
 pinned: false
 license: other
 short_description: US + Italian market trading signals (paper trading only)
