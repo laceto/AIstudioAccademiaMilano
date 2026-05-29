@@ -27,6 +27,49 @@ from pathlib import Path
 from prompts import SYSTEM_PROMPT, build_user_prompt
 from templates import render_html, render_markdown, validate
 
+
+def fetch_market_context(max_staleness_days: int = 2) -> str | None:
+    """Return a compact sector sentiment string from lacetohf/sector-analysis.
+
+    Returns None on any error so the caller can proceed without market data.
+    """
+    try:
+        from datasets import load_dataset
+        from datetime import date
+
+        ds = load_dataset("lacetohf/sector-analysis", split="train")
+        if len(ds) == 0:
+            return None
+
+        df = ds.to_pandas()
+        date_col = next(
+            (c for c in ["date", "Date", "timestamp", "analysis_date"] if c in df.columns),
+            None,
+        )
+        if date_col is None:
+            return None
+
+        df[date_col] = df[date_col].astype(str).str[:10]
+        latest = df[date_col].max()
+
+        try:
+            staleness = (date.today() - date.fromisoformat(latest)).days
+            if staleness > max_staleness_days:
+                print(f"[market-context] Sector data is stale ({latest}); skipping.", file=sys.stderr)
+                return None
+        except (ValueError, TypeError):
+            pass
+
+        rows = df[df[date_col] == latest]
+        lines = [f"Sector snapshot ({latest}):"]
+        for _, row in rows.iterrows():
+            parts = [f"{k}={v}" for k, v in row.items() if k != date_col and v is not None]
+            lines.append("  " + " | ".join(str(p) for p in parts))
+        return "\n".join(lines)
+    except Exception as exc:
+        print(f"[market-context] Could not load sector data: {exc}", file=sys.stderr)
+        return None
+
 DEFAULT_MODEL = "claude-opus-4-7"
 
 
@@ -55,7 +98,12 @@ def extract_json(raw: str) -> dict:
     return json.loads(text[start : end + 1])
 
 
-def call_claude(journal: str, date_str: str, model: str) -> dict:
+def call_claude(
+    journal: str,
+    date_str: str,
+    model: str,
+    market_context: str | None = None,
+) -> dict:
     from anthropic import Anthropic  # imported lazily so --dry-run works offline
 
     client = Anthropic()
@@ -63,7 +111,7 @@ def call_claude(journal: str, date_str: str, model: str) -> dict:
         model=model,
         max_tokens=2000,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": build_user_prompt(journal, date_str)}],
+        messages=[{"role": "user", "content": build_user_prompt(journal, date_str, market_context)}],
     )
     text = "".join(block.text for block in msg.content if block.type == "text")
     return extract_json(text)
@@ -117,6 +165,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Skip the LLM call and emit a deterministic stub briefing.",
     )
+    parser.add_argument(
+        "--market-context",
+        action="store_true",
+        help="Inject today's sector sentiment from lacetohf/sector-analysis into the briefing prompt.",
+    )
     args = parser.parse_args(argv)
 
     journal = read_input(args.input)
@@ -124,6 +177,8 @@ def main(argv: list[str] | None = None) -> int:
         sys.exit("error: journal input is empty")
 
     date_str = args.date or date_cls.today().isoformat()
+
+    market_ctx = fetch_market_context() if args.market_context else None
 
     if args.dry_run:
         briefing = dry_run_briefing(journal)
@@ -133,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
                 "error: ANTHROPIC_API_KEY not set. "
                 "Set it or pass --dry-run for an offline stub."
             )
-        briefing = call_claude(journal, date_str, args.model)
+        briefing = call_claude(journal, date_str, args.model, market_context=market_ctx)
 
     validate(briefing)
 

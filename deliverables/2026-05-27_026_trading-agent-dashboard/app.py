@@ -321,6 +321,36 @@ else:
 
 st.divider()
 
+# ── Sector Context (lacetohf/sector-analysis) ─────────────────────────────────
+st.subheader("🌐 Sector Context")
+try:
+    import sector_context as _sc
+    rows, is_fresh, latest_date = _sc.load_sector_context()
+    if rows:
+        if not is_fresh:
+            st.warning(
+                f"⚠️ Sector data is stale (latest: {latest_date}). "
+                "The rss_feed pipeline may not have run recently."
+            )
+        else:
+            st.caption(f"Source: `lacetohf/sector-analysis` — snapshot {latest_date}")
+        st.dataframe(
+            pd.DataFrame(rows),
+            use_container_width=True,
+            hide_index=True,
+        )
+    else:
+        st.info("No sector data available in lacetohf/sector-analysis yet.")
+except ImportError:
+    st.info(
+        "Install `datasets` to enable the Sector Context panel:\n"
+        "```bash\npip install datasets\n```"
+    )
+except Exception as exc:
+    st.warning(f"Sector context unavailable: {exc}")
+
+st.divider()
+
 # ── API Reference ─────────────────────────────────────────────────────────────
 with st.expander("REST API Reference"):
     st.markdown("""
