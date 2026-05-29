@@ -163,6 +163,12 @@ def chat(req: ChatRequest):
     )
 
 
+@app.post("/chat/sync")
+def chat_sync(req: ChatRequest):
+    """Sync JSON response (~2s) — used by gateway bots for real-time Q&A."""
+    return {"answer": _sync_rag_answer(req.query)}
+
+
 @app.post("/chat/stream")
 def chat_stream(req: ChatRequest):
     """SSE stream — use for the chat widget.

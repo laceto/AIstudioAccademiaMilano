@@ -85,6 +85,21 @@ async def whatsapp_reply(
     if not incoming:
         return _twiml_reply("Please send a text message describing what you need.")
 
+    # ? <question> → RAG knowledge-base query
+    if incoming.startswith("?"):
+        import os, httpx as _httpx
+        rag_query = incoming[1:].strip()
+        rag_url = os.environ.get("RAG_API_URL", "").rstrip("/")
+        if rag_url and rag_query:
+            try:
+                resp = _httpx.post(f"{rag_url}/chat/sync", json={"query": rag_query}, timeout=30)
+                reply = resp.json().get("answer", "No answer returned.")
+            except Exception as exc:
+                reply = f"RAG error: {exc}"
+        else:
+            reply = "RAG_API_URL not configured — knowledge base unavailable." if not rag_url else "Empty question."
+        return _twiml_reply(reply)
+
     result = _adapter.submit(
         text=incoming,
         channel="whatsapp",

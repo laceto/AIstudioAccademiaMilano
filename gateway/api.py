@@ -481,9 +481,32 @@ async def telegram_webhook(request: Request):
                 "• Ho bisogno di un sito per il mio ristorante\n"
                 "• Crea una fattura PDF da 500€\n"
                 "• Voglio un chatbot per il mio sito\n\n"
+                "Per domande sulla knowledge base: /ask <domanda>\n"
                 "Scrivi la tua richiesta e penso io al resto."
             ),
         )
+        return {"ok": True}
+
+    # /ask <question> or ?<question> → RAG knowledge-base query
+    rag_query = None
+    if text.startswith("/ask "):
+        rag_query = text[5:].strip()
+    elif text.startswith("?"):
+        rag_query = text[1:].strip()
+
+    if rag_query:
+        rag_url = os.environ.get("RAG_API_URL", "").rstrip("/")
+        if rag_url:
+            import httpx as _httpx
+            try:
+                async with _httpx.AsyncClient(timeout=30) as client:
+                    resp = await client.post(f"{rag_url}/chat/sync", json={"query": rag_query})
+                    answer = resp.json().get("answer", "No answer returned.")
+            except Exception as exc:
+                answer = f"RAG error: {exc}"
+        else:
+            answer = "RAG_API_URL not configured — knowledge base unavailable."
+        await bot.send_message(chat_id=chat_id, text=answer)
         return {"ok": True}
 
     normalized = _normalize(text)
