@@ -1,0 +1,34 @@
+suit_id:     "S001"
+suit_name:   "AI Studio Accademia Milano"
+owner_name:  "Luigi Aceto"
+owner_email: "luigi.vinegar@gmail.com"
+founded:     "2026-05-23"
+locale:      "it_IT"
+currency:    "EUR"
+
+agent_personas:
+  stacy:      "Stacy"
+  gianni:     "Gianni"
+  chiara:     "Chiara"
+  marco:      "Marco"
+  francesca:  "Francesca"
+  lorenzo:    "Lorenzo"
+  valentina:  "Valentina"
+
+pricing_overrides: {}
+env_prefix:        ""
+
+hosting:
+  static:    "vercel"
+  apps:      "streamlit-cloud"
+  repo_org:  "laceto"
+
+audit_dir: "process/audit"
+learning_loop:
+  claude_dir:                 "$HOME/.claude"
+  auto_commit_risk_threshold: 3
+
+license:
+  origin_suit: "S001"
+  issued_date: "2026-05-23"
+  licensed_to: "Luigi Aceto"
