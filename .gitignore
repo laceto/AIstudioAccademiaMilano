@@ -33,10 +33,11 @@ env/
 gateway/queue/
 
 # Data & indexes (binary artifacts — use Actions cache instead)
-data/vectorstore/
+# vectorstore/repo/ IS committed (bootstrapped by rag-bootstrap.yml) so fresh
+# sessions have a usable RAG index. Other index outputs stay ignored.
+data/vectorstore/*
+!data/vectorstore/repo/
 data/index/
-*.faiss
-*.pkl
 data/*.npy
 data/raw/
 
