@@ -350,3 +350,8 @@ To avoid the kind of conflict that gave request 008 two different products, foll
 | ISS-020 | P1 | Carlos: `gateway/bot_telegram.py` + `bot_whatsapp.py` wired to PipelineAdapter — Input Gateway Track 2 | OPEN |
 | ISS-021 | P2 | Deploy Input Gateway: all three channels live (Streamlit Cloud + Cloud Run + Telegram/Twilio webhooks) | OPEN |
 | ISS-022 | P1 | Crash-recovery flush: periodic checkpoint write to project_state.md before each git commit (assign Gianni to scope) | OPEN |
+| ISS-023 | P2 | Scope `etsy_digital_product_pack` intent: deliverable → PDF + listing title/tags/description + mockup cover (Etsy digital-downloads category) | OPEN |
+| ISS-024 | P2 | Scope `digital_product_listing_pack` intent: any deliverable → multi-platform listing payload (Etsy, Gumroad, Payhip, Lemon Squeezy) with cover image + copy | OPEN |
+| ISS-025 | P1 | Evaluate Lemon Squeezy vs Payhip as merchant-of-record storefront (EU VAT handling for Italian one-person op — unblocks digital product sales without DIY VAT MOSS) | OPEN |
+| ISS-026 | P3 | Hugging Face Spaces paid deployment lane for `chatbot_app` / `agent_deploy_streamlit` / `techa` deliverables (natural distribution channel for AI demos) | OPEN |
+| ISS-027 | P3 | Gumroad secondary-channel publisher: one-click upload for `pdf_document`, `mediterranean_meal_planner`, `micro_syllabus_flashcards`, `mind_dashboard_journal` | OPEN |
