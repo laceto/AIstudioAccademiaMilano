@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).parent.parent
 
@@ -81,11 +82,23 @@ def embed_local(texts: list[str], model_name: str) -> np.ndarray:
 
 def embed_openai(texts: list[str], model_name: str) -> np.ndarray:
     from openai import OpenAI
+    from langchain_core.documents import Document
+    from kitai.batch import (
+        build_embedding_tasks, submit_batch_job,
+        poll_until_complete, download_batch_results, parse_embedding_results,
+    )
     client = OpenAI()
-    vectors: list[list[float]] = []
-    for i in range(0, len(texts), 100):
-        resp = client.embeddings.create(model=model_name, input=texts[i : i + 100])
-        vectors.extend(e.embedding for e in resp.data)
+    docs = [Document(page_content=t, metadata={"id": i}) for i, t in enumerate(texts)]
+    tasks = build_embedding_tasks(docs, model=model_name)
+    job_id = submit_batch_job(client, tasks)
+    print(f"[embed_index] Batch submitted: {job_id}")
+    completed = poll_until_complete(client, [job_id], poll_interval=30.0)
+    if job_id not in completed:
+        raise RuntimeError(f"Batch {job_id} did not complete — check OpenAI dashboard")
+    results = download_batch_results(client, job_id)
+    pairs = parse_embedding_results(results)
+    id_to_emb = {int(cid.removeprefix("custom_id_")): emb for cid, emb in pairs}
+    vectors = [id_to_emb[i] for i in range(len(texts))]
     return np.array(vectors, dtype=np.float32)
 
 
@@ -101,6 +114,7 @@ def save_index(chunks: list[dict], embeddings: np.ndarray, index_dir: Path) -> N
 
 
 def main() -> None:
+    load_dotenv()
     parser = argparse.ArgumentParser()
     parser.add_argument("--provider", choices=["local", "openai"], default="local")
     parser.add_argument("--model", default=None)
