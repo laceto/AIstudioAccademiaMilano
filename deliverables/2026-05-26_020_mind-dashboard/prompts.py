@@ -30,6 +30,10 @@ markdown fences. The JSON object MUST conform exactly to this schema:
 }
 
 Rules:
+- If a MARKET CONTEXT block is provided, you may reference specific sector trends in
+  "insight" or "tomorrow_top_3" when they are directly relevant to what the user wrote
+  (e.g. user mentions a stock, a portfolio, or market anxiety). Do not force market
+  references into briefings where the journal has no financial content.
 - "metrics" should have 4-7 entries. Extract whatever the user mentioned
   (focus level, energy, sleep, water, screen time, mood, primary blocker,
   deep-work hours, etc.). If a value is not stated, infer cautiously from
@@ -45,10 +49,22 @@ Rules:
 """
 
 
-def build_user_prompt(journal_text: str, date_str: str) -> str:
+def build_user_prompt(
+    journal_text: str,
+    date_str: str,
+    market_context: str | None = None,
+) -> str:
+    market_block = ""
+    if market_context:
+        market_block = (
+            f"\n--- MARKET CONTEXT (today's sector sentiment) ---\n"
+            f"{market_context.strip()}\n"
+            f"--- END MARKET CONTEXT ---\n"
+        )
     return (
-        f"Date: {date_str}\n\n"
-        f"--- BEGIN JOURNAL ---\n"
+        f"Date: {date_str}\n"
+        f"{market_block}"
+        f"\n--- BEGIN JOURNAL ---\n"
         f"{journal_text.strip()}\n"
         f"--- END JOURNAL ---\n\n"
         f"Return the JSON briefing now."
