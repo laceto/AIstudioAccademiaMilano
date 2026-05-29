@@ -1,0 +1,31 @@
+# CODEOWNERS — AI Studio Accademia Milano
+# Syntax: <pattern> <owner> [<owner> ...]
+# Owners are notified on PRs touching matched paths.
+# GitHub usernames or teams (@org/team-name).
+
+# RAG Team owns all RAG scripts, data, and this workflow
+.github/workflows/rag-maintenance.yml   @laceto
+scripts/rag/                            @laceto
+data/rag_registry.tsv                   @laceto
+data/vectorstore/                       @laceto
+requirements-rag.txt                    @laceto
+
+# Research pipeline
+.github/workflows/research_schedule.yml @laceto
+scripts/github_research/                @laceto
+scripts/github_delta/                   @laceto
+
+# Studio ops + digital presence
+.github/workflows/studio-ops.yml        @laceto
+.github/workflows/digital_presence.yml  @laceto
+scripts/digital_presence_pipeline.py    @laceto
+
+# Wiki
+.github/workflows/wiki-maintenance.yml  @laceto
+wiki/                                   @laceto
+
+# CI
+.github/workflows/ci.yml                @laceto
+
+# Core config + pipeline — everything else defaults to Luigi
+*                                       @laceto
