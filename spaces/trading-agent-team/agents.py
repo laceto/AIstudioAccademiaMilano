@@ -2,8 +2,8 @@
 Trading Agent Team — four named agents covering US and Italian markets.
 
 Alpha / Beta / Gamma  — US large-caps via Alpaca paper (executes dry-run orders)
-Delta                 — Italian blue-chips via yfinance (analysis only, mirrors
-                        techa's default symbols: ENI.MI, A2A.MI, PST.MI)
+Delta                 — Italian stocks from myfinance2 daily brief via yfinance;
+                        bull candidates → LONG analysis, bear candidates → SHORT analysis
 
 Each agent runs SMA crossover + RSI. Shared state is written to store.py
 (state.json) so the Streamlit dashboard and FastAPI server stay in sync.
@@ -21,6 +21,7 @@ import store
 import data_provider
 from strategy import sma_crossover_signal, compute_rsi
 from trader import make_clients, get_position, qty_to_buy
+from brief_loader import fetch_brief
 
 # ── Agent roster ──────────────────────────────────────────────────────────────
 AGENT_CONFIGS: list[dict] = [
@@ -50,11 +51,12 @@ AGENT_CONFIGS: list[dict] = [
     },
     {
         "name": "Delta",
-        "description": "Italian blue-chips — macro trend (SMA 20/60) · yfinance · analysis only",
-        "symbols": ["ENI.MI", "A2A.MI", "PST.MI"],
+        "description": "Italian brief — bull (LONG) + bear (SHORT) · myfinance2 daily brief · yfinance · analysis only",
+        "symbols": [],               # populated at runtime from the daily brief
         "short_window": 20,
         "long_window": 60,
         "data_source": "yfinance",   # Alpaca does not cover Borsa Italiana
+        "brief_driven": True,
     },
 ]
 
@@ -78,6 +80,20 @@ def _techa_patterns(symbols: list[str]) -> dict[str, list[str]]:
         return {sym: [] for sym in symbols}
 
 
+# ── Brief-driven symbol resolution ───────────────────────────────────────────
+def _resolve_symbols(cfg: dict) -> tuple[list[str], dict[str, str]]:
+    """Return (all_symbols, side_map) where side_map[symbol] = 'long'|'short'."""
+    if not cfg.get("brief_driven"):
+        return cfg["symbols"], {s: "long" for s in cfg["symbols"]}
+
+    brief = fetch_brief()
+    bull = brief.get("bull", [])
+    bear = brief.get("bear", [])
+    side_map = {s: "long" for s in bull}
+    side_map.update({s: "short" for s in bear})
+    return bull + bear, side_map
+
+
 # ── Core run logic ────────────────────────────────────────────────────────────
 def run_agent(cfg: dict, api_key: str, secret_key: str, dry_run: bool = True) -> dict:
     name = cfg["name"]
@@ -94,6 +110,8 @@ def run_agent(cfg: dict, api_key: str, secret_key: str, dry_run: bool = True) ->
     })
 
     try:
+        symbols, side_map = _resolve_symbols(cfg)
+
         # Alpaca agents get full trading + data client; yfinance agents get neither
         if src == "alpaca":
             trading_client, data_client = make_clients(api_key, secret_key)
@@ -104,10 +122,11 @@ def run_agent(cfg: dict, api_key: str, secret_key: str, dry_run: bool = True) ->
             equity = 100_000.0  # nominal for position-size display only
 
         # Optional: gather candlestick patterns for all symbols in one techa call
-        patterns = _techa_patterns(cfg["symbols"])
+        patterns = _techa_patterns(symbols)
 
         signals: list[dict] = []
-        for symbol in cfg["symbols"]:
+        for symbol in symbols:
+            side = side_map.get(symbol, "long")
             bars = data_provider.get_bars(
                 symbol,
                 data_source=src,
@@ -116,6 +135,7 @@ def run_agent(cfg: dict, api_key: str, secret_key: str, dry_run: bool = True) ->
             if len(bars) < cfg["long_window"] + 1:
                 signals.append({
                     "symbol": symbol,
+                    "side": side,
                     "signal": "insufficient_data",
                     "rsi": None,
                     "price": None,
@@ -131,26 +151,42 @@ def run_agent(cfg: dict, api_key: str, secret_key: str, dry_run: bool = True) ->
             price = float(bars["close"].iloc[-1])
             sym_patterns = patterns.get(symbol, [])
 
-            # Determine action
+            # Determine action — aware of long/short side
             action = "none"
             if src == "alpaca" and trading_client:
                 position = get_position(trading_client, symbol)
-                if sig == "buy" and position is None:
-                    qty = qty_to_buy(bars, equity)
-                    action = f"would BUY {qty} shares [dry run]" if dry_run else f"BUY {qty} shares"
-                elif sig == "sell" and position is not None:
-                    qty = abs(int(float(position.qty)))
-                    action = f"would SELL {qty} shares [dry run]" if dry_run else f"SELL {qty} shares"
+                if side == "long":
+                    if sig == "buy" and position is None:
+                        qty = qty_to_buy(bars, equity)
+                        action = f"would BUY {qty} shares [dry run]" if dry_run else f"BUY {qty} shares"
+                    elif sig == "sell" and position is not None:
+                        qty = abs(int(float(position.qty)))
+                        action = f"would SELL {qty} shares [dry run]" if dry_run else f"SELL {qty} shares"
+                else:  # short
+                    if sig == "sell" and position is None:
+                        qty = qty_to_buy(bars, equity)
+                        action = f"would SHORT {qty} shares [dry run]" if dry_run else f"SHORT {qty} shares"
+                    elif sig == "buy" and position is not None:
+                        qty = abs(int(float(position.qty)))
+                        action = f"would COVER {qty} shares [dry run]" if dry_run else f"COVER {qty} shares"
             else:
                 # yfinance agents are analysis-only
-                if sig == "buy":
-                    qty = qty_to_buy(bars, equity)
-                    action = f"signal: BUY ~{qty} shares [analysis only]"
-                elif sig == "sell":
-                    action = "signal: SELL [analysis only]"
+                if side == "long":
+                    if sig == "buy":
+                        qty = qty_to_buy(bars, equity)
+                        action = f"signal: LONG ~{qty} shares [analysis only]"
+                    elif sig == "sell":
+                        action = "signal: EXIT LONG [analysis only]"
+                else:  # short
+                    if sig == "sell":
+                        qty = qty_to_buy(bars, equity)
+                        action = f"signal: SHORT ~{qty} shares [analysis only]"
+                    elif sig == "buy":
+                        action = "signal: COVER SHORT [analysis only]"
 
             signals.append({
                 "symbol": symbol,
+                "side": side,
                 "signal": sig,
                 "rsi": round(rsi, 1),
                 "price": round(price, 2),
