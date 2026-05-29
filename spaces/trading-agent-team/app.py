@@ -180,7 +180,7 @@ for col, cfg in zip(cols, agent_module.AGENT_CONFIGS):
 st.divider()
 
 # ── Aggregated Signal Table ───────────────────────────────────────────────────
-st.subheader("All Signals")
+st.subheader("Today's Signals")
 all_sigs = agent_module.all_signals(state)
 if all_sigs:
     rows = []
