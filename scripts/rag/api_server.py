@@ -16,6 +16,9 @@ Embed:
     The widget connects to http://localhost:8000 by default.
 """
 
+import base64 as _base64
+import hashlib as _hashlib
+import hmac as _hmac
 import json
 import logging
 import os
@@ -23,10 +26,12 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import httpx as _httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Form, HTTPException
+from fastapi import Request as _Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
 ROOT = Path(__file__).parent.parent.parent
@@ -121,6 +126,23 @@ def _to_sources(docs) -> list[dict]:
     ]
 
 
+def _sync_rag_answer(query: str) -> str:
+    res     = _get_resources()
+    hybrid  = _build_retriever(res, K_SEMANTIC, K_BM25, WEIGHTS_SPARSE)
+    queries = translate_query(res["chat_model"], query, QUERY_STRATEGY)
+    merged  = retrieve_for_queries(queries, hybrid)
+    ordered = reorder_docs(merged)
+    context = "\n\n".join(doc.page_content for doc in ordered)
+    prompt  = SYSTEM_PROMPT + f"Context:\n{context}\n\nQuestion: {query}"
+    resp = res["openai_client"].chat.completions.create(
+        model=CHAT_MODEL,
+        temperature=0,
+        messages=[{"role": "user", "content": prompt}],
+        stream=False,
+    )
+    return resp.choices[0].message.content.strip()
+
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.get("/health")
@@ -178,6 +200,68 @@ def chat_stream(req: ChatRequest):
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+@app.post("/webhook/telegram")
+async def webhook_telegram(request: _Request):
+    token   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    body    = await request.json()
+    msg     = body.get("message", {})
+    text    = (msg.get("text") or "").strip()
+    chat_id = msg.get("chat", {}).get("id")
+    if not text or not chat_id:
+        return {}
+    answer = _sync_rag_answer(text)
+    if token:
+        async with _httpx.AsyncClient(timeout=10) as client:
+            await client.post(
+                f"https://api.telegram.org/bot{token}/sendMessage",
+                json={"chat_id": chat_id, "text": answer},
+            )
+    else:
+        log.warning("/webhook/telegram: TELEGRAM_BOT_TOKEN unset — reply suppressed")
+    return {}
+
+
+@app.post("/webhook/whatsapp", response_class=PlainTextResponse)
+async def webhook_whatsapp(
+    request: _Request,
+    Body: str = Form(default=""),
+    From: str = Form(default=""),
+):
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+    if auth_token:
+        sig       = request.headers.get("X-Twilio-Signature", "")
+        form_data = await request.form()
+        sorted_p  = "".join(f"{k}{v}" for k, v in sorted(form_data.items()))
+        canonical = str(request.url) + sorted_p
+        expected  = _base64.b64encode(
+                        _hmac.new(auth_token.encode(), canonical.encode(), _hashlib.sha1).digest()
+                    ).decode()
+        if not _hmac.compare_digest(expected, sig):
+            raise HTTPException(status_code=403, detail="Invalid Twilio signature")
+    else:
+        log.warning("/webhook/whatsapp: TWILIO_AUTH_TOKEN unset — signature check skipped (dev)")
+
+    incoming = Body.strip()
+    if not incoming or not From:
+        return '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'
+
+    answer = _sync_rag_answer(incoming)
+
+    sid     = os.environ.get("TWILIO_ACCOUNT_SID", "")
+    wa_from = os.environ.get("TWILIO_WHATSAPP_FROM", "")
+    if sid and auth_token and wa_from:
+        async with _httpx.AsyncClient(timeout=10) as client:
+            await client.post(
+                f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json",
+                auth=(sid, auth_token),
+                data={"From": wa_from, "To": From, "Body": answer},
+            )
+    else:
+        log.warning("/webhook/whatsapp: Twilio creds incomplete — reply suppressed")
+
+    return '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
