@@ -18,7 +18,6 @@ Invariants:
     - data/rag_registry.tsv tracks: id, path, chunk_index, content_hash, guid
 """
 
-import argparse
 import hashlib
 import logging
 import os
@@ -286,16 +285,24 @@ def update_vectorstore(
 def main() -> None:
     load_dotenv()
 
-    embeddings_model = OpenAIEmbeddings(model=EMBED_MODEL, dimensions=EMBED_DIMENSIONS)
-    registry = load_registry()
+    if not os.environ.get("OPENAI_API_KEY"):
+        log.warning("OPENAI_API_KEY not set — nothing to embed. Exiting.")
+        sys.exit(0)
 
+    registry   = load_registry()
     files      = collect_files()
     all_chunks = build_all_chunks(files)
-    new_chunks = find_new_chunks(all_chunks, registry)
+    new_chunks = find_new_chunks(all_chunks, registry)  # exits 0 if nothing new
     new_chunks = assign_ids(new_chunks, registry)
     docs       = build_documents(new_chunks)
 
-    pairs = run_embedding_batch(docs, OpenAI())
+    # Instantiate OpenAI clients only after confirming there is work to do.
+    # kitai.batch handles bulk embedding (async, 50% cheaper than sync calls).
+    # embeddings_model is stored in the FAISS pickle for single-query encoding at retrieval time.
+    client           = OpenAI()
+    embeddings_model = OpenAIEmbeddings(model=EMBED_MODEL, dimensions=EMBED_DIMENSIONS)
+
+    pairs = run_embedding_batch(docs, client)
 
     aligned_pairs, aligned_docs = align_pairs(pairs, docs)
     if not aligned_docs:
