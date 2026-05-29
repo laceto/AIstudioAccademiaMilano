@@ -7,7 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH=/home/user/.local/bin:$PATH
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential wget ca-certificates curl \
+        build-essential wget ca-certificates curl git \
     && wget -qO- "https://prdownloads.sourceforge.net/ta-lib/ta-lib-${TA_LIB_VERSION}-src.tar.gz" \
        | tar -xz -C /tmp \
     && cd /tmp/ta-lib && ./configure --prefix=/usr && make && make install \
