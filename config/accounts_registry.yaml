@@ -58,12 +58,18 @@ email:
     notes: Standalone Zoho mailbox, no forwarding. DNS auto-mapped by Zoho to Cloudflare.
 
 hosting:
-  - provider: Vercel
+  - provider: Railway
     plan: hobby
     account_email: luigi.vinegar@gmail.com
     used_for: static_landing_pages
-    deploy_token_env: VERCEL_TOKEN
+    deploy_token_env: RAILWAY_TOKEN
     status: active
+    notes: >
+      Static sites use Railway multi-service: root railway.toml → gateway (FastAPI).
+      Each site subfolder has its own Dockerfile + railway.toml; add as a separate
+      Railway service pointing to deliverables/2026-05-24_011_bakery-v2/site/.
+      Custom domain aistudiomilano.xyz → set in Railway service Settings → Domains,
+      then update Cloudflare CNAME to the Railway-provided *.up.railway.app URL.
 
   - provider: Streamlit Cloud
     plan: free
