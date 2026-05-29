@@ -63,17 +63,17 @@ jobs:
           path: data/vectorstore/
           key: rag-vectorstore-${{ steps.registry.outputs.hash }}
 
-      # RAG Team: Indexer — run embed_repo.py (openai batch if key present, else local sentence-transformers)
+      # RAG Team: Indexer — run embed_repo.py (requires OPENAI_API_KEY secret; skips with warning if absent)
       - name: Rebuild RAG index
         if: steps.rag_check.outputs.available == 'true'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          if [ -n "$OPENAI_API_KEY" ]; then
-            python -m scripts.rag.embed_repo --provider openai
-          else
-            python -m scripts.rag.embed_repo --provider local
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::warning::OPENAI_API_KEY secret not set — skipping RAG index rebuild. Add it in repo Settings → Secrets → Actions."
+            exit 0
           fi
+          python -m scripts.rag.embed_repo --provider openai
 
       # RAG Team: Indexer — commit updated rag_registry.tsv so Retriever/Synthesizer/Injector pick it up
       - name: Commit registry
