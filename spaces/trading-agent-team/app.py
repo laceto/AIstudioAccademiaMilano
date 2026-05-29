@@ -58,12 +58,14 @@ if not alpaca_ok:
     )
 
 # ── Techa availability ────────────────────────────────────────────────────────
+_TECHA_ERROR: str = ""
 try:
     from techa.agents.orchestrator import create_orchestrator as _techa_orch
     from techa.agents.patterns import create_pattern_agent as _techa_patterns
     _TECHA = True
-except ImportError:
+except Exception as _e:
     _TECHA = False
+    _TECHA_ERROR = f"{type(_e).__name__}: {_e}"
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
@@ -351,10 +353,8 @@ def _benchmark_for(symbol: str) -> str:
     return "FTSEMIB.MI" if symbol.endswith(".MI") else "^GSPC"
 
 if not _TECHA:
-    st.info(
-        "**techa** is being installed — refresh in a minute. "
-        "Requires TA-Lib + OpenAI."
-    )
+    st.error(f"techa import failed: `{_TECHA_ERROR}`")
+    st.info("Requires TA-Lib C library + OpenAI.")
 else:
     tab_run, tab_cache = st.tabs(["Run Analysis", "Cached Reports"])
 
