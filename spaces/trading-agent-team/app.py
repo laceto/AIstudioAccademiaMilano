@@ -188,23 +188,35 @@ if all_sigs:
             emoji = "🟢" if signal == "buy" else "🔴" if signal == "sell" else "⬜"
         else:
             emoji = "🔴" if signal == "sell" else "🟢" if signal == "buy" else "⬜"
+
+        # Delta-specific fields
+        conviction = sig.get("conviction")
+        methods = sig.get("methods", [])
+        regime_flip = sig.get("regime_flip", False)
+        daily_ret = sig.get("daily_return")
+
         pats = sig.get("patterns", [])
         pat_str = ", ".join(pats[:3]) + ("…" if len(pats) > 3 else "") if pats else "—"
+        methods_str = ", ".join(methods) if methods else "—"
+
         rows.append({
             "Agent": sig.get("agent", ""),
             "Symbol": sig.get("symbol", ""),
             "Side": side_badge,
-            "Source": sig.get("data_source", "alpaca"),
             "Signal": f"{emoji} {signal.upper()}",
-            "RSI": sig.get("rsi", ""),
-            "Price": f"${sig['price']:.2f}" if sig.get("price") else "N/A",
+            "Conviction": f"{conviction:+.2f}" if conviction is not None else "—",
+            "Day %": f"{daily_ret:+.1%}" if daily_ret is not None else "—",
+            "Methods": methods_str,
+            "Regime ⚡": "✅" if regime_flip else "",
+            "RSI": sig.get("rsi", "—") or "—",
+            "Price": f"${sig['price']:.2f}" if sig.get("price") else "—",
             "Patterns": pat_str,
             "Action": sig.get("action", "none"),
             "Time": sig.get("timestamp", "")[:19],
         })
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
     if not _TECHA:
-        st.caption("Install techa to populate the Patterns column.")
+        st.caption("Install techa to populate the Patterns column (Alpha/Beta/Gamma only).")
 else:
     st.info("No signals yet — click **Run All Agents** to generate signals.")
 
