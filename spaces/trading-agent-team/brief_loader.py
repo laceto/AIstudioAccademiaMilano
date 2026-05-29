@@ -14,6 +14,14 @@ BRIEF_URL = (
     "https://raw.githubusercontent.com/laceto/myfinance2/main"
     "/data/results/it/daily_brief.txt"
 )
+_COMMITS_API = (
+    "https://api.github.com/repos/laceto/myfinance2/commits"
+    "?path=data/results/it/daily_brief.txt&per_page={n}"
+)
+_RAW_AT_SHA = (
+    "https://raw.githubusercontent.com/laceto/myfinance2/{sha}"
+    "/data/results/it/daily_brief.txt"
+)
 
 SIGNAL_METHODS = {
     "rbo_20", "rbo_50",
@@ -21,6 +29,37 @@ SIGNAL_METHODS = {
     "rsma_100150", "rsma_50100", "rsma_50100150",
     "rtt_5020",
 }
+
+
+def fetch_brief_history(n_days: int = 7) -> list[dict]:
+    """Fetch signal flips from the last n_days versions of daily_brief.txt.
+
+    Returns a list of parsed briefs (same structure as fetch_brief()),
+    ordered newest-first. Today's brief is index 0.
+    Skips commits that fail to fetch or parse — never raises.
+    """
+    import json
+
+    try:
+        url = _COMMITS_API.format(n=n_days + 1)  # +1 buffer for weekends/gaps
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            commits = json.loads(resp.read().decode("utf-8"))
+    except Exception as exc:
+        return [{"date": "", "bull": [], "bear": [], "signal_flips": {},
+                 "regime_flips": {}, "error": str(exc)}]
+
+    results = []
+    for commit in commits[:n_days]:
+        sha = commit["sha"]
+        raw_url = _RAW_AT_SHA.format(sha=sha)
+        try:
+            with urllib.request.urlopen(raw_url, timeout=10) as resp:
+                text = resp.read().decode("utf-8")
+            results.append(_parse(text))
+        except Exception:
+            continue  # skip failed days silently
+
+    return results
 
 
 def fetch_brief(url: str = BRIEF_URL) -> dict:

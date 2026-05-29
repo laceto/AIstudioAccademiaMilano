@@ -226,6 +226,52 @@ else:
 
 st.divider()
 
+# ── Historical Signal Flips (myfinance2 daily_brief.txt git history) ──────────
+st.subheader("Historical Signal Flips")
+_n_days = st.slider("Days back", min_value=2, max_value=20, value=7, key="hist_days")
+
+with st.spinner(f"Loading last {_n_days} briefs from myfinance2…"):
+    try:
+        from brief_loader import fetch_brief_history as _fbh
+        _history = _fbh(n_days=_n_days)
+    except Exception as _e:
+        _history = []
+        st.warning(f"Could not load history: {_e}")
+
+if _history:
+    _hist_rows = []
+    for _brief in _history:
+        _date = _brief.get("date", "—")
+        _bull_map = {c["symbol"]: c for c in _brief.get("bull", [])}
+        _bear_map = {c["symbol"]: c for c in _brief.get("bear", [])}
+        _reg = _brief.get("regime_flips", {})
+        for _sym, _flip in _brief.get("signal_flips", {}).items():
+            _dir = _flip["direction"]
+            _side = "long" if _dir == "bull_flip" else "short"
+            _side_badge = "🟦 LONG" if _side == "long" else "🟥 SHORT"
+            _methods = ", ".join(_flip["methods"])
+            _cand = _bull_map.get(_sym) or _bear_map.get(_sym) or {}
+            _conv = _cand.get("conviction")
+            _dret = _cand.get("daily_return")
+            _hist_rows.append({
+                "Date": _date,
+                "Symbol": _sym,
+                "Side": _side_badge,
+                "Signal": "🟢 BUY" if _side == "long" else "🔴 SELL",
+                "Conviction": f"{_conv:+.2f}" if _conv is not None else "—",
+                "Day %": f"{_dret:+.1%}" if _dret is not None else "—",
+                "Methods": _methods,
+                "Regime ⚡": "✅" if _sym in _reg else "",
+            })
+    if _hist_rows:
+        st.dataframe(pd.DataFrame(_hist_rows), use_container_width=True, hide_index=True)
+    else:
+        st.info("No signal flips found in the selected period.")
+else:
+    st.info("No historical data available.")
+
+st.divider()
+
 # ── Open Positions (Alpaca) ───────────────────────────────────────────────────
 st.subheader("Open Positions (Alpaca)")
 positions = portfolio.get("positions", [])
