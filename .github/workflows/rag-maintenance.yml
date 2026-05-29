@@ -1,4 +1,11 @@
 name: RAG Maintenance
+# Owner: RAG Team (agents/rag/README.md)
+# Agents involved:
+#   - Indexer      (scripts/rag/embed_repo.py)    — rebuilds FAISS + registry
+#   - Retriever    (scripts/rag/retrieve_repo.py) — consumes index built here
+#   - Synthesizer  (scripts/rag/synthesize.py)    — consumes index built here
+#   - Context Injector (scripts/rag/inject_context.py) — always-on, reads live index
+# Schedule: daily 06:00 UTC — runs before research pipeline (07:00 UTC)
 
 on:
   schedule:
@@ -22,9 +29,11 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-rag.txt
 
+      # RAG Team: Indexer — install embed dependencies
       - name: Install RAG dependencies
         run: pip install -r requirements-rag.txt
 
+      # RAG Team: Indexer — guard: skip if embed_repo.py not yet on branch
       - name: Check RAG scripts available
         id: rag_check
         run: |
@@ -35,6 +44,7 @@ jobs:
             echo "RAG scripts not on this branch yet — skipping rebuild"
           fi
 
+      # RAG Team: Indexer — hash registry to enable vectorstore cache hit
       - name: Compute registry hash
         if: steps.rag_check.outputs.available == 'true'
         id: registry
@@ -45,6 +55,7 @@ jobs:
             echo "hash=empty" >> "$GITHUB_OUTPUT"
           fi
 
+      # RAG Team: Indexer — restore FAISS vectorstore from cache (skip re-embed if unchanged)
       - name: Restore vectorstore cache
         if: steps.rag_check.outputs.available == 'true'
         uses: actions/cache@v4
@@ -52,6 +63,7 @@ jobs:
           path: data/vectorstore/
           key: rag-vectorstore-${{ steps.registry.outputs.hash }}
 
+      # RAG Team: Indexer — run embed_repo.py (openai batch if key present, else local sentence-transformers)
       - name: Rebuild RAG index
         if: steps.rag_check.outputs.available == 'true'
         env:
@@ -63,6 +75,7 @@ jobs:
             python -m scripts.rag.embed_repo --provider local
           fi
 
+      # RAG Team: Indexer — commit updated rag_registry.tsv so Retriever/Synthesizer/Injector pick it up
       - name: Commit registry
         if: steps.rag_check.outputs.available == 'true'
         run: |
