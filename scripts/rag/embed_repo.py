@@ -29,7 +29,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
-from langchain_openai import OpenAIEmbeddings
+from langchain_core.embeddings import Embeddings
 from openai import OpenAI
 
 from kitai.batch import (
@@ -40,6 +40,31 @@ from kitai.batch import (
     submit_batch_job,
 )
 from kitai.index import create_vectorstore
+
+
+class _SyncEmbeddings(Embeddings):
+    """Thin langchain_core.Embeddings shim over the raw OpenAI client.
+
+    Used only as the FAISS query-time encoder (single query → vector).
+    Bulk indexing uses kitai.batch (async, 50% cheaper) — never this class.
+    Avoids langchain_openai.OpenAIEmbeddings which validates credentials
+    eagerly at construction time.
+    """
+
+    def __init__(self, client: OpenAI, model: str, dimensions: int) -> None:
+        self._client     = client
+        self._model      = model
+        self._dimensions = dimensions
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        resp = self._client.embeddings.create(
+            input=texts, model=self._model, dimensions=self._dimensions,
+        )
+        return [item.embedding for item in resp.data]
+
+    def embed_query(self, text: str) -> list[float]:
+        return self.embed_documents([text])[0]
+
 
 ROOT             = Path(__file__).parent.parent.parent
 VECTORSTORE_DIR  = ROOT / "data" / "vectorstore" / "repo"
@@ -253,7 +278,7 @@ def align_pairs(
 def init_vectorstore(
     docs: list[Document],
     text_emb_pairs: list[tuple[str, list[float]]],
-    embeddings_model: OpenAIEmbeddings,
+    embeddings_model: _SyncEmbeddings,
 ) -> FAISS:
     embeddings_arr = np.array([emb for _, emb in text_emb_pairs], dtype=np.float32)
     store = create_vectorstore(docs, embeddings_arr, embeddings_model)
@@ -264,7 +289,7 @@ def init_vectorstore(
 def update_vectorstore(
     text_emb_pairs: list[tuple[str, list[float]]],
     aligned_docs: list[Document],
-    embeddings_model: OpenAIEmbeddings,
+    embeddings_model: _SyncEmbeddings,
 ) -> FAISS:
     store = FAISS.load_local(
         str(VECTORSTORE_DIR), embeddings_model,
@@ -296,11 +321,11 @@ def main() -> None:
     new_chunks = assign_ids(new_chunks, registry)
     docs       = build_documents(new_chunks)
 
-    # Instantiate OpenAI clients only after confirming there is work to do.
-    # kitai.batch handles bulk embedding (async, 50% cheaper than sync calls).
-    # embeddings_model is stored in the FAISS pickle for single-query encoding at retrieval time.
+    # Instantiate after confirming there is work to do.
+    # kitai.batch handles bulk indexing (async, 50% cheaper than sync OpenAI calls).
+    # _SyncEmbeddings is stored in the FAISS pickle only for query-time single-vector encoding.
     client           = OpenAI()
-    embeddings_model = OpenAIEmbeddings(model=EMBED_MODEL, dimensions=EMBED_DIMENSIONS)
+    embeddings_model = _SyncEmbeddings(client, EMBED_MODEL, EMBED_DIMENSIONS)
 
     pairs = run_embedding_batch(docs, client)
 
