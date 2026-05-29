@@ -83,5 +83,5 @@ jobs:
           else
             git commit -m "rag: rebuild index $(date +%Y-%m-%d) [skip ci]"
             git pull --rebase origin main
-            git push
+            git push origin HEAD:main
           fi
