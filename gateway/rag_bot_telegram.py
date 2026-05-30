@@ -90,9 +90,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 def main() -> None:
-    token = os.environ.get("RAG_BOT_TOKEN", "")
+    token = os.environ.get("TELEGRAM_RAG_BOT_TOKEN", "")
     if not token:
-        raise RuntimeError("RAG_BOT_TOKEN not set — create a bot via @BotFather and add it to .env")
+        raise RuntimeError("TELEGRAM_RAG_BOT_TOKEN not set — create a bot via @BotFather and add it to .env")
     app = Application.builder().token(token).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("ask", cmd_ask))
