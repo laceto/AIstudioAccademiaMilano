@@ -21,8 +21,11 @@ import hashlib
 import hmac
 import logging
 import os
+import urllib.parse
 
-from fastapi import APIRouter, Form, HTTPException, Request
+import httpx as _httpx
+
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 
 from config.brand import b, fmt
@@ -52,19 +55,14 @@ def _verify_twilio_signature(request: Request, body: bytes) -> bool:
 
 
 @router.post("/webhook/whatsapp", response_class=PlainTextResponse)
-async def whatsapp_reply(
-    request: Request,
-    Body: str = Form(default=""),
-    From: str = Form(default=""),
-    To: str = Form(default=""),
-):
+async def whatsapp_reply(request: Request):
     """Full TwiML reply endpoint for Twilio WhatsApp sandbox."""
+    raw_body = await request.body()
+    form_data = dict(urllib.parse.parse_qsl(raw_body.decode("utf-8")))
+
     token = os.environ.get("TWILIO_AUTH_TOKEN", "")
     if token:
         sig = request.headers.get("X-Twilio-Signature", "")
-        raw_form = await request.body()
-        # Re-derive canonical with sorted form fields
-        form_data = await request.form()
         sorted_params = "".join(f"{k}{v}" for k, v in sorted(form_data.items()))
         canonical = str(request.url) + sorted_params
         expected = base64.b64encode(
@@ -72,9 +70,11 @@ async def whatsapp_reply(
         ).decode()
         if not hmac.compare_digest(expected, sig):
             raise HTTPException(status_code=403, detail="Invalid Twilio signature")
+    else:
+        logger.warning("TWILIO_AUTH_TOKEN not set — skipping HMAC validation (dev)")
 
-    incoming = Body.strip()
-    user_phone = From.replace("whatsapp:", "")
+    incoming = form_data.get("Body", "").strip()
+    user_phone = form_data.get("From", "").replace("whatsapp:", "")
 
     logger.info(
         "WhatsApp request | from=%s text_length=%d",
@@ -87,7 +87,6 @@ async def whatsapp_reply(
 
     # ? <question> → RAG knowledge-base query
     if incoming.startswith("?"):
-        import os, httpx as _httpx
         rag_query = incoming[1:].strip()
         rag_url = os.environ.get("RAG_API_URL", "").rstrip("/")
         if rag_url and rag_query:

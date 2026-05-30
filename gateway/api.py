@@ -21,9 +21,14 @@ Environment variables:
 """
 
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+import httpx as _httpx
+
+logger = logging.getLogger(__name__)
 
 # Load .env from repo root — setdefault so Cloud Run env vars always win
 _env_file = Path(__file__).resolve().parent.parent / ".env"
@@ -497,7 +502,6 @@ async def telegram_webhook(request: Request):
     if rag_query:
         rag_url = os.environ.get("RAG_API_URL", "").rstrip("/")
         if rag_url:
-            import httpx as _httpx
             try:
                 async with _httpx.AsyncClient(timeout=30) as client:
                     resp = await client.post(f"{rag_url}/chat/sync", json={"query": rag_query})
@@ -506,7 +510,10 @@ async def telegram_webhook(request: Request):
                 answer = f"RAG error: {exc}"
         else:
             answer = "RAG_API_URL not configured — knowledge base unavailable."
-        await bot.send_message(chat_id=chat_id, text=answer)
+        try:
+            await bot.send_message(chat_id=chat_id, text=answer)
+        except Exception as exc:
+            logger.warning("Telegram send failed (chat_id=%s): %s", chat_id, exc)
         return {"ok": True}
 
     normalized = _normalize(text)
@@ -520,16 +527,19 @@ async def telegram_webhook(request: Request):
         metadata={"user_id": user_id, "chat_id": chat_id},
     )
 
-    if result["status"] == "error":
-        await bot.send_message(
-            chat_id=chat_id,
-            text="Non riesco a elaborare questa richiesta. Prova con una diversa.",
-        )
-    else:
-        await bot.send_message(
-            chat_id=chat_id,
-            text=f"Ricevuto! La tua richiesta è in elaborazione.\n\nJob ID: `{result['job_id']}`",
-            parse_mode="Markdown",
-        )
+    try:
+        if result["status"] == "error":
+            await bot.send_message(
+                chat_id=chat_id,
+                text="Non riesco a elaborare questa richiesta. Prova con una diversa.",
+            )
+        else:
+            await bot.send_message(
+                chat_id=chat_id,
+                text=f"Ricevuto! La tua richiesta è in elaborazione.\n\nJob ID: `{result['job_id']}`",
+                parse_mode="Markdown",
+            )
+    except Exception as exc:
+        logger.warning("Telegram send failed (chat_id=%s): %s", chat_id, exc)
 
     return {"ok": True}
