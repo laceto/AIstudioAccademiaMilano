@@ -1,0 +1,14 @@
+.env
+.env.*
+*.env
+.git/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+node_modules/
+*.egg-info/
+.claude/
+data/index/
+mindful-pause-bot/
