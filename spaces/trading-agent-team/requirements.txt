@@ -6,7 +6,7 @@ yfinance>=0.2
 datasets>=2.19
 python-dotenv>=1.0
 mplfinance==0.12.10b0
-algoshort @ git+https://github.com/laceto/algoshort.git@main
+algoshort @ git+https://github.com/laceto/algoshort.git@9381a0d
 techa @ git+https://github.com/laceto/techa.git@main
 openai>=1.40
 langchain-openai>=0.2
