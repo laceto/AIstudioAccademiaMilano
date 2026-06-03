@@ -1,132 +1,144 @@
-# CLAUDE.md
+# CLAUDE.md — Studio Router
 
-This file provides guidance to Claude Code when working in this repository.
+This file is the **primary router** for every Claude session in this repo.  
+Read Step 1–3 before touching any code. Reference sections follow.
 
 ---
 
-## What This Repo Is
+## STEP 1 — CLASSIFY THE REQUEST
 
-**AI Studio Accademia Milano** — a one-human AI enterprise (founder: Luigi Aceto).  
-Every user request produces a tangible deployed output: software, PDF, automation, or agent.  
-This repo is the operational backbone: agents, skills, pricing, learning loop, and all deliverables.
+Map the user request to an intent, then look it up in the table below.  
+If the intent is not in the table → `unknown_product: null` → **block, escalate to Luigi**.
+
+| Intent keyword(s) | Product key | Price | Skills to preload |
+|-------------------|-------------|-------|-------------------|
+| landing page, sito statico | `static_landing_page` | 9.90 | — |
+| landing page premium | `premium_landing_page` | 29.90 | — |
+| landing page commerciale | `commercial_landing_page` | 45.90 | — |
+| PDF, documento | `pdf_document` | 1.90 | — |
+| fattura, invoice | `invoice_pdf` | 3.90 | `templates/pdf/invoice_standard.py` |
+| report strategico | `strategic_report` | 4.90 | — |
+| chatbot, streamlit chat | `chatbot_app` | 19.90 | `templates/streamlit/chatbot.py` |
+| email delivery | `email_delivery` | 0.50 | — |
+| RAG, knowledge base, embeddings | `rag_knowledge_base` | 29.90 | `langchain-rag`, `langgraph-fundamentals` |
+| calendario, calendar sync | `calendar_integration` | 14.90 | — |
+| meteo, weather dashboard | `weather_dashboard` | 9.90 | — |
+| deploy streamlit, agent deploy | `agent_deploy_streamlit` | 19.90 | `langgraph-subagents` |
+| trading, algo trading, bot | `algo_trading` | 24.90 | `langgraph-fundamentals` |
+| mind dashboard, journal | `mind_dashboard_journal` | 9.90 | — |
+| syllabus, flashcard | `micro_syllabus_flashcards` | 14.90 | — |
+| family archivist | `family_archivist` | 14.90 | — |
+| meal planner, ricette | `mediterranean_meal_planner` | 14.90 | — |
+| niccolò chronicles, time capsule | `niccolo_chronicles` | 14.90 | — |
+| qualsiasi altro | `unknown_product` | **null** | **BLOCK** |
+
+---
+
+## STEP 2 — AGENTIC FRAMEWORK GATE
+
+If the request involves **LangGraph, LangChain, multi-agent, o pipeline agentiche** → invoke `/agentic-router` **before** scrivere codice.
+
+| Trigger | Skills obbligatorie |
+|---------|---------------------|
+| LangGraph / StateGraph / Send dispatch | `langgraph-fundamentals`, `langgraph-dynamic-parallelism` |
+| Subagenti / nested agents | `langgraph-subagents`, `deep-agents-orchestration` |
+| Persistence / checkpointing | `langgraph-persistence` |
+| Human-in-the-loop | `langgraph-human-in-the-loop` |
+| LangChain chains / RAG | `langchain-fundamentals`, `langchain-rag` |
+| Memory cross-session | `deep-agents-memory` |
+| Orchestrazione generica | `deep-agents-core` |
+
+> `scripts/agentic_skill_router.py` si attiva su ogni `UserPromptSubmit` e inietta questo reminder automaticamente. Non saltare mai l'invocazione dello skill.
+
+---
+
+## STEP 3 — ESEGUI LA PIPELINE (6 agenti, in ordine)
+
+```
+User Input
+  │
+  ▼
+[Stacy]      Classifica intent + pricing check → blocca se unknown_product: null
+  │
+  ▼
+[Gianni]     Scoping tecnico, stack, superficie di rischio
+  │
+  ▼
+[Chiara]     Implementazione (codice, PDF, template, contenuto)
+  │
+  ▼
+[Stacy QA]   Validazione output (disclaimer, formato, sicurezza)
+  │
+  ▼
+[Marco]      Finance: costo + margine + fattura (background attuariale)
+  │
+  ▼
+[Francesca]  Delivery: push GitHub + audit log
+```
+
+**Risk agents** (tutti background attuariale): Technical Auditor, Financial Controller,  
+Operational Monitor, Reputation Guardian, Compliance Agent.  
+Formula: `P(event) × impact × blast_radius` → Risk Units (RU). Flag a 2σ.
+
+---
+
+## STEP 4 — DELIVERY CHECKLIST
+
+Prima di chiudere ogni task:
+
+- [ ] Audit log creato in `process/audit/YYYY-MM-DD_NNN_slug.md`
+- [ ] Cartella `deliverables/YYYY-MM-DD_NNN_slug/` presente
+- [ ] Riga aggiunta nella tabella **Delivered Requests** sotto
+- [ ] Se nuova pricing → aggiornata anche in `config/global_settings.json`
+- [ ] Branch `claude/<slug>` pushato, PR aperta e mergiata via GitHub MCP
+
+**Pre-push (10 sec):** `ls process/audit/ | tail -3` → NNN corretto → `grep "| $NNN " CLAUDE.md` → esattamente una riga.
+
+---
+
+---
+
+# REFERENCE
+
+Le sezioni seguenti sono consultazione, non routing. Non saltarle per pigrizia.
 
 ---
 
 ## Active Branch
 
-Create a **fresh branch from main** for every feature. Never push to main directly.  
-Naming convention: `claude/<slug>` (e.g. `claude/calendar-sync`, `claude/readme-review`).  
-The branch `claude/digital-communities-guide-a5lBV` is legacy — do not use it.
+Crea un **branch fresco da main** per ogni feature. Mai pushare su main direttamente.  
+Convention: `claude/<slug>` (es. `claude/calendar-sync`).  
+Il branch `claude/digital-communities-guide-a5lBV` è legacy — non usarlo.
 
-**Auto-commit and merge on task completion (standing rule).** When a task is finished, commit on the feature branch, push, open a PR against `main`, and merge it via GitHub MCP — do not ask for confirmation at each step. Exceptions that still require asking first: destructive operations (`git reset --hard`, `git push --force`, deleting branches), commits that touch `.env`/credentials, or work the user explicitly paused mid-flow.
+**Auto-commit e merge a task completato (regola permanente).** Commita sul feature branch, pusha, apri PR su `main`, mergela via GitHub MCP — senza chiedere conferma a ogni passo. Eccezioni che richiedono ancora conferma: operazioni distruttive (`git reset --hard`, `git push --force`, cancellazione branch), commit che toccano `.env`/credenziali, lavoro che l'utente ha esplicitamente messo in pausa.
 
 ---
 
 ## Cross-Platform Hook Convention
 
-Hooks in `.claude/settings.json` run in both environments:
-- **Local Windows** (Luigi's machine, Git Bash) — `C:\Users\l_ace\Desktop\projects\...`
-- **Linux remote** (Claude Code on the web container) — `/home/user/<repo>`
+Hook in `.claude/settings.json` girano in entrambi gli ambienti:
+- **Windows locale** (macchina di Luigi, Git Bash) — `C:\Users\l_ace\Desktop\projects\...`
+- **Linux remoto** (container Claude Code on the web) — `/home/user/<repo>`
 
-**Never hardcode absolute paths in hook commands.** Use:
-- `$CLAUDE_PROJECT_DIR` — repo root (set by Claude Code on both platforms)
-- `$HOME/.claude` — global Claude config dir (resolves correctly on Windows Git Bash and Linux)
+**Mai hardcodare path assoluti.** Usa:
+- `$CLAUDE_PROJECT_DIR` — root del repo
+- `$HOME/.claude` — config dir globale di Claude
 
-Hooks already run with CWD = `$CLAUDE_PROJECT_DIR`, so the leading `cd` is usually redundant; if kept for clarity, quote the variable: `cd "$CLAUDE_PROJECT_DIR"`.
-
-**Global propagation:** mirror this convention in `~/.claude/CLAUDE.md` (Luigi's global memory) so it applies to every future project, not just this repo. When bootstrapping a new project, audit `.claude/settings.json` for hardcoded `C:\` or `/Users/` paths before the first push.
+**Propagazione globale:** replica la convention in `~/.claude/CLAUDE.md` (memoria globale di Luigi) così vale per ogni progetto futuro.
 
 ---
 
-## Agentic Framework Skills (Mandatory Gate)
+## Security Constraints (Non-Negotiable)
 
-Whenever a task involves **LangGraph, LangChain, multi-agent systems, or agentic pipelines**, invoke the `/agentic-router` skill first — it routes to the correct framework skills. Then invoke whichever it recommends before writing any implementation code.
-
-| Trigger | Skills to load |
-|---------|---------------|
-| LangGraph graph / StateGraph / Send dispatch | `langgraph-fundamentals`, `langgraph-dynamic-parallelism` |
-| Subagents / nested agents | `langgraph-subagents`, `deep-agents-orchestration` |
-| Persistence / checkpointing | `langgraph-persistence` |
-| Human-in-the-loop | `langgraph-human-in-the-loop` |
-| LangChain chains / RAG | `langchain-fundamentals`, `langchain-rag` |
-| Memory across sessions | `deep-agents-memory` |
-| General multi-agent orchestration | `deep-agents-core` |
-
-This gate is automated: `scripts/agentic_skill_router.py` runs on every `UserPromptSubmit` and injects a reminder when agentic keywords are detected. Do not skip the skill invocation even when confident — skills encode the canonical conventions for this repo.
-
----
-
-## 6-Agent Pipeline
-
-Every request flows through this sequence. Never skip a step.
-
-```
-User Input
-  |
-  v
-[Stacy]      Intent classification + pricing check (block if unknown_product: null)
-  |
-  v
-[Gianni]     Technical scoping, stack selection, risk surface
-  |
-  v
-[Chiara]     Implementation (code, content, PDF, template)
-  |
-  v
-[Stacy QA]   Output validation (disclaimer check, format, security)
-  |
-  v
-[Marco]      Financial: cost + margin + invoice (actuarial background)
-  |
-  v
-[Francesca]  Delivery: GitHub push + audit log
-```
-
-**Risk agents** (all actuarial background): Technical Auditor, Financial Controller,
-Operational Monitor, Reputation Guardian, Compliance Agent.  
-Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
-
----
-
-## Key Files
-
-| File | Purpose |
-|------|--------|
-| `config/global_settings.json` | Single source of truth: skills, pricing, hooks, MCP, issues |
-| `pytest.ini` | `pythonpath = .` — makes `scripts/` importable in CI and locally |
-| `config/accounts_registry.yaml` | All platform accounts: URL, status, credential readiness — owned by IT Staff |
-| `.claude/settings.json` | Hook commands: Stop, PreToolUse, PostToolUse, UserPromptSubmit (RAG injection) |
-| `credentials/registry.md` | Step-by-step guide for all credentials across deliverables |
-| `.env.example` | Template for all environment variables — copy to `.env` and fill in |
-| `scripts/learning_loop.py` | Auto-updates settings after every request |
-| `scripts/git-hooks/pre-commit` | Pre-commit hook: blocks `.env` + known secret patterns; auto-activated by SessionStart hook in `.claude/settings.json` |
-| `scripts/post_delivery_update.py` | Post-commit hook: creates audit stubs, patches CLAUDE.md table |
-| `scripts/digital_presence_pipeline.py` | Bridges D009+D010: GitHub activity → post → multi-platform publish |
-| `scripts/rag/embed_repo.py` | Index all repo files via kitai batch + FAISS |
-| `scripts/rag/retrieve_repo.py` | Hybrid BM25+FAISS retrieval; `retrieve()` and `ask()` public API |
-| `scripts/rag/inject_context.py` | UserPromptSubmit hook — injects top-5 repo chunks before every response |
-| `scripts/rag/synthesize.py` | Async batch synthesis via kitai.batch (50% cheaper, Pydantic output) |
-| `scripts/github_research/main.py` | GitHub AI Research CLI (Scout->Analyst->Curator->Reporter) |
-| `process/intent_registry.yaml` | All known intents -> skills -> delivery options |
-| `process/audit/` | One YAML-fronted Markdown file per completed request |
-| `agents/README.md` | Agent role definitions + actuarial specs |
-| `agents/rag/README.md` | RAG Team: Indexer, Retriever, Synthesizer, Context Injector specs |
-| `agents/research/README.md` | GitHub Research Department spec |
-| `agents/input_gateway/README.md` | Input Gateway Team spec (Pablo, Sofia, Carlos) |
-| `templates/pdf/invoice_standard.py` | `InvoiceTemplate` -> valid PDF bytes via fpdf2 |
-| `templates/streamlit/chatbot.py` | `ChatbotTemplate(provider, model)` -> Streamlit app |
-| `wiki/llm/` | Karpathy-style LLM education wiki (7 chapters + code) |
-| `deliverables/rag/streamlit_rag_app.py` | Interactive semantic search UI |
-| `deliverables/github-research/streamlit_research_app.py` | GitHub AI Research dashboard |
-| `config/suits/` | White-label suit configs — S001 = origin (AI Studio), S002+ = replicas with own brand/pricing/creds |
-| `config/suits/suit_schema.yaml` | Canonical schema for all suit fields (identity, personas, pricing overrides, hosting, license) |
-| `scripts/suit_manager.py` | CLI: `list`, `show`, `create` suit instances; validates against suit_schema.yaml |
-| `scripts/run_pipeline_cli.py` | CLI entrypoint to run the full 6-agent pipeline locally or via GitHub Actions |
-| `scripts/log_analytics.py` | Delivery metrics + revenue analytics computed from audit logs |
-| `scripts/chat_analysis/` | Chat-to-RSS pipeline — WhatsApp/Claude session parsers, keyword/sentiment analyzer, RSS 2.0 + OPML builder |
-| `aziende-fabrizia/` | Fabrizia's digital companies vertical — `diabetologia-endocrinologia/` with 4 specialist deliverables (PubMed, Avatar, Research Radar, Meta-Analysis) |
-| `.github/workflows/pipeline.yml` | GitHub Actions: trigger full 6-agent pipeline via `workflow_dispatch` or GitHub issue-opened |
-| `.github/workflows/rag-bootstrap.yml` | GitHub Actions: rebuild FAISS index on push |
+- OAuth token: solo sessione corrente — mai salvati o loggati
+- API key: in Streamlit Secrets o env var — mai nel codice
+- `unknown_product: null` blocca la delivery finché Luigi approva il prezzo
+- Credential manager TTL: scoped alla sessione (`scripts/credential_manager.py`)
+- Output advisory: disclaimer obbligatorio (validato da `validate_advisory_output()`)
+- Apple Calendar: solo app-specific password (appleid.apple.com) — mai password principale
+- Twilio webhook: HMAC-SHA1 attivo in produzione
+- Google `credentials.json` e `token.json`: locali, mai committati
+- **Pre-commit secret scan** (`scripts/git-hooks/pre-commit`): blocca `.env` staged e pattern di credenziali noti. Auto-attivato dal hook `SessionStart` in `.claude/settings.json` (`git config core.hooksPath scripts/git-hooks`). Bypass solo con `--no-verify` per falsi positivi confermati.
 
 ---
 
@@ -134,84 +146,77 @@ Formula: `P(event) x impact x blast_radius` -> Risk Units (RU). Flag at 2sigma.
 
 ```json
 {
-  "static_landing_page":     "9.90",
-  "premium_landing_page":    "29.90",
-  "commercial_landing_page": "45.90",
-  "pdf_document":            "1.90",
-  "invoice_pdf":             "3.90",
-  "strategic_report":        "4.90",
-  "chatbot_app":             "19.90",
-  "email_delivery":          "0.50",
-  "rag_knowledge_base":      "29.90",
-  "calendar_integration":    "14.90",
-  "weather_dashboard":       "9.90",
-  "agent_deploy_streamlit":  "19.90",
-  "algo_trading":            "24.90",
-  "mind_dashboard_journal":  "9.90",
+  "static_landing_page":       "9.90",
+  "premium_landing_page":      "29.90",
+  "commercial_landing_page":   "45.90",
+  "pdf_document":              "1.90",
+  "invoice_pdf":               "3.90",
+  "strategic_report":          "4.90",
+  "chatbot_app":               "19.90",
+  "email_delivery":            "0.50",
+  "rag_knowledge_base":        "29.90",
+  "calendar_integration":      "14.90",
+  "weather_dashboard":         "9.90",
+  "agent_deploy_streamlit":    "19.90",
+  "algo_trading":              "24.90",
+  "mind_dashboard_journal":    "9.90",
   "micro_syllabus_flashcards": "14.90",
-  "family_archivist":        "14.90",
-  "mediterranean_meal_planner": "14.90",
-  "niccolo_chronicles":      "14.90",
-  "unknown_product":         null
+  "family_archivist":          "14.90",
+  "mediterranean_meal_planner":"14.90",
+  "niccolo_chronicles":        "14.90",
+  "unknown_product":           null
 }
 ```
 
-**Marco must block and escalate to Luigi if `unknown_product: null`.** Never guess.
+**Marco blocca ed escala a Luigi se `unknown_product: null`.** Mai indovinare.
 
 ---
 
-## Security Constraints (Non-Negotiable)
+## Key Files
 
-- OAuth tokens used for single session only — never stored or logged
-- API keys in Streamlit Secrets or env vars — never in code
-- `unknown_product: null` blocks delivery until Luigi approves price
-- Credential manager (`scripts/credential_manager.py`) TTL: session-scoped
-- Advisory outputs must include disclaimer at top or bottom (validated by `validate_advisory_output()`)
-- Apple Calendar: app-specific password only (generate at appleid.apple.com) — main Apple ID password never used
-- Twilio webhook: HMAC-SHA1 signature validation active in production
-- Google `credentials.json` and `token.json` kept local, never committed
-- **Pre-commit secret scan** (`scripts/git-hooks/pre-commit`): blocks staged `.env` files and known credential patterns (OpenAI, Anthropic, AWS, GitHub PAT, Stripe, Slack, Google, Twilio, Alpaca, PEM blocks). **Auto-activated** by the `SessionStart` hook in `.claude/settings.json`, which runs `git config core.hooksPath scripts/git-hooks` on every Claude session — no manual install per clone. Required because the standing "auto-commit and merge on task completion" rule (see Active Branch) removes the per-step human review that would otherwise catch a leaked key. Bypass only with `--no-verify` and only for confirmed false positives.
-
----
-
-## Learning Loop
-
-After every completed request, two scripts run automatically:
-
-**`scripts/post_delivery_update.py`** — triggered by the git `post-commit` hook:
-1. Detects new `deliverables/YYYY-MM-DD_NNN_slug/` folders without audit logs
-2. Creates stub audit logs in `process/audit/`
-3. Updates `config/global_settings.json` meta + new skills
-4. Patches the Delivered Requests table in this file
-
-**`scripts/learning_loop.py`** — triggered by the Claude Code `Stop` hook:
-
-```
-python scripts/learning_loop.py \
-  --event session_end \
-  --audit-dir process/audit \
-  --settings config/global_settings.json \
-  --claude-dir C:\Users\l_ace\.claude
-```
-
-**`--claude-dir` is mandatory.** It wires the loop to the global Claude installation:
-- Writes `project_state.md` to `C:\Users\l_ace\.claude\projects\...\memory\`
-- Promotes mature skills as `SKILL.md` stubs to `C:\Users\l_ace\.claude\skills\`
-
-Steps:
-1. Reads latest audit log in `process/audit/`
-2. Updates `config/global_settings.json`: new skills, MCP tools, pattern counters
-3. Promotes recurring patterns to hooks using **tiered thresholds**:
-   - `security` (OAuth/API key skills): threshold = 1
-   - `external_api_write` (send/deploy): threshold = 2
-   - `skill_preload` (everything else): threshold = 3
-4. Auto-commits if risk score < 3; escalates to Luigi if >= 3
+| File | Scopo |
+|------|-------|
+| `config/global_settings.json` | Single source of truth: skills, pricing, hooks, MCP, issues |
+| `pytest.ini` | `pythonpath = .` — rende `scripts/` importabile in CI e locale |
+| `config/accounts_registry.yaml` | Tutti gli account platform: URL, status, credential readiness |
+| `.claude/settings.json` | Hook: Stop, PreToolUse, PostToolUse, UserPromptSubmit (RAG injection) |
+| `credentials/registry.md` | Guida step-by-step per tutte le credenziali |
+| `.env.example` | Template variabili d'ambiente — copia in `.env` e compila |
+| `scripts/learning_loop.py` | Auto-aggiorna settings dopo ogni request |
+| `scripts/git-hooks/pre-commit` | Blocca `.env` + pattern segreti noti |
+| `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
+| `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
+| `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
+| `scripts/rag/retrieve_repo.py` | Retrieval ibrido BM25+FAISS |
+| `scripts/rag/inject_context.py` | Hook UserPromptSubmit — inietta top-5 chunk prima di ogni risposta |
+| `scripts/rag/synthesize.py` | Sintesi async via kitai.batch (50% più economico, output Pydantic) |
+| `scripts/github_research/main.py` | GitHub AI Research CLI (Scout→Analyst→Curator→Reporter) |
+| `process/intent_registry.yaml` | Tutti gli intent noti → skills → opzioni di delivery |
+| `process/audit/` | Un file Markdown con YAML frontmatter per ogni request completata |
+| `agents/README.md` | Definizioni dei ruoli agente + spec attuariali |
+| `agents/rag/README.md` | RAG Team spec |
+| `agents/research/README.md` | GitHub Research Department spec |
+| `agents/input_gateway/README.md` | Input Gateway Team spec (Pablo, Sofia, Carlos) |
+| `templates/pdf/invoice_standard.py` | `InvoiceTemplate` → PDF bytes via fpdf2 |
+| `templates/streamlit/chatbot.py` | `ChatbotTemplate(provider, model)` → Streamlit app |
+| `wiki/llm/` | Wiki LLM stile Karpathy (7 capitoli + codice) |
+| `deliverables/rag/streamlit_rag_app.py` | UI ricerca semantica interattiva |
+| `deliverables/github-research/streamlit_research_app.py` | GitHub AI Research dashboard |
+| `config/suits/` | Config white-label — S001 = origine, S002+ = repliche |
+| `config/suits/suit_schema.yaml` | Schema canonico per tutti i campi suit |
+| `scripts/suit_manager.py` | CLI: `list`, `show`, `create` suit; valida contro suit_schema.yaml |
+| `scripts/run_pipeline_cli.py` | Entrypoint CLI per la pipeline a 6 agenti |
+| `scripts/log_analytics.py` | Metriche di delivery + revenue analytics dagli audit log |
+| `scripts/chat_analysis/` | Pipeline chat→RSS: parser WhatsApp/Claude, analyzer, RSS 2.0 + OPML |
+| `aziende-fabrizia/` | Verticale Fabrizia — `diabetologia-endocrinologia/` con 4 deliverable |
+| `.github/workflows/pipeline.yml` | GitHub Actions: trigger pipeline via `workflow_dispatch` o issue |
+| `.github/workflows/rag-bootstrap.yml` | GitHub Actions: rebuild FAISS index su push |
 
 ---
 
 ## Audit Log Format
 
-Every delivery creates `process/audit/YYYY-MM-DD_NNN_slug.md` with YAML block:
+Ogni delivery crea `process/audit/YYYY-MM-DD_NNN_slug.md`:
 
 ```yaml
 request_id: "NNN"
@@ -228,25 +233,54 @@ learning_flags:
 
 ---
 
-## Testing Approach (TDD)
+## Delivery ID Policy
 
-Write failing tests first. Then implement. Never the other way.
+1. **Il filename dell'audit log è l'ID canonico.** Formato: `process/audit/YYYY-MM-DD_NNN_slug.md`.
+2. **ID globalmente unici e monotòni.** Next ID = max(NNN) + 1 su tutti gli audit log.
+3. **Tre artefatti devono coesistere** per considerare una delivery "done": audit log + cartella deliverable + riga nella tabella.
+4. **Nuova pricing → aggiornata in 3 posti nello stesso commit:** audit log, tabella CLAUDE.md, `config/global_settings.json`.
+5. **Tooling interno senza audit log numerato** usa ID `—` nella tabella, path `deliverables/<slug>/`.
+
+---
+
+## Learning Loop
+
+**`scripts/post_delivery_update.py`** — hook `post-commit`:
+1. Rileva nuove cartelle `deliverables/YYYY-MM-DD_NNN_slug/` senza audit log
+2. Crea stub audit log in `process/audit/`
+3. Aggiorna `config/global_settings.json` + nuove skills
+4. Patcha la tabella Delivered Requests
+
+**`scripts/learning_loop.py`** — hook `Stop`:
+```
+python scripts/learning_loop.py \
+  --event session_end \
+  --audit-dir process/audit \
+  --settings config/global_settings.json \
+  --claude-dir C:\Users\l_ace\.claude
+```
+Soglie promozione hook: `security` = 1, `external_api_write` = 2, `skill_preload` = 3.  
+Auto-commit se risk score < 3; escala a Luigi se ≥ 3.
+
+---
+
+## Testing (TDD)
+
+Scrivi prima il test fallente. Poi implementa. Mai il contrario.
 
 ```bash
 pytest tests/ -v
 pytest tests/test_iss004_templates.py -v
 ```
 
-Test files: `tests/test_issNNN_topic.py`
-
 ---
 
 ## RAG Knowledge Base
 
 ```bash
-python -m scripts.embed_index                         # build index (~30s local)
+python -m scripts.embed_index
 python -m scripts.retrieve "how does Marco price unknown products?"
-python -m scripts.rag_chat "explain the 6-agent pipeline"  # needs OPENAI_API_KEY
+python -m scripts.rag_chat "explain the 6-agent pipeline"
 streamlit run deliverables/rag/streamlit_rag_app.py
 ```
 
@@ -256,27 +290,26 @@ streamlit run deliverables/rag/streamlit_rag_app.py
 
 ```bash
 pip install -r requirements-research.txt
-export GITHUB_TOKEN=ghp_...     # optional, 60->5000 req/h
+export GITHUB_TOKEN=ghp_...
 python scripts/github_research/main.py --topics llm rag ai-agents --min-stars 200
 streamlit run deliverables/github-research/streamlit_research_app.py
 ```
 
-Agents: **Scout** (search) -> **Analyst** (score) -> **Curator** (dedup+categorise) -> **Reporter** (digest+dashboard)
-See `agents/research/README.md`.
+Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 
 ---
 
 ## LLM Wiki
 
-`wiki/llm/` — Karpathy-style, 7 chapters + runnable code examples:
+`wiki/llm/` — 7 capitoli + codice runnable:
 
-- `01_tokenization.md` — BPE, tiktoken, token cost per product
-- `02_embeddings.md` — lookup tables, cosine similarity, RAG connection
-- `03_attention.md` — Q/K/V, 20-line Python, complexity
-- `04_transformer.md` — full architecture, GELU, residuals
+- `01_tokenization.md` — BPE, tiktoken, costo token per prodotto
+- `02_embeddings.md` — lookup table, cosine similarity, RAG
+- `03_attention.md` — Q/K/V, Python 20 righe, complessità
+- `04_transformer.md` — architettura completa, GELU, residuals
 - `05_training.md` — pretraining, RLHF, LoRA, RAG vs fine-tune
 - `06_inference.md` — temperature, top-k/p, streaming, KV cache
-- `07_studio_playbook.md` — model selection, token budgets, prompt engineering
+- `07_studio_playbook.md` — selezione modello, budget token, prompt engineering
 - `code/` — `bpe_minimal.py`, `nano_attention.py`, `sampling_demo.py`
 
 ---
@@ -293,48 +326,26 @@ See `agents/research/README.md`.
 | 006 | 2026-05-23 | RAG system: embed all code + agents | 29.90 |
 | 007 | 2026-05-23 | WhatsApp/Telegram -> Apple/Outlook/Gmail calendar sync | 14.90 |
 | 008 | 2026-05-23 | Algo Trading Bot — Alpaca paper (paper=True hardcoded), SMA(20/50)+RSI, 5% position cap, Streamlit/Plotly dashboard | 24.90 |
-| 009 | 2026-05-23 | LinkedIn Post Generator from GitHub activity (Claude claude-sonnet-4-6) | 4.90 |
+| 009 | 2026-05-23 | LinkedIn Post Generator from GitHub activity | 4.90 |
 | 010 | 2026-05-23 | Profile Setup & Publishing — bio + first post for 9 platforms | 14.90 |
 | 011 | 2026-05-24 | Milan Weather Dashboard (Streamlit + OpenWeatherMap) | 9.90 |
 | 013 | 2026-05-24 | techa Streamlit deploy (LangGraph trading agents + TA-Lib, HF Spaces / Cloud Run) | 19.90 |
-| —   | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) — internal tooling, no audit log assigned | 0.00 |
-| 014 | 2026-05-24 | Dispenser input v1 — QR/Streamlit form, Stripe, WhatsApp+Telegram delivery | 0.00 (internal infra) |
-| 015 | 2026-05-25 | Logo Generator — circle/square/minimal styles, configurable size + accent color | 0.00 (internal) |
-| 016 | 2026-05-25 | AI Studio LangGraph assistant — multi-agent graph with parallel department nodes | 0.00 (internal) |
-| 017 | 2026-05-25 | Lawyer LangGraph + Mindful Bot — white-label legal assistant + psychology entry product | 0.00 (internal) |
-| 018 | 2026-05-25 | SOAP Note Generator — psychology vertical Streamlit app (Diletta pilot) | 0.00 (internal) |
-| 019 | 2026-05-25 | Studio Digital Twin — LangGraph parallel simulation of the 6-agent pipeline | 0.00 (internal) |
-| 020 | 2026-05-26 | Mind Dashboard — daily AI briefing from raw journal text (JSON-contract, Markdown/HTML) | 9.90 |
-| 021 | 2026-05-26 | Micro-Syllabus & Flashcard Generator — 7-day plan + 10 Anki-ready cards from goal+minutes (OpenAI gpt-4o) | 14.90 |
-| 022 | 2026-05-26 | Family Archivist — single-file HTML for retirees, voice/text → story_archive.md + memory_metadata.json, local + Claude/OpenAI modes | 14.90 |
-| 023 | 2026-05-26 | Mediterranean Meal Planner — favourites + season → Weekly_Menu_<Season>.md with 7-day batch-cook matrix + categorised grocery list (OpenAI gpt-4o) | 14.90 |
-| 024 | 2026-05-26 | The Niccolò Chronicles — WhatsApp time-capsule chat (voice notes + photos + 5-word texts) → monthly `Niccolo_Age_5_Month_<Month>.md` with 4 sections (Quote Board / Art Catalog / Habit Tracker / Letter to Future Niccolò), OpenAI gpt-4o JSON mode | 14.90 |
-| 025 | 2026-05-27 | Chat-to-Insights RSS Pipeline — parses Claude sessions + WhatsApp exports + audit logs as RSS feeds; keyword/timeline/heatmap/author/sentiment analysis; RSS 2.0 + OPML export; Streamlit dashboard | 0.00 (internal) |
-| 026 | 2026-05-27 | Trading Agent Team Dashboard + API — 4 agents (Alpha/Beta/Gamma US Alpaca + Delta Italian yfinance), shared JSON store, Streamlit dashboard, FastAPI (9 endpoints), techa deep-analysis integration | 24.90 |
-| 027 | 2026-05-27 | DIY Electrical Brainstorm — affinity groups + API landscape for cantina 3×4 assistant (Reddit/WhatsApp/Leroy Merlin funnel) | 4.90 |
-| 028 | 2026-05-27 | Team Showcase — Streamlit app displaying the full coding team: 6-agent pipeline, 5 risk agents, specialist agents, 4 department teams, open issues tracker | 0.00 (internal) |
-
----
-
-## Delivery ID Policy (Single Source of Truth)
-
-To avoid the kind of conflict that gave request 008 two different products, follow these five rules. They are mechanical, not bureaucratic.
-
-1. **The audit log filename is the canonical ID.** Format: `process/audit/YYYY-MM-DD_NNN_slug.md`. The `NNN` is the request ID. If there is no audit log, there is no ID.
-2. **IDs are globally unique and monotonic.** Next ID = max(NNN across **all** audit logs) + 1. Never reuse a number, even on a different date. Date is metadata, not a disambiguator.
-3. **Three artefacts must exist together before a delivery is "done":**
-   - `process/audit/YYYY-MM-DD_NNN_slug.md` (the canonical record)
-   - `deliverables/YYYY-MM-DD_NNN_slug/` (the code/output)
-   - A row in the Delivered Requests table above
-   Missing any one = incomplete delivery, not eligible for the table.
-4. **New pricing must land in three places in the same commit** as the audit log:
-   - `learning_flags.new_pricing` in the audit log
-   - `pricing` block in this file (CLAUDE.md)
-   - `pricing` dict in `config/global_settings.json`
-   `scripts/learning_loop.py` is supposed to propagate (2) and (3) from (1); if the hook didn't run (e.g. broken path on a different platform), do it by hand and verify before pushing.
-5. **Internal/free tooling without a numbered audit log** uses ID `—` in the table and lives at `deliverables/<slug>/` (no date/number prefix). It's still a row, just unnumbered — never squat on a real ID.
-
-**Pre-push checklist (10 seconds):** `ls process/audit/ | tail -3` → confirm your new audit log is there with the next free NNN, then `grep "| $NNN " CLAUDE.md` → confirm exactly one row.
+| —   | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) — internal tooling | 0.00 |
+| 014 | 2026-05-24 | Dispenser input v1 — QR/Streamlit form, Stripe, WhatsApp+Telegram delivery | 0.00 (internal) |
+| 015 | 2026-05-25 | Logo Generator — circle/square/minimal styles | 0.00 (internal) |
+| 016 | 2026-05-25 | AI Studio LangGraph assistant — multi-agent graph con nodi dipartimento paralleli | 0.00 (internal) |
+| 017 | 2026-05-25 | Lawyer LangGraph + Mindful Bot — white-label legal + psychology entry product | 0.00 (internal) |
+| 018 | 2026-05-25 | SOAP Note Generator — psychology vertical Streamlit app (pilota Diletta) | 0.00 (internal) |
+| 019 | 2026-05-25 | Studio Digital Twin — LangGraph parallel simulation della pipeline a 6 agenti | 0.00 (internal) |
+| 020 | 2026-05-26 | Mind Dashboard — daily AI briefing da testo journal grezzo | 9.90 |
+| 021 | 2026-05-26 | Micro-Syllabus & Flashcard Generator — piano 7 giorni + 10 carte Anki (OpenAI gpt-4o) | 14.90 |
+| 022 | 2026-05-26 | Family Archivist — HTML single-file per pensionati, voice/text → story_archive.md | 14.90 |
+| 023 | 2026-05-26 | Mediterranean Meal Planner — menu settimanale + lista spesa (OpenAI gpt-4o) | 14.90 |
+| 024 | 2026-05-26 | The Niccolò Chronicles — WhatsApp time-capsule → Niccolo_Age_5_Month_<Month>.md | 14.90 |
+| 025 | 2026-05-27 | Chat-to-Insights RSS Pipeline — parser sessioni Claude + WhatsApp + audit log | 0.00 (internal) |
+| 026 | 2026-05-27 | Trading Agent Team Dashboard + API — 4 agenti, JSON store, Streamlit, FastAPI | 24.90 |
+| 027 | 2026-05-27 | DIY Electrical Brainstorm — affinity groups + API landscape cantina 3×4 | 4.90 |
+| 028 | 2026-05-27 | Team Showcase — Streamlit app del full coding team | 0.00 (internal) |
 
 ---
 
@@ -350,17 +361,17 @@ To avoid the kind of conflict that gave request 008 two different products, foll
 | ISS-007 | P3 | Provider-agnostic chatbot template | OPEN |
 | ISS-008 | P2 | RAG retrieval system | DELIVERED |
 | ISS-009 | P3 | Schedule GitHub Research runs (cron + digest commit) | OPEN |
-| ISS-010 | P2 | Add `hosting_target` required field to requirements gate for `*_deploy_*` intents (HF Spaces / Render / Docker / local) | OPEN |
-| ISS-011 | P1 | Acquire dispenser credentials before go-live: Stripe API key, Twilio (SID + token + WhatsApp sender), Telegram bot token (@BotFather), Luigi's admin chat_id, public HTTPS URL, Italian VAT/Stripe Tax setup | OPEN |
-| ISS-012 | P2 | Implement `LLMClassifier` for free-text dispenser requests (gpt-4o-mini / claude-haiku, escalate via Telegram if confidence < 0.8 — Marco rule) | OPEN |
-| ISS-013 | P3 | Implement `SatispayProvider` + `PayPalProvider` (stubs in deliverable 014) | OPEN |
-| ISS-018 | P1 | Pablo: `gateway/pipeline_adapter.py` + FastAPI `/submit` + HMAC middleware — Input Gateway Track 0 | OPEN |
-| ISS-019 | P1 | Sofia: `gateway/streamlit_app.py` wired to PipelineAdapter — Input Gateway Track 1 | OPEN |
-| ISS-020 | P1 | Carlos: `gateway/bot_telegram.py` + `bot_whatsapp.py` wired to PipelineAdapter — Input Gateway Track 2 | OPEN |
-| ISS-021 | P2 | Deploy Input Gateway: all three channels live (Streamlit Cloud + Cloud Run + Telegram/Twilio webhooks) | OPEN |
-| ISS-022 | P1 | Crash-recovery flush: periodic checkpoint write to project_state.md before each git commit (assign Gianni to scope) | OPEN |
-| ISS-023 | P2 | Scope `etsy_digital_product_pack` intent: deliverable → PDF + listing title/tags/description + mockup cover (Etsy digital-downloads category) | OPEN |
-| ISS-024 | P2 | Scope `digital_product_listing_pack` intent: any deliverable → multi-platform listing payload (Etsy, Gumroad, Payhip, Lemon Squeezy) with cover image + copy | OPEN |
-| ISS-025 | P1 | Evaluate Lemon Squeezy vs Payhip as merchant-of-record storefront (EU VAT handling for Italian one-person op — unblocks digital product sales without DIY VAT MOSS) | OPEN |
-| ISS-026 | P3 | Hugging Face Spaces paid deployment lane for `chatbot_app` / `agent_deploy_streamlit` / `techa` deliverables (natural distribution channel for AI demos) | OPEN |
-| ISS-027 | P3 | Gumroad secondary-channel publisher: one-click upload for `pdf_document`, `mediterranean_meal_planner`, `micro_syllabus_flashcards`, `mind_dashboard_journal` | OPEN |
+| ISS-010 | P2 | Add `hosting_target` required field per intenti `*_deploy_*` | OPEN |
+| ISS-011 | P1 | Acquire dispenser credentials before go-live (Stripe, Twilio, Telegram, VAT) | OPEN |
+| ISS-012 | P2 | Implement `LLMClassifier` per richieste dispenser free-text | OPEN |
+| ISS-013 | P3 | Implement `SatispayProvider` + `PayPalProvider` | OPEN |
+| ISS-018 | P1 | Pablo: `gateway/pipeline_adapter.py` + FastAPI `/submit` + HMAC middleware | OPEN |
+| ISS-019 | P1 | Sofia: `gateway/streamlit_app.py` wired to PipelineAdapter | OPEN |
+| ISS-020 | P1 | Carlos: `gateway/bot_telegram.py` + `bot_whatsapp.py` wired to PipelineAdapter | OPEN |
+| ISS-021 | P2 | Deploy Input Gateway: tutti e 3 i canali live | OPEN |
+| ISS-022 | P1 | Crash-recovery flush: checkpoint periodico su project_state.md | OPEN |
+| ISS-023 | P2 | Scope `etsy_digital_product_pack` intent | OPEN |
+| ISS-024 | P2 | Scope `digital_product_listing_pack` intent | OPEN |
+| ISS-025 | P1 | Valutare Lemon Squeezy vs Payhip come merchant-of-record (EU VAT) | OPEN |
+| ISS-026 | P3 | HF Spaces paid deployment lane per chatbot/agent/techa deliverable | OPEN |
+| ISS-027 | P3 | Gumroad secondary-channel publisher per PDF, planner, flashcard, journal | OPEN |
