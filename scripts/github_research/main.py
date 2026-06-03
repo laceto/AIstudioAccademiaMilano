@@ -11,6 +11,7 @@ from report import deduplicate, generate_report
 from search_users import search_contributors, DEFAULT_QUERY
 from score_user import rank_users
 from report_users import generate_contributor_report
+from synthesize_research import synthesize_repo_insights
 
 
 def run_repos(args, token):
@@ -30,11 +31,14 @@ def run_repos(args, token):
     categorised = deduplicate(ranked)
     print(f"  -> {sum(len(v) for v in categorised.values())} unique repos across {len(categorised)} categories")
 
+    # ── AI synthesis via kitai batch (GA only) ────────────────────────────────
+    all_scored = [rs for v in categorised.values() for rs in v]
+    insights = synthesize_repo_insights(all_scored, max_repos=20)
+
     print("[Reporter] Generating report...")
-    generate_report(categorised, output_path=args.output)
+    generate_report(categorised, output_path=args.output, insights=insights or None)
     print(f"  -> Report written to {args.output}")
 
-    all_scored = [rs for v in categorised.values() for rs in v]
     top5 = sorted(all_scored, key=lambda x: x.score, reverse=True)[:5]
     print("\nTop 5 repos:")
     for rs in top5:
@@ -77,7 +81,6 @@ def main():
     parser.add_argument("--min-stars", type=int, default=100)
     parser.add_argument("--max-per-topic", type=int, default=10)
     parser.add_argument("--output", type=Path, default=Path("research_report.md"))
-    # Contributor-specific flags
     parser.add_argument("--query", default=DEFAULT_QUERY, help="GitHub user search query")
     parser.add_argument("--max-results", type=int, default=30, help="Max users to enrich")
     parser.add_argument("--scan-readmes", action="store_true",
