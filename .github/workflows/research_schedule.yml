@@ -35,7 +35,10 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-research.txt
 
-      - run: pip install requests
+      - name: Install dependencies
+        run: |
+          pip install requests openai
+          pip install "git+https://github.com/laceto/kitai.git"
 
       - name: Set run mode
         id: mode
@@ -75,10 +78,12 @@ jobs:
 
       # ── WEEKLY ─────────────────────────────────────────────────────────────
 
-      - name: Weekly — full research scan
+      - name: Weekly — full research scan + kitai synthesis
         if: steps.mode.outputs.mode == 'weekly'
         env:
           RESEARCH_GITHUB_TOKEN: ${{ secrets.RESEARCH_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PYTHONPATH: .
         run: |
           DATE=$(date +%Y-%m-%d)
           mkdir -p process/research

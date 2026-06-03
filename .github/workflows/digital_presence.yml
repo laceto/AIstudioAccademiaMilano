@@ -44,18 +44,24 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install anthropic requests tweepy pyperclip
+          pip install anthropic requests tweepy pyperclip openai
+          pip install "git+https://github.com/laceto/kitai.git"
 
       - name: Check required secrets
         id: api_check
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "::warning::ANTHROPIC_API_KEY not set in repo secrets — skipping Digital Presence Pipeline. Add it at Settings > Secrets > Actions."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
+          if [ -n "$OPENAI_API_KEY" ]; then
             echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::OPENAI_API_KEY set — will use kitai batch (gpt-4o, 50% cheaper)"
+          elif [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::OPENAI_API_KEY absent — falling back to direct Anthropic API"
+          else
+            echo "::warning::Neither OPENAI_API_KEY nor ANTHROPIC_API_KEY set — skipping. Add at Settings > Secrets > Actions."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Resolve inputs
@@ -73,6 +79,8 @@ jobs:
         if: steps.api_check.outputs.skip != 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PYTHONPATH: .
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
