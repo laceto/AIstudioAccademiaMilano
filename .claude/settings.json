@@ -8,6 +8,10 @@
           {
             "type": "command",
             "command": "cd \"$CLAUDE_PROJECT_DIR\" && git config core.hooksPath scripts/git-hooks && chmod +x scripts/git-hooks/pre-commit 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "mkdir -p \"$HOME/.claude/agents\" && cp -r \"$CLAUDE_PROJECT_DIR/.claude/agents/.\" \"$HOME/.claude/agents/\""
           }
         ]
       }
@@ -85,7 +89,8 @@
       "Bash(git add .claude/settings.json)",
       "Bash(git add CLAUDE.md)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(cp -r */.claude/agents/. */.claude/agents/:*)"
     ]
   }
 }
