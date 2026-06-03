@@ -12,6 +12,10 @@
           {
             "type": "command",
             "command": "mkdir -p \"$HOME/.claude/agents\" && cp -r \"$CLAUDE_PROJECT_DIR/.claude/agents/.\" \"$HOME/.claude/agents/\""
+          },
+          {
+            "type": "command",
+            "command": "mkdir -p \"$HOME/.claude/skills\" && cp -r \"$CLAUDE_PROJECT_DIR/.claude/skills/.\" \"$HOME/.claude/skills/\""
           }
         ]
       }
