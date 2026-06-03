@@ -1,0 +1,75 @@
+# Suit S002 — Reinsurance Branch Office
+# White-label instance of the AI Studio pipeline adapted for a reinsurance context.
+# Origin suit: S001 (AI Studio Accademia Milano)
+
+# ── Identity ──────────────────────────────────────────────────────
+suit_id:        "S002"
+suit_name:      "Reinsurance Branch Office"
+owner_name:     "Luigi Aceto"
+owner_email:    "luigi.vinegar@gmail.com"
+founded:        "2026-06-03"
+locale:         "it_IT"
+currency:       "EUR"
+
+# ── Agent personas ─────────────────────────────────────────────────
+agent_personas:
+  stacy:      "Branch Manager"            # intake & QA → Principal Officer role
+  gianni:     "Actuarial Analyst"         # technical scoping → actuarial scoping
+  chiara:     "Medical Underwriter"       # implementation → underwriting/claim analysis
+  marco:      "Sr Accounting Executive"   # financial → consolidated P&L + sign-off
+  francesca:  "Accountant"               # delivery → bordereaux + audit log
+  lorenzo:    "Lorenzo"                  # security watchdog — unchanged
+  valentina:  "Valentina"               # content/publishing — unchanged
+
+# ── Workflow types (extends base pipeline intents) ─────────────────
+custom_workflows:
+  - id: claim
+    label: "Claim Processing"
+    description: "Process an incoming reinsurance claim end-to-end"
+    entry_node: branch_manager_intake
+  - id: treaty
+    label: "Treaty Evaluation"
+    description: "Evaluate and price a new reinsurance treaty"
+    entry_node: branch_manager_intake
+  - id: report
+    label: "Monthly Reporting"
+    description: "Run the monthly actuarial and financial reporting cycle"
+    entry_node: branch_manager_intake
+
+# ── Pricing overrides ──────────────────────────────────────────────
+# Reinsurance deliverables use domain-specific pricing.
+pricing_overrides:
+  claim_processing:         "29.90"
+  treaty_evaluation:        "49.90"
+  monthly_reporting:        "19.90"
+  reinsurance_report_pdf:   "9.90"
+
+# ── Credential namespace ───────────────────────────────────────────
+env_prefix:     "S002"    # e.g. S002_ANTHROPIC_API_KEY, S002_OPENAI_API_KEY
+
+# ── Deployment targets ─────────────────────────────────────────────
+hosting:
+  static:     "vercel"
+  apps:       "streamlit-cloud"
+  repo_org:   "laceto"
+  app_path:   "deliverables/2026-06-03_029_reinsurance-office/streamlit_app.py"
+
+# ── LangGraph config ───────────────────────────────────────────────
+langgraph:
+  graph_module:   "deliverables.2026-06-03_029_reinsurance-office.graph"
+  default_provider: "anthropic"
+  auto_approve:   false       # always require Branch Manager HITL in production
+  interrupt_nodes:
+    - "branch_manager_approve"
+
+# ── Audit & learning loop ──────────────────────────────────────────
+audit_dir:      "process/audit"
+learning_loop:
+  claude_dir:   "$HOME/.claude"
+  auto_commit_risk_threshold: 2    # stricter than S001 (reinsurance = regulated)
+
+# ── White-label license ────────────────────────────────────────────
+license:
+  origin_suit:  "S001"
+  issued_date:  "2026-06-03"
+  licensed_to:  "Reinsurance Branch Office Pilot"
