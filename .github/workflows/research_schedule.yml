@@ -13,12 +13,16 @@ on:
         type: choice
         options: [daily, weekly]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   research:
     runs-on: ubuntu-latest
     permissions:
       contents: write   # commit digest back to repo
       issues: write     # open alert / digest issues
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -87,12 +91,26 @@ jobs:
 
       - name: Weekly — commit digest to repo
         if: steps.mode.outputs.mode == 'weekly'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add process/research/
-          git diff --staged --quiet || git commit -m "research: weekly AI digest ${{ env.RUN_DATE }} [skip ci]"
-          git push
+          if git diff --staged --quiet; then
+            echo "No research changes — nothing to commit."
+          else
+            BRANCH="ops/research-$(date +%Y%m%d)"
+            git checkout -b "$BRANCH"
+            git commit -m "research: weekly AI digest ${{ env.RUN_DATE }} [skip ci]"
+            git push origin "$BRANCH"
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "research: weekly AI digest ${{ env.RUN_DATE }}" \
+              --body "Automated weekly AI research digest." \
+              --auto-merge
+          fi
 
       - name: Weekly — open digest issue
         if: steps.mode.outputs.mode == 'weekly'
