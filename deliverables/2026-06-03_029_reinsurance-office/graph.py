@@ -21,6 +21,11 @@ Three workflow paths share the same graph:
 
 Human-in-the-loop: branch_manager_approve is an interrupt node in production.
 Set config["configurable"]["auto_approve"] = False to activate HITL.
+
+NOTE: interrupt_before=["branch_manager_approve"] fires unconditionally on every
+execution. In auto_approve=True mode run_workflow() handles resume automatically
+via update_state() + stream(None). Any caller that invokes branch_graph.stream()
+directly must replicate this resume step, otherwise the graph stalls permanently.
 """
 import uuid
 from datetime import datetime
@@ -64,20 +69,23 @@ def route_after_intake(state: BranchState) -> list[Send] | str:
 
 
 def route_after_medical(state: BranchState) -> str:
-    return "actuarial_analyst"
+    """claim → actuarial_analyst; treaty → parallel_aggregator."""
+    return "parallel_aggregator" if state.get("workflow_type") == "treaty" else "actuarial_analyst"
 
 
 def route_after_actuarial(state: BranchState) -> str:
-    return "accountant"
+    """claim → accountant; treaty/report → parallel_aggregator."""
+    return "accountant" if state.get("workflow_type", "claim") == "claim" else "parallel_aggregator"
+
+
+def route_after_accountant(state: BranchState) -> str:
+    """report (early via Send) → parallel_aggregator; claim/treaty → sr_accounting_exec."""
+    return "parallel_aggregator" if state.get("workflow_type") == "report" else "sr_accounting_exec"
 
 
 def route_after_aggregator(state: BranchState) -> str:
-    wf = state.get("workflow_type", "claim")
-    return "sr_accounting_exec" if wf == "report" else "accountant"
-
-
-def route_after_approve(state: BranchState) -> str:
-    return END
+    """treaty → accountant; report → sr_accounting_exec (skips accountant)."""
+    return "sr_accounting_exec" if state.get("workflow_type") == "report" else "accountant"
 
 
 # ── Graph assembly ─────────────────────────────────────────────────────────────
@@ -98,16 +106,19 @@ def build_branch_graph():
     # intake fans out differently per workflow type
     g.add_conditional_edges("branch_manager_intake", route_after_intake)
 
-    # claim path: linear
-    g.add_edge("medical_underwriter", "actuarial_analyst")
-    g.add_edge("actuarial_analyst",   "accountant")
+    # claim: MW → actuarial; treaty: MW → aggregator
+    g.add_conditional_edges("medical_underwriter", route_after_medical)
 
-    # parallel paths converge at aggregator
-    g.add_edge("parallel_aggregator", "accountant")
+    # claim: actuarial → accountant; treaty/report: actuarial → aggregator
+    g.add_conditional_edges("actuarial_analyst", route_after_actuarial)
 
-    # accountant always feeds sr exec (report path skips accountant → sr exec direct)
-    g.add_edge("accountant",       "sr_accounting_exec")
-    g.add_edge("sr_accounting_exec", "branch_manager_approve")
+    # claim/treaty: accountant → sr_exec; report: accountant (early Send) → aggregator
+    g.add_conditional_edges("accountant", route_after_accountant)
+
+    # treaty: aggregator → accountant; report: aggregator → sr_exec
+    g.add_conditional_edges("parallel_aggregator", route_after_aggregator)
+
+    g.add_edge("sr_accounting_exec",     "branch_manager_approve")
     g.add_edge("branch_manager_approve", END)
 
     return g.compile(checkpointer=MemorySaver(), interrupt_before=["branch_manager_approve"])

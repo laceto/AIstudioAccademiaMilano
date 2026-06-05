@@ -17,8 +17,8 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 
-from llm_factory import get_llm
-from state import TwinState
+from .llm_factory import get_llm
+from .state import TwinState
 
 
 def _provider(config: RunnableConfig) -> str:

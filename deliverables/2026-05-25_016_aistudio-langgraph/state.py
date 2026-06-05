@@ -44,7 +44,10 @@ def _load_pricing() -> dict[str, Optional[str]]:
                 loaded[k] = None
             else:
                 loaded[k] = str(v).lstrip("€")
-        return loaded if loaded else _PRICING_FALLBACK
+        # Merge: fallback provides defaults; JSON overrides; null_product always None
+        merged = {**_PRICING_FALLBACK, **loaded}
+        merged["unknown_product"] = None
+        return merged
     except Exception:
         return _PRICING_FALLBACK
 

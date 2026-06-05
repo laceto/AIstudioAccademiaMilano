@@ -220,7 +220,7 @@ Return ONLY valid JSON: {{"passed": true, "issues": [], "reviewer": "legal_qa"}}
         }
     except Exception as exc:
         return {
-            "review_reports": [{"reviewer": "legal_qa", "passed": True, "issues": [], "error": str(exc)}],
+            "review_reports": [{"reviewer": "legal_qa", "passed": False, "issues": [str(exc)], "error": str(exc)}],
             "error": str(exc),
             "messages": [AIMessage(content=f"[LegalQA] ERROR: {exc}")],
         }
@@ -255,7 +255,7 @@ Return ONLY valid JSON: {{"passed": true, "issues": [], "reviewer": "compliance_
         }
     except Exception as exc:
         return {
-            "review_reports": [{"reviewer": "compliance_check", "passed": True, "issues": [], "error": str(exc)}],
+            "review_reports": [{"reviewer": "compliance_check", "passed": False, "issues": [str(exc)], "error": str(exc)}],
             "error": str(exc),
             "messages": [AIMessage(content=f"[Compliance] ERROR: {exc}")],
         }
