@@ -26,6 +26,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
@@ -109,7 +110,7 @@ def build_branch_graph():
     g.add_edge("sr_accounting_exec", "branch_manager_approve")
     g.add_edge("branch_manager_approve", END)
 
-    return g.compile(interrupt_before=["branch_manager_approve"])
+    return g.compile(checkpointer=MemorySaver(), interrupt_before=["branch_manager_approve"])
 
 
 branch_graph = build_branch_graph()
@@ -146,7 +147,14 @@ def run_workflow(
         "finished":               False,
     }
 
-    config = {"configurable": {"provider": provider, "auto_approve": auto_approve}}
+    thread_id = case_id or f"CASE-{uuid.uuid4().hex[:8].upper()}"
+    config = {
+        "configurable": {
+            "provider": provider,
+            "auto_approve": auto_approve,
+            "thread_id": thread_id,
+        }
+    }
     steps: list[dict] = []
     final_state: dict = {}
 
@@ -157,12 +165,10 @@ def run_workflow(
             steps.append({"content": last.content, "snapshot": event})
         final_state = event
 
-    # HITL: if interrupted at approval gate, resume with auto_approve
+    # HITL: inject decision via update_state then resume (requires checkpointer)
     if not final_state.get("finished") and auto_approve:
-        final_state["manager_decision"] = "approved"
-        for event in branch_graph.stream(
-            None, config=config, stream_mode="values"
-        ):
+        branch_graph.update_state(config, {"manager_decision": "approved"})
+        for event in branch_graph.stream(None, config=config, stream_mode="values"):
             msgs = event.get("messages", [])
             if msgs:
                 steps.append({"content": msgs[-1].content, "snapshot": event})

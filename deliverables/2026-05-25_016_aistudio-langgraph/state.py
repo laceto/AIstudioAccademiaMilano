@@ -9,7 +9,7 @@ from typing import Annotated, List, Optional, TypedDict
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 
-PRICING_TABLE: dict[str, Optional[str]] = {
+_PRICING_FALLBACK: dict[str, Optional[str]] = {
     "static_landing_page":     "9.90",
     "premium_landing_page":    "29.90",
     "commercial_landing_page": "45.90",
@@ -22,7 +22,34 @@ PRICING_TABLE: dict[str, Optional[str]] = {
     "calendar_integration":    "14.90",
     "weather_dashboard":       "9.90",
     "agent_deploy_streamlit":  "19.90",
+    "algo_trading":            "24.90",
+    "mind_dashboard_journal":  "9.90",
+    "micro_syllabus_flashcards": "14.90",
+    "family_archivist":        "14.90",
+    "mediterranean_meal_planner": "14.90",
+    "niccolo_chronicles":      "14.90",
+    "unknown_product":         None,
 }
+
+
+def _load_pricing() -> dict[str, Optional[str]]:
+    import json
+    from pathlib import Path
+    try:
+        cfg = Path(__file__).resolve().parents[2] / "config" / "global_settings.json"
+        raw = json.loads(cfg.read_text(encoding="utf-8"))
+        loaded: dict[str, Optional[str]] = {}
+        for k, v in raw.get("pricing", {}).items():
+            if v is None:
+                loaded[k] = None
+            else:
+                loaded[k] = str(v).lstrip("€")
+        return loaded if loaded else _PRICING_FALLBACK
+    except Exception:
+        return _PRICING_FALLBACK
+
+
+PRICING_TABLE: dict[str, Optional[str]] = _load_pricing()
 
 
 class StudioState(TypedDict):

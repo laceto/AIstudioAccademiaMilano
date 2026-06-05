@@ -74,6 +74,8 @@ def run_simulation(
         "studio_baseline":    studio_baseline or load_studio_baseline(),
         "department_impacts": [],
         "simulation_report":  None,
+        "messages":           [],
+        "error":              None,
         "finished":           False,
     }
 

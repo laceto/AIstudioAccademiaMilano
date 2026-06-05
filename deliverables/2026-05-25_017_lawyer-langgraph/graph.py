@@ -11,6 +11,7 @@ Pipeline:
                                           └─► delivery_agent
                                                 └─► END
 """
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
@@ -68,7 +69,7 @@ def build_lawyer_graph():
     g.add_edge("billing_agent",   "delivery_agent")
     g.add_edge("delivery_agent",  END)
 
-    return g.compile()
+    return g.compile(checkpointer=MemorySaver())
 
 
 lawyer_graph = build_lawyer_graph()
