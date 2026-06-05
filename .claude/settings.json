@@ -49,6 +49,10 @@
           {
             "type": "command",
             "command": "cd \"$CLAUDE_PROJECT_DIR\" && python scripts/delta_collector.py --date today --audit-dir process/audit --output process/deltas 2>&1 || true"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && python scripts/checkpoint_state.py --brief 2>&1 || true"
           }
         ]
       }
@@ -87,6 +91,7 @@
       "Bash(python -m scripts.github_delta.collect:*)",
       "Bash(python scripts/sync_issues.py:*)",
       "Bash(python scripts/post_delivery_update.py:*)",
+      "Bash(python scripts/checkpoint_state.py:*)",
       "Bash(python scripts/check_oauth.py:*)",
       "Bash(git add process/audit/*)",
       "Bash(git add config/global_settings.json)",
