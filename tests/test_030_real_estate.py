@@ -1,10 +1,13 @@
 import pytest
+import requests
+from unittest.mock import patch
 from templates.finance.real_estate import (
     compute_mortgage_payment,
     compute_roi_metrics,
     project_10yr,
     sensitivity_grid,
 )
+from scripts.market_data import get_omi_benchmark, summarise_listings, geocode_city
 
 
 def _base_metrics(**overrides):
@@ -104,3 +107,37 @@ def test_equity_uses_post_amortisation_balance():
     assert df.loc[df["Year"] == 1, "Loan Balance (€)"].iloc[0] == pytest.approx(expected_balance_yr1, abs=0.50)
     expected_equity_yr1 = 200_000 - expected_balance_yr1
     assert df.loc[df["Year"] == 1, "Equity (€)"].iloc[0] == pytest.approx(expected_equity_yr1, abs=0.50)
+
+
+# ── market_data.py tests ──────────────────────────────────────────────────────
+
+# TC-1: unknown city or invalid fascia → None, no KeyError
+def test_omi_benchmark_unknown_inputs():
+    assert get_omi_benchmark("Atlantis", "C") is None
+    assert get_omi_benchmark("Milano", "X") is None
+
+
+# TC-2: sale_mid and rent_mid are always between min and max for all cities/zones
+def test_omi_benchmark_mid_values_in_range():
+    b = get_omi_benchmark("Milano", "C")
+    assert b is not None
+    assert b["sale_min"] <= b["sale_mid"] <= b["sale_max"]
+    assert b["rent_min"] <= b["rent_mid"] <= b["rent_max"]
+
+
+# TC-3: true median for both odd and even-length listing lists
+def test_summarise_listings_true_median():
+    odd = [{"price": p, "size": 100} for p in [100, 200, 300]]    # true median = 2.0 €/sqm
+    even = [{"price": p, "size": 100} for p in [100, 200, 300, 400]]  # true median = 2.5 €/sqm
+    r_odd = summarise_listings(odd)
+    r_even = summarise_listings(even)
+    assert r_odd["price_per_sqm_median"] == pytest.approx(2.0)
+    assert r_even["price_per_sqm_median"] == pytest.approx(2.5)
+
+
+# TC-4: geocode network timeout → returns (None, "timeout"), no exception raised
+def test_geocode_city_timeout_returns_none():
+    with patch("scripts.market_data.requests.get", side_effect=requests.exceptions.Timeout):
+        result = geocode_city("Milano")
+    assert result[0] is None
+    assert result[1] == "timeout"

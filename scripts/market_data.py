@@ -10,6 +10,7 @@ Sources:
 from __future__ import annotations
 import os
 import time
+import threading
 import requests
 
 # ── OMI static benchmarks ────────────────────────────────────────────────────
@@ -143,21 +144,26 @@ def list_cities() -> list[str]:
 
 # ── Nominatim geocoding ──────────────────────────────────────────────────────
 
-def geocode_city(city: str, country: str = "Italy") -> tuple[float, float] | None:
-    """Return (lat, lng) for a city name via Nominatim. Returns None on failure."""
+def geocode_city(city: str, country: str = "Italy") -> tuple[float, float] | tuple[None, str]:
+    """
+    Return (lat, lng) on success.
+    Return (None, reason) on failure — reason is 'timeout', 'not_found', or 'error'.
+    """
     try:
         resp = requests.get(
             "https://nominatim.openstreetmap.org/search",
             params={"q": f"{city}, {country}", "format": "json", "limit": 1},
             headers={"User-Agent": "AIStudioAccademiaMilano-RealEstateDashboard/1.0"},
-            timeout=8,
+            timeout=5,
         )
         results = resp.json()
         if results:
             return float(results[0]["lat"]), float(results[0]["lon"])
+        return None, "not_found"
+    except requests.exceptions.Timeout:
+        return None, "timeout"
     except Exception:
-        pass
-    return None
+        return None, "error"
 
 
 # ── Idealista API ────────────────────────────────────────────────────────────
@@ -166,6 +172,7 @@ IDEALISTA_AUTH_URL = "https://api.idealista.com/oauth/authorize"
 IDEALISTA_SEARCH_URL = "https://api.idealista.com/3.5/it/search"
 
 _token_cache: dict = {}
+_token_lock = threading.Lock()
 
 
 def _get_idealista_token() -> str | None:
@@ -174,22 +181,32 @@ def _get_idealista_token() -> str | None:
     if not api_key or not api_secret:
         return None
 
-    now = time.time()
-    if _token_cache.get("expires_at", 0) > now + 60:
+    with _token_lock:
+        now = time.time()
+        if _token_cache.get("expires_at", 0) > now + 60:
+            return _token_cache["token"]
+
+        try:
+            resp = requests.post(
+                IDEALISTA_AUTH_URL,
+                auth=(api_key, api_secret),
+                data={"grant_type": "client_credentials", "scope": "read"},
+                timeout=6,
+            )
+        except requests.exceptions.RequestException:
+            return None
+
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        _token_cache["token"] = data["access_token"]
+        _token_cache["expires_at"] = now + data.get("expires_in", 7200)
         return _token_cache["token"]
 
-    resp = requests.post(
-        IDEALISTA_AUTH_URL,
-        auth=(api_key, api_secret),
-        data={"grant_type": "client_credentials", "scope": "read"},
-        timeout=10,
-    )
-    if resp.status_code != 200:
-        return None
-    data = resp.json()
-    _token_cache["token"] = data["access_token"]
-    _token_cache["expires_at"] = now + data.get("expires_in", 7200)
-    return _token_cache["token"]
+
+def _invalidate_token() -> None:
+    with _token_lock:
+        _token_cache.clear()
 
 
 def search_idealista(
@@ -209,20 +226,27 @@ def search_idealista(
     if not token:
         return []
 
-    resp = requests.post(
-        IDEALISTA_SEARCH_URL,
-        headers={"Authorization": f"Bearer {token}"},
-        data={
-            "operation": operation,
-            "propertyType": "homes",
-            "center": f"{lat},{lng}",
-            "distance": radius_m,
-            "maxItems": max_items,
-            "numPage": 1,
-            "country": "it",
-        },
-        timeout=15,
-    )
+    try:
+        resp = requests.post(
+            IDEALISTA_SEARCH_URL,
+            headers={"Authorization": f"Bearer {token}"},
+            data={
+                "operation": operation,
+                "propertyType": "homes",
+                "center": f"{lat},{lng}",
+                "distance": radius_m,
+                "maxItems": max_items,
+                "numPage": 1,
+                "country": "it",
+            },
+            timeout=8,
+        )
+    except requests.exceptions.RequestException:
+        return []
+
+    if resp.status_code == 401:
+        _invalidate_token()
+        return []
     if resp.status_code != 200:
         return []
 
@@ -244,11 +268,15 @@ def summarise_listings(listings: list[dict], sqm_key: str = "size") -> dict | No
     if not prices_per_sqm:
         return None
     prices_per_sqm.sort()
+    sorted_prices = sorted(raw_prices)
     n = len(prices_per_sqm)
+    # True median for both odd and even n
+    median_psqm = (prices_per_sqm[(n - 1) // 2] + prices_per_sqm[n // 2]) / 2
+    median_price = (sorted_prices[(n - 1) // 2] + sorted_prices[n // 2]) / 2
     return {
         "count": n,
-        "price_per_sqm_median": prices_per_sqm[n // 2],
+        "price_per_sqm_median": median_psqm,
         "price_per_sqm_min": prices_per_sqm[0],
         "price_per_sqm_max": prices_per_sqm[-1],
-        "price_median": sorted(raw_prices)[n // 2],
+        "price_median": median_price,
     }
