@@ -37,21 +37,49 @@ Classify the request and return ONLY a valid JSON object — no prose, no markdo
   "needs_review": <true if confidence < 0.8 or product_type is unknown_product, else false>
 }"""
 
-_PRICES: dict[str, float | None] = {
-    "static_landing_page": 9.90,
-    "premium_landing_page": 29.90,
-    "commercial_landing_page": 45.90,
-    "pdf_document": 1.90,
-    "invoice_pdf": 3.90,
-    "strategic_report": 4.90,
-    "chatbot_app": 19.90,
-    "email_delivery": 0.50,
-    "rag_knowledge_base": 29.90,
-    "calendar_integration": 14.90,
-    "weather_dashboard": 9.90,
-    "agent_deploy_streamlit": 19.90,
-    "unknown_product": None,
-}
+def _load_prices() -> dict[str, float | None]:
+    """Load prices from global_settings.json; fall back to hardcoded values."""
+    import json
+    from pathlib import Path
+    _fallback: dict[str, float | None] = {
+        "static_landing_page":        9.90,
+        "premium_landing_page":       29.90,
+        "commercial_landing_page":    45.90,
+        "pdf_document":               1.90,
+        "invoice_pdf":                3.90,
+        "strategic_report":           4.90,
+        "chatbot_app":                19.90,
+        "email_delivery":             0.50,
+        "rag_knowledge_base":         29.90,
+        "calendar_integration":       14.90,
+        "weather_dashboard":          9.90,
+        "agent_deploy_streamlit":     19.90,
+        "algo_trading":               24.90,
+        "mind_dashboard_journal":     9.90,
+        "micro_syllabus_flashcards":  14.90,
+        "family_archivist":           14.90,
+        "mediterranean_meal_planner": 14.90,
+        "niccolo_chronicles":         14.90,
+        "unknown_product":            None,
+    }
+    try:
+        cfg = Path(__file__).resolve().parents[1] / "config" / "global_settings.json"
+        raw = json.loads(cfg.read_text(encoding="utf-8")).get("pricing", {})
+        loaded: dict[str, float | None] = {}
+        for k, v in raw.items():
+            if v is None:
+                loaded[k] = None
+            else:
+                try:
+                    loaded[k] = float(str(v).replace("€", "").replace(",", ".").strip())
+                except ValueError:
+                    pass
+        return {**_fallback, **loaded, "unknown_product": None}
+    except Exception:
+        return _fallback
+
+
+_PRICES: dict[str, float | None] = _load_prices()
 
 
 class QueueWorker:

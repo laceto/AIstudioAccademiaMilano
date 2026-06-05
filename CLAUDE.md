@@ -346,6 +346,9 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 026 | 2026-05-27 | Trading Agent Team Dashboard + API — 4 agenti, JSON store, Streamlit, FastAPI | 24.90 |
 | 027 | 2026-05-27 | DIY Electrical Brainstorm — affinity groups + API landscape cantina 3×4 | 4.90 |
 | 028 | 2026-05-27 | Team Showcase — Streamlit app del full coding team | 0.00 (internal) |
+| 029 | 2026-06-03 | Reinsurance Branch Office — LangGraph 3-workflow (claim/treaty/report) + Streamlit | 0.00 (internal) |
+| —   | 2026-06-05 | Input Gateway — FastAPI `/submit`, PipelineAdapter, Streamlit form, Telegram+WhatsApp bots, QueueWorker | 0.00 (internal) |
+| —   | 2026-06-05 | Crash-Recovery Checkpoint — scripts/checkpoint_state.py + Stop hook (ISS-022) | 0.00 (internal) |
 
 ---
 
@@ -353,7 +356,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 
 | ID | Priority | Title | Status |
 |----|----------|-------|--------|
-| ISS-002 | P1 | Build `process/intent_registry.yaml` | OPEN |
+| ISS-002 | P1 | Build `process/intent_registry.yaml` | DELIVERED |
 | ISS-003 | P2 | Unified credential manager | OPEN |
 | ISS-004 | P2 | Build `templates/` library (InvoiceTemplate, ChatbotTemplate) | OPEN |
 | ISS-005 | P2 | Tiered thresholds in learning_loop.py | OPEN |
@@ -365,11 +368,11 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | ISS-011 | P1 | Acquire dispenser credentials before go-live (Stripe, Twilio, Telegram, VAT) | OPEN |
 | ISS-012 | P2 | Implement `LLMClassifier` per richieste dispenser free-text | OPEN |
 | ISS-013 | P3 | Implement `SatispayProvider` + `PayPalProvider` | OPEN |
-| ISS-018 | P1 | Pablo: `gateway/pipeline_adapter.py` + FastAPI `/submit` + HMAC middleware | OPEN |
-| ISS-019 | P1 | Sofia: `gateway/streamlit_app.py` wired to PipelineAdapter | OPEN |
-| ISS-020 | P1 | Carlos: `gateway/bot_telegram.py` + `bot_whatsapp.py` wired to PipelineAdapter | OPEN |
+| ISS-018 | P1 | Pablo: `gateway/pipeline_adapter.py` + FastAPI `/submit` + HMAC middleware | DELIVERED |
+| ISS-019 | P1 | Sofia: `gateway/streamlit_app.py` wired to PipelineAdapter | DELIVERED |
+| ISS-020 | P1 | Carlos: `gateway/bot_telegram.py` + `bot_whatsapp.py` wired to PipelineAdapter | DELIVERED |
 | ISS-021 | P2 | Deploy Input Gateway: tutti e 3 i canali live | OPEN |
-| ISS-022 | P1 | Crash-recovery flush: checkpoint periodico su project_state.md | OPEN |
+| ISS-022 | P1 | Crash-recovery flush: checkpoint periodico su project_state.md | DELIVERED |
 | ISS-023 | P2 | Scope `etsy_digital_product_pack` intent | OPEN |
 | ISS-024 | P2 | Scope `digital_product_listing_pack` intent | OPEN |
 | ISS-025 | P1 | Valutare Lemon Squeezy vs Payhip come merchant-of-record (EU VAT) | OPEN |
