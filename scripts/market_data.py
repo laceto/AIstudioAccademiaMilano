@@ -225,7 +225,7 @@ def search_idealista(
     """
     token = _get_idealista_token()
     if not token:
-        return []
+        return [], "no_credentials"
 
     try:
         resp = requests.post(

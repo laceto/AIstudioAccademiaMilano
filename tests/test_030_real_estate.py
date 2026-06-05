@@ -1,3 +1,4 @@
+import os
 import pytest
 import requests
 from unittest.mock import patch
@@ -141,3 +142,39 @@ def test_geocode_city_timeout_returns_none():
         result = geocode_city("Milano")
     assert result[0] is None
     assert result[1] == "timeout"
+
+
+# TC-5: search_idealista tuple contract — all error branches return (list, str)
+def test_search_idealista_tuple_contract():
+    from scripts.market_data import search_idealista, _token_cache
+    import scripts.market_data as md
+
+    # No-credentials path (env vars absent)
+    with patch.dict(os.environ, {}, clear=True):
+        # Ensure env vars are absent
+        os.environ.pop("IDEALISTA_API_KEY", None)
+        os.environ.pop("IDEALISTA_SECRET", None)
+        _token_cache.clear()
+        result = search_idealista(45.46, 9.19)
+    assert isinstance(result, tuple) and len(result) == 2
+    assert result[0] == []
+    assert result[1] == "no_credentials"
+
+    # 429 rate-limited path
+    with patch("scripts.market_data._get_idealista_token", return_value="fake_token"), \
+         patch("scripts.market_data.requests.post") as mock_post:
+        mock_post.return_value.status_code = 429
+        result = search_idealista(45.46, 9.19)
+    assert result == ([], "rate_limited")
+
+    # Timeout path
+    with patch("scripts.market_data._get_idealista_token", return_value="fake_token"), \
+         patch("scripts.market_data.requests.post", side_effect=requests.exceptions.Timeout):
+        result = search_idealista(45.46, 9.19)
+    assert result == ([], "timeout")
+
+
+# TC-6: summarise_listings([]) → None, not an exception
+def test_summarise_listings_empty():
+    assert summarise_listings([]) is None
+    assert summarise_listings([{"no_price": 1}]) is None

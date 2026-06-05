@@ -1,7 +1,9 @@
 import sys
 import time
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+_repo_root = str(Path(__file__).resolve().parents[2])
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
 
 import os
 import streamlit as st
@@ -265,10 +267,14 @@ with tab_market:
             f"(€{implied_price_mid:,.0f} / €{implied_rent_mid:,.0f}/mo)",
             help="Overwrites Purchase Price and Monthly Rent in the sidebar with OMI mid-range values.",
         ):
-            st.session_state["sim_purchase_price"] = int(implied_price_mid)
-            st.session_state["sim_monthly_rent"]   = int(implied_rent_mid)
-            st.session_state["sim_sqm"]            = int(prop_sqm)
-            st.rerun()
+            if implied_price_mid > 0 and implied_rent_mid > 0:
+                st.session_state["sim_purchase_price"] = int(implied_price_mid)
+                st.session_state["sim_monthly_rent"]   = int(implied_rent_mid)
+                st.session_state["sim_sqm"]            = int(prop_sqm)
+                st.toast("OMI mid-values applied — switch to the Simulation tab to see them.", icon="✅")
+                st.rerun()
+            else:
+                st.warning("Cannot apply: implied values are zero. Check city and sqm inputs.")
 
         st.subheader(f"Zone comparison — {city}, {prop_sqm} sqm")
         rows = []
@@ -374,7 +380,7 @@ with tab_market:
         if st.button("Search Idealista"):
             with st.spinner("Geocoding…"):
                 geo_result = geocode_city(search_city)
-                time.sleep(1)  # R2 — OSM usage policy: max 1 req/s
+                time.sleep(1)  # R2 — OSM usage policy: max 1 req/s — inside spinner so UI stays responsive
 
             if isinstance(geo_result[0], float):
                 lat, lng = geo_result
@@ -415,7 +421,11 @@ with tab_market:
                             "€/sqm": round(price / size) if price and size > 0 else None,
                             "Link": listing.get("url", ""),  # U2 — include URL column
                         })
-                    st.dataframe(pd.DataFrame(rows_l), use_container_width=True)
+                    st.dataframe(
+                        pd.DataFrame(rows_l),
+                        column_config={"Link": st.column_config.LinkColumn("Link")},
+                        use_container_width=True,
+                    )
             else:
                 msgs = {
                     "timeout":   "Geocoding timed out. Try again or check your network.",
