@@ -215,11 +215,12 @@ def search_idealista(
     operation: str = "sale",
     radius_m: int = 2000,
     max_items: int = 50,
-) -> list[dict]:
+) -> tuple[list[dict], str | None]:
     """
     Search Idealista listings near a coordinate.
     operation: 'sale' or 'rent'
-    Returns list of listings with price, size, rooms, url.
+    Returns (listings, error_code) — error_code is None on success,
+    or one of: 'auth_error', 'rate_limited', 'timeout', 'network_error', 'api_error'.
     Requires IDEALISTA_API_KEY + IDEALISTA_SECRET env vars.
     """
     token = _get_idealista_token()
@@ -241,16 +242,20 @@ def search_idealista(
             },
             timeout=8,
         )
+    except requests.exceptions.Timeout:
+        return [], "timeout"
     except requests.exceptions.RequestException:
-        return []
+        return [], "network_error"
 
     if resp.status_code == 401:
         _invalidate_token()
-        return []
+        return [], "auth_error"
+    if resp.status_code == 429:
+        return [], "rate_limited"
     if resp.status_code != 200:
-        return []
+        return [], "api_error"
 
-    return resp.json().get("elementList", [])
+    return resp.json().get("elementList", []), None
 
 
 def summarise_listings(listings: list[dict], sqm_key: str = "size") -> dict | None:

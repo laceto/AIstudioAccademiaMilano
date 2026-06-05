@@ -1,6 +1,6 @@
 import sys
+import time
 from pathlib import Path
-# Resolve repo root so imports work regardless of working directory at deploy time
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import os
@@ -26,11 +26,24 @@ from scripts.market_data import (
 st.set_page_config(page_title="Real Estate ROI", layout="wide", page_icon="🏠")
 st.title("🏠 Real Estate Investment Dashboard")
 
-# ── Sidebar (hoisted above tabs — global singleton, must not be tab-scoped) ──
+# ── Session state defaults (set before sidebar renders) ───────────────────
+# These keys are used as widget keys so tab_market can push OMI values into
+# the simulation via st.session_state + st.rerun().
+for key, default in [
+    ("sim_purchase_price", 300_000),
+    ("sim_monthly_rent",   1_200),
+    ("sim_sqm",            80),
+]:
+    if key not in st.session_state:
+        st.session_state[key] = default
+
+# ── Sidebar (must be above st.tabs — global Streamlit singleton) ──────────
 with st.sidebar:
     st.header("Property")
-    purchase_price = st.number_input("Purchase Price (€)", 10_000, 5_000_000, 300_000, 5_000)
-    sqm = st.number_input("Size (sqm)", 10, 1_000, 80, 5)
+    purchase_price = st.number_input(
+        "Purchase Price (€)", 10_000, 5_000_000, step=5_000, key="sim_purchase_price"
+    )
+    sqm = st.number_input("Size (sqm)", 10, 1_000, step=5, key="sim_sqm")
     renovation = st.number_input("Renovation Budget (€)", 0, 500_000, 0, 1_000)
 
     st.header("Purchase Costs")
@@ -44,7 +57,9 @@ with st.sidebar:
     loan_term = st.selectbox("Term (years)", [10, 15, 20, 25, 30], index=3)
 
     st.header("Rental Income")
-    monthly_rent = st.number_input("Monthly Rent (€)", 0, 20_000, 1_200, 50)
+    monthly_rent = st.number_input(
+        "Monthly Rent (€)", 0, 20_000, step=50, key="sim_monthly_rent"
+    )
     vacancy_rate = st.slider("Vacancy (%)", 0, 30, 5)
 
     st.header("Annual Expenses")
@@ -221,7 +236,7 @@ with tab_market:
         fascia = st.selectbox("Zone", list(FASCIA_LABELS.keys()),
                               format_func=lambda k: FASCIA_LABELS[k], index=1)
     with col_c:
-        prop_sqm = st.number_input("Property size (sqm)", 10, 500, sqm, 5, key="mkt_sqm")
+        prop_sqm = st.number_input("Property size (sqm)", 10, 500, int(sqm), 5, key="mkt_sqm")
 
     bench = get_omi_benchmark(city, fascia)
     if bench:
@@ -233,7 +248,7 @@ with tab_market:
         m4.metric("Rent max (€/sqm/mo)", f"€{bench['rent_max']:.1f}")
 
         implied_price_mid = bench["sale_mid"] * prop_sqm
-        implied_rent_mid = bench["rent_mid"] * prop_sqm
+        implied_rent_mid  = bench["rent_mid"] * prop_sqm
 
         st.info(
             f"For a **{prop_sqm} sqm** property in **{city} {FASCIA_LABELS[fascia]}**:\n\n"
@@ -243,6 +258,17 @@ with tab_market:
             f"€{bench['rent_max'] * prop_sqm:,.0f}** (mid: €{implied_rent_mid:,.0f})\n\n"
             f"*Source: {bench['source']}*"
         )
+
+        # U1 — push OMI mid-values into the Simulation tab via session_state
+        if st.button(
+            f"📥 Use OMI mid-values in Simulation  "
+            f"(€{implied_price_mid:,.0f} / €{implied_rent_mid:,.0f}/mo)",
+            help="Overwrites Purchase Price and Monthly Rent in the sidebar with OMI mid-range values.",
+        ):
+            st.session_state["sim_purchase_price"] = int(implied_price_mid)
+            st.session_state["sim_monthly_rent"]   = int(implied_rent_mid)
+            st.session_state["sim_sqm"]            = int(prop_sqm)
+            st.rerun()
 
         st.subheader(f"Zone comparison — {city}, {prop_sqm} sqm")
         rows = []
@@ -348,13 +374,24 @@ with tab_market:
         if st.button("Search Idealista"):
             with st.spinner("Geocoding…"):
                 geo_result = geocode_city(search_city)
+                time.sleep(1)  # R2 — OSM usage policy: max 1 req/s
 
             if isinstance(geo_result[0], float):
                 lat, lng = geo_result
                 with st.spinner(f"Fetching {operation} listings near {search_city}…"):
-                    listings = search_idealista(lat, lng, operation, radius)
-                if not listings:
-                    st.warning("No listings returned. Check your API credentials or try a larger radius.")
+                    listings, err = search_idealista(lat, lng, operation, radius)
+
+                # R1 — surface specific error codes to the user
+                if err == "rate_limited":
+                    st.warning("Idealista rate limit reached. Wait 60 seconds and try again.")
+                elif err == "auth_error":
+                    st.error("Idealista authentication failed. Check your API credentials.")
+                elif err in ("timeout", "network_error"):
+                    st.error("Could not reach Idealista. Check your network and retry.")
+                elif err:
+                    st.error(f"Idealista API error ({err}). Try again later.")
+                elif not listings:
+                    st.warning("No listings returned. Try a larger radius.")
                 else:
                     summary = summarise_listings(listings)
                     if summary:
@@ -367,7 +404,7 @@ with tab_market:
 
                     rows_l = []
                     for listing in listings[:20]:
-                        size = listing.get("size") or 0
+                        size  = listing.get("size") or 0
                         price = listing.get("price")
                         rows_l.append({
                             "Price (€)": price,
@@ -376,14 +413,13 @@ with tab_market:
                             "Floor": listing.get("floor"),
                             "District": listing.get("district"),
                             "€/sqm": round(price / size) if price and size > 0 else None,
-                            "Link": listing.get("url", ""),
+                            "Link": listing.get("url", ""),  # U2 — include URL column
                         })
                     st.dataframe(pd.DataFrame(rows_l), use_container_width=True)
             else:
-                _reason = geo_result[1]
                 msgs = {
-                    "timeout": "Geocoding timed out. Try again or check your network.",
-                    "not_found": f"Could not find '{search_city}'. Try a different spelling or add the province.",
-                    "error": "Geocoding failed due to an unexpected error.",
+                    "timeout":   "Geocoding timed out. Try again or check your network.",
+                    "not_found": f"Could not find '{search_city}'. Try a different spelling.",
+                    "error":     "Geocoding failed due to an unexpected error.",
                 }
-                st.error(msgs.get(_reason, "Geocoding failed."))
+                st.error(msgs.get(geo_result[1], "Geocoding failed."))
