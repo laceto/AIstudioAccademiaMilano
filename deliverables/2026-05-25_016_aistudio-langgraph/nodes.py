@@ -8,6 +8,7 @@ The provider is read from config["configurable"]["provider"] (default: "anthropi
   smart tier → sonnet-4.6 / gpt-4o       (Gianni scope, Chiara implement)
 """
 import json
+import threading
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -249,7 +250,8 @@ def chiara_implement(state: StudioState, config: RunnableConfig) -> dict:
         }
     except Exception as exc:
         return {
-            "error": str(exc),
+            "error":        str(exc),
+            "qa_iteration": state.get("qa_iteration", 0) + 1,
             "messages": [AIMessage(content=f"[Chiara] ERROR: {exc}")],
         }
 
@@ -448,16 +450,20 @@ def marco_invoice(state: StudioState) -> dict:
 
 # ── Francesca: Delivery ────────────────────────────────────────────────────────
 
+_audit_id_lock = threading.Lock()
+
+
 def _next_audit_id(audit_dir) -> int:
     import re
     from pathlib import Path
-    pattern = re.compile(r"^\d{4}-\d{2}-\d{2}_(\d+)_")
-    ids = [
-        int(m.group(1))
-        for f in Path(audit_dir).iterdir()
-        if (m := pattern.match(f.name))
-    ]
-    return (max(ids) + 1) if ids else 1
+    with _audit_id_lock:
+        pattern = re.compile(r"^\d{4}-\d{2}-\d{2}_(\d+)_")
+        ids = [
+            int(m.group(1))
+            for f in Path(audit_dir).iterdir()
+            if (m := pattern.match(f.name))
+        ]
+        return (max(ids) + 1) if ids else 1
 
 
 def _write_audit_log(path, state: StudioState, req_id: int, datestr: str, deliverable_path: str) -> None:
@@ -601,8 +607,14 @@ def francesca_deliver(state: StudioState) -> dict:
     filename        = Path(raw_path).name or "main.py"
     deliverable_dir = ROOT / "deliverables" / slug
     deliverable_dir.mkdir(parents=True, exist_ok=True)
-    actual_path = deliverable_dir / filename
-    actual_path.write_text(state.get("deliverable_content") or "", encoding="utf-8")
+    actual_path     = deliverable_dir / filename
+    content_to_write = state.get("deliverable_content") or ""
+    if not content_to_write.strip():
+        return {
+            "error": "empty deliverable — Chiara produced no content",
+            "messages": [AIMessage(content="[Francesca] ERROR: empty deliverable, aborting delivery")],
+        }
+    actual_path.write_text(content_to_write, encoding="utf-8")
 
     rel_deliverable = str(actual_path.relative_to(ROOT))
 

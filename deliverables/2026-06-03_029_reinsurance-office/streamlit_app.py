@@ -4,8 +4,11 @@ Tabs: Team Showcase | Run Workflow | Case Log
 """
 import json
 import os
+import sys
 import uuid
 from datetime import datetime
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import streamlit as st
 
@@ -237,7 +240,7 @@ with tab_run:
 
         with st.spinner(f"Running {wf['label']} — {case_id} ..."):
             try:
-                from .graph import run_workflow
+                from graph import run_workflow
 
                 steps, final_state = run_workflow(
                     case_input=case_input,

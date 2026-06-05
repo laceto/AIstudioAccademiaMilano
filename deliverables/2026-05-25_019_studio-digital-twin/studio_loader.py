@@ -18,28 +18,49 @@ _KNOWN_REVENUES = [
     19.90,  # 005 chatbot
     29.90,  # 006 rag
     14.90,  # 007 calendar
-    0.00,   # 008 github research (internal)
+    24.90,  # 008 algo trading
     4.90,   # 009 linkedin post
     14.90,  # 010 profile setup
     9.90,   # 011 weather dashboard
+    0.00,   # 012 discord bot (internal)
     19.90,  # 013 techa deploy
     0.00,   # 014 dispenser (internal infra)
     0.00,   # 015 logo generator (internal)
+    0.00,   # 016 aistudio langgraph (internal)
+    0.00,   # 017 lawyer langgraph (internal)
+    0.00,   # 018 soap note (internal)
+    0.00,   # 019 digital twin (internal)
+    9.90,   # 020 mind dashboard
+    14.90,  # 021 micro syllabus
+    14.90,  # 022 family archivist
+    14.90,  # 023 meal planner
+    14.90,  # 024 niccolò chronicles
+    0.00,   # 025 chat rss (internal)
+    24.90,  # 026 trading agent team
+    4.90,   # 027 diy electrical brainstorm
+    0.00,   # 028 team showcase (internal)
+    0.00,   # 029 reinsurance office (internal)
 ]
 
 _PRICING_TABLE = {
-    "static_landing_page":     9.90,
-    "premium_landing_page":    29.90,
-    "commercial_landing_page": 45.90,
-    "pdf_document":            1.90,
-    "invoice_pdf":             3.90,
-    "strategic_report":        4.90,
-    "chatbot_app":             19.90,
-    "email_delivery":          0.50,
-    "rag_knowledge_base":      29.90,
-    "calendar_integration":    14.90,
-    "weather_dashboard":       9.90,
-    "agent_deploy_streamlit":  19.90,
+    "static_landing_page":        9.90,
+    "premium_landing_page":       29.90,
+    "commercial_landing_page":    45.90,
+    "pdf_document":               1.90,
+    "invoice_pdf":                3.90,
+    "strategic_report":           4.90,
+    "chatbot_app":                19.90,
+    "email_delivery":             0.50,
+    "rag_knowledge_base":         29.90,
+    "calendar_integration":       14.90,
+    "weather_dashboard":          9.90,
+    "agent_deploy_streamlit":     19.90,
+    "algo_trading":               24.90,
+    "mind_dashboard_journal":     9.90,
+    "micro_syllabus_flashcards":  14.90,
+    "family_archivist":           14.90,
+    "mediterranean_meal_planner": 14.90,
+    "niccolo_chronicles":         14.90,
 }
 
 

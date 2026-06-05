@@ -16,6 +16,12 @@ Pipeline:
                                                             marco_invoice
                                                               └─► francesca_deliver
                                                                     └─► END
+
+NOTE: interrupt_before=["luigi_escalate"] fires unconditionally on every
+execution that reaches luigi_escalate, regardless of auto_approve.
+In auto_approve=True mode run_pipeline() handles resume automatically via
+update_state() + stream(None). Any caller that invokes studio_graph.stream()
+directly must replicate this resume step, otherwise the graph stalls.
 """
 import uuid
 from typing import Literal

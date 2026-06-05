@@ -772,6 +772,8 @@
   },
   "pricing": {
     "static_landing_page": "€9.90",
+    "premium_landing_page": "€29.90",
+    "commercial_landing_page": "€45.90",
     "pdf_document": "€1.90",
     "invoice_pdf": "€3.90",
     "strategic_report": "€4.90",
