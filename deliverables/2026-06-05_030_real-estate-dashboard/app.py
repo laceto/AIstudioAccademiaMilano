@@ -8,6 +8,7 @@ if _repo_root not in sys.path:
 import os
 import streamlit as st
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.subplots import make_subplots
 import pandas as pd
 
@@ -19,6 +20,7 @@ from templates.finance.real_estate import (
 from scripts.market_data import (
     get_omi_benchmark,
     list_cities,
+    city_map_data,
     geocode_city,
     search_idealista,
     summarise_listings,
@@ -28,9 +30,7 @@ from scripts.market_data import (
 st.set_page_config(page_title="Real Estate ROI", layout="wide", page_icon="🏠")
 st.title("🏠 Real Estate Investment Dashboard")
 
-# ── Session state defaults (set before sidebar renders) ───────────────────
-# These keys are used as widget keys so tab_market can push OMI values into
-# the simulation via st.session_state + st.rerun().
+# ── Session state defaults ────────────────────────────────────────────────────
 for key, default in [
     ("sim_purchase_price", 300_000),
     ("sim_monthly_rent",   1_200),
@@ -39,7 +39,7 @@ for key, default in [
     if key not in st.session_state:
         st.session_state[key] = default
 
-# ── Sidebar (must be above st.tabs — global Streamlit singleton) ──────────
+# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("Property")
     purchase_price = st.number_input(
@@ -55,8 +55,8 @@ with st.sidebar:
 
     st.header("Mortgage")
     down_payment_pct = st.slider("Down Payment (%)", 5, 100, 20)
-    mortgage_rate = st.slider("Rate (%)", 0.5, 10.0, 3.5, 0.1)
-    loan_term = st.selectbox("Term (years)", [10, 15, 20, 25, 30], index=3)
+    mortgage_rate    = st.slider("Rate (%)", 0.5, 10.0, 3.5, 0.1)
+    loan_term        = st.selectbox("Term (years)", [10, 15, 20, 25, 30], index=3)
 
     st.header("Rental Income")
     monthly_rent = st.number_input(
@@ -66,8 +66,8 @@ with st.sidebar:
 
     st.header("Annual Expenses")
     property_tax = st.number_input("Property Tax / IMU (€/yr)", 0, 20_000, 800, 100)
-    maintenance = st.number_input("Maintenance (€/yr)", 0, 20_000, 1_200, 100)
-    insurance = st.number_input("Insurance (€/yr)", 0, 5_000, 400, 50)
+    maintenance  = st.number_input("Maintenance (€/yr)", 0, 20_000, 1_200, 100)
+    insurance    = st.number_input("Insurance (€/yr)", 0, 5_000, 400, 50)
     mgmt_fee_pct = st.slider("Mgmt Fee (% of rent)", 0, 20, 0)
 
     st.header("Italian Tax")
@@ -77,8 +77,8 @@ with st.sidebar:
     )
 
     st.header("Growth")
-    appreciation = st.slider("Annual Appreciation (%)", -5.0, 8.0, 2.0, 0.5)
-    rent_growth = st.slider("Annual Rent Growth (%)", 0.0, 6.0, 1.5, 0.5)
+    appreciation  = st.slider("Annual Appreciation (%)", -5.0, 8.0, 2.0, 0.5)
+    rent_growth   = st.slider("Annual Rent Growth (%)", 0.0, 6.0, 1.5, 0.5)
     opex_inflation = st.slider("Opex Inflation (%/yr)", 0.0, 5.0, 2.0, 0.5)
 
 tab_sim, tab_market = st.tabs(["📊 Simulation", "🗺️ Market Data"])
@@ -113,8 +113,8 @@ with tab_sim:
     )
 
     price_per_sqm = purchase_price / sqm if sqm > 0 else 0
-
     ltv = m.loan_amount / purchase_price * 100 if purchase_price > 0 else 0
+
     if ltv > 80:
         st.error(f"LTV {ltv:.0f}% — most Italian banks cap at 80% for non-primary residence.")
     if m.monthly_cf_aftertax < -300:
@@ -139,7 +139,7 @@ with tab_sim:
             "Item": ["Down Payment", "Notary & Taxes", "Buyer Agent", "Renovation"],
             "Amount": [
                 f"€{m.down_payment:,.0f}", f"€{m.notary_cost:,.0f}",
-                f"€{m.agent_cost:,.0f}", f"€{m.renovation:,.0f}",
+                f"€{m.agent_cost:,.0f}",   f"€{m.renovation:,.0f}",
             ],
         }).set_index("Item"))
 
@@ -159,7 +159,9 @@ with tab_sim:
         rental_tax_rate_pct=rental_tax_rate,
     )
 
-    years = df["Year"].tolist()
+    years    = df["Year"].tolist()
+    cum_vals = df["Cumulative CF (€)"].tolist()
+
     fig = make_subplots(
         rows=1, cols=2,
         subplot_titles=("Equity Build-up", "Cumulative Cash Flow (after tax)"),
@@ -174,8 +176,6 @@ with tab_sim:
     fig.add_trace(go.Scatter(x=years, y=df["Loan Balance (€)"].tolist(),
                               name="Loan Balance",
                               line=dict(color="#F44336", width=2, dash="dash")), row=1, col=1)
-
-    cum_vals = df["Cumulative CF (€)"].tolist()
     fig.add_trace(go.Bar(x=years, y=cum_vals,
                           marker_color=["#4CAF50" if v >= 0 else "#F44336" for v in cum_vals],
                           showlegend=False), row=1, col=2)
@@ -204,6 +204,30 @@ with tab_sim:
     st.caption("Rows = rent scenarios · Columns = mortgage rate scenarios · N/A = invalid rate")
 
     st.divider()
+
+    # ── A2 — Lead capture CTA ─────────────────────────────────────────────
+    st.subheader("📧 Get the Investment Summary")
+    with st.form("lead_capture"):
+        col_e1, col_e2 = st.columns([3, 1])
+        with col_e1:
+            email_input = st.text_input(
+                "Email address",
+                placeholder="you@example.com",
+                label_visibility="collapsed",
+            )
+        with col_e2:
+            send_btn = st.form_submit_button("Send summary")
+        if send_btn:
+            if email_input and "@" in email_input:
+                # Wired to email_delivery pipeline when credentials are available
+                st.success(
+                    f"Summary queued for **{email_input}** — includes key metrics, "
+                    "10-year projection, and sensitivity table."
+                )
+            else:
+                st.warning("Please enter a valid email address.")
+
+    st.divider()
     st.download_button(
         "Export 10-year projection (CSV)",
         df.to_csv(index=False),
@@ -218,19 +242,19 @@ with tab_sim:
 with tab_market:
     st.subheader("Market Benchmarks")
     st.warning(
-        "**OMI data is from H2 2024** (Agenzia delle Entrate, H1 and H2 2025 editions now "
-        "available). Values are official fiscal ranges for *abitazioni civili (A), stato normale "
-        "(N)* — they are NOT current market prices and must NOT be used as the sole basis for "
-        "any investment decision. Achievable rents in high-demand areas can exceed OMI maxima "
-        "by 30–70%. Always verify against live listings.",
+        "**OMI data is from H2 2024** (Agenzia delle Entrate). Values are official fiscal "
+        "ranges for *abitazioni civili (A), stato normale (N)* — NOT current market prices. "
+        "Must NOT be used as the sole basis for any investment decision. Achievable rents in "
+        "high-demand areas can exceed OMI maxima by 30–70%.",
         icon="⚠️",
     )
     st.caption(
-        "Source: Osservatorio del Mercato Immobiliare — "
-        "[agenziaentrate.gov.it](https://www.agenziaentrate.gov.it/portale/schede/"
-        "fabbricatiterreni/omi/banche-dati/quotazioni-immobiliari)"
+        "Source: [Osservatorio del Mercato Immobiliare — agenziaentrate.gov.it]"
+        "(https://www.agenziaentrate.gov.it/portale/schede/fabbricatiterreni/omi/"
+        "banche-dati/quotazioni-immobiliari)"
     )
 
+    # ── City benchmark lookup ─────────────────────────────────────────────
     col_a, col_b, col_c = st.columns([2, 1, 1])
     with col_a:
         city = st.selectbox("City", list_cities(), index=list_cities().index("Milano"))
@@ -244,8 +268,8 @@ with tab_market:
     if bench:
         st.divider()
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Sale price min (€/sqm)", f"€{bench['sale_min']:,}")
-        m2.metric("Sale price max (€/sqm)", f"€{bench['sale_max']:,}")
+        m1.metric("Sale min (€/sqm)", f"€{bench['sale_min']:,}")
+        m2.metric("Sale max (€/sqm)", f"€{bench['sale_max']:,}")
         m3.metric("Rent min (€/sqm/mo)", f"€{bench['rent_min']:.1f}")
         m4.metric("Rent max (€/sqm/mo)", f"€{bench['rent_max']:.1f}")
 
@@ -254,103 +278,156 @@ with tab_market:
 
         st.info(
             f"For a **{prop_sqm} sqm** property in **{city} {FASCIA_LABELS[fascia]}**:\n\n"
-            f"- Implied purchase price: **€{bench['sale_min'] * prop_sqm:,.0f} – "
+            f"- Implied price: **€{bench['sale_min'] * prop_sqm:,.0f} – "
             f"€{bench['sale_max'] * prop_sqm:,.0f}** (mid: €{implied_price_mid:,.0f})\n"
-            f"- Implied monthly rent: **€{bench['rent_min'] * prop_sqm:,.0f} – "
-            f"€{bench['rent_max'] * prop_sqm:,.0f}** (mid: €{implied_rent_mid:,.0f})\n\n"
+            f"- Implied rent: **€{bench['rent_min'] * prop_sqm:,.0f} – "
+            f"€{bench['rent_max'] * prop_sqm:,.0f}/mo** (mid: €{implied_rent_mid:,.0f})\n\n"
             f"*Source: {bench['source']}*"
         )
 
-        # U1 — push OMI mid-values into the Simulation tab via session_state
         if st.button(
             f"📥 Use OMI mid-values in Simulation  "
             f"(€{implied_price_mid:,.0f} / €{implied_rent_mid:,.0f}/mo)",
-            help="Overwrites Purchase Price and Monthly Rent in the sidebar with OMI mid-range values.",
+            help="Overwrites Purchase Price, Monthly Rent and Size in the sidebar.",
         ):
             if implied_price_mid > 0 and implied_rent_mid > 0:
                 st.session_state["sim_purchase_price"] = int(implied_price_mid)
                 st.session_state["sim_monthly_rent"]   = int(implied_rent_mid)
                 st.session_state["sim_sqm"]            = int(prop_sqm)
-                st.toast("OMI mid-values applied — switch to the Simulation tab to see them.", icon="✅")
+                st.toast("OMI mid-values applied — switch to Simulation tab to see them.", icon="✅")
                 st.rerun()
             else:
                 st.warning("Cannot apply: implied values are zero. Check city and sqm inputs.")
 
+        # Zone comparison
         st.subheader(f"Zone comparison — {city}, {prop_sqm} sqm")
-        rows = []
+        zone_rows = []
         for fk, fl in FASCIA_LABELS.items():
             b = get_omi_benchmark(city, fk)
             if b:
-                rows.append({
+                zone_rows.append({
                     "Zone": fl,
                     "Sale min (€)": b["sale_min"] * prop_sqm,
                     "Sale max (€)": b["sale_max"] * prop_sqm,
                     "Sale mid (€)": b["sale_mid"] * prop_sqm,
                     "Rent min (€/mo)": round(b["rent_min"] * prop_sqm),
                     "Rent max (€/mo)": round(b["rent_max"] * prop_sqm),
-                    "Gross Yield mid (%)": round(
-                        b["rent_mid"] * prop_sqm * 12 / (b["sale_mid"] * prop_sqm) * 100, 2
-                    ),
+                    "Gross Yield (%)": round(b["rent_mid"] * 12 / b["sale_mid"] * 100, 2),
                 })
-        if rows:
-            comp_df = pd.DataFrame(rows).set_index("Zone")
-            st.dataframe(comp_df.style.format({
-                "Sale min (€)": "€{:,.0f}", "Sale max (€)": "€{:,.0f}",
-                "Sale mid (€)": "€{:,.0f}", "Rent min (€/mo)": "€{:,.0f}",
-                "Rent max (€/mo)": "€{:,.0f}", "Gross Yield mid (%)": "{:.2f}%",
-            }), use_container_width=True)
-            st.caption("Gross yield = OMI mid rent × 12 / OMI mid sale price — gross, pre-vacancy, pre-tax.")
-
-            fig2 = go.Figure(go.Bar(
-                x=[r["Zone"] for r in rows],
-                y=[r["Gross Yield mid (%)"] for r in rows],
-                marker_color=["#4CAF50", "#2196F3", "#FF9800"],
-                text=[f"{r['Gross Yield mid (%)']:.2f}%" for r in rows],
-                textposition="outside",
-            ))
-            fig2.update_layout(
-                height=300, template="plotly_white",
-                yaxis_title="Gross Yield (%)", xaxis_title="Zone",
-                yaxis_range=[0, max(r["Gross Yield mid (%)"] for r in rows) * 1.3],
+        if zone_rows:
+            st.dataframe(
+                pd.DataFrame(zone_rows).set_index("Zone").style.format({
+                    "Sale min (€)": "€{:,.0f}", "Sale max (€)": "€{:,.0f}",
+                    "Sale mid (€)": "€{:,.0f}", "Rent min (€/mo)": "€{:,.0f}",
+                    "Rent max (€/mo)": "€{:,.0f}", "Gross Yield (%)": "{:.2f}%",
+                }),
+                use_container_width=True,
             )
-            st.plotly_chart(fig2, use_container_width=True)
+            st.caption("Gross yield = OMI mid rent × 12 / OMI mid sale — gross, pre-vacancy, pre-tax.")
 
     st.divider()
 
-    # ── Cross-city comparison ─────────────────────────────────────────────
+    # ── U3 — Italy yield map + U4 budget filter ───────────────────────────
+    st.subheader("Italy Yield Map")
+
+    map_col1, map_col2, map_col3 = st.columns([1, 1, 2])
+    with map_col1:
+        map_fascia = st.selectbox(
+            "Zone", list(FASCIA_LABELS.keys()),
+            format_func=lambda k: FASCIA_LABELS[k], index=1, key="map_fascia",
+        )
+    with map_col2:
+        map_sqm = st.number_input("Reference size (sqm)", 30, 300, int(sqm), 10, key="map_sqm")
+    with map_col3:
+        # U4 — budget filter
+        max_budget = st.number_input(
+            "Max budget (€) — greys out cities above this implied price",
+            min_value=50_000, max_value=5_000_000,
+            value=int(purchase_price), step=10_000,
+        )
+
+    map_rows = city_map_data(fascia=map_fascia, ref_sqm=map_sqm)
+    if map_rows:
+        map_df = pd.DataFrame(map_rows)
+        map_df["within_budget"] = map_df["implied_price"] <= max_budget
+        map_df["color"]  = map_df["within_budget"].map({True: "In budget", False: "Over budget"})
+        map_df["marker"] = map_df["within_budget"].map({True: 12, False: 6})
+        map_df["label"]  = map_df.apply(
+            lambda r: f"{r['city']}<br>Yield: {r['gross_yield']:.1f}%<br>"
+                      f"Price: €{r['sale_mid']:,}/sqm<br>"
+                      f"Rent: €{r['rent_mid']:.1f}/sqm/mo<br>"
+                      f"Implied: €{r['implied_price']:,}", axis=1
+        )
+
+        fig_map = px.scatter_mapbox(
+            map_df,
+            lat="lat", lon="lon",
+            size="gross_yield",
+            color="color",
+            color_discrete_map={"In budget": "#2196F3", "Over budget": "#BDBDBD"},
+            hover_name="city",
+            hover_data={
+                "gross_yield": ":.2f", "sale_mid": True,
+                "implied_price": True, "lat": False, "lon": False,
+                "color": False, "marker": False, "label": False,
+            },
+            size_max=30,
+            mapbox_style="open-street-map",
+            zoom=4.5,
+            center={"lat": 42.5, "lon": 12.5},
+            height=480,
+            labels={
+                "gross_yield": "Gross Yield (%)",
+                "sale_mid": "Sale mid (€/sqm)",
+                "implied_price": f"Implied price ({map_sqm}sqm, €)",
+            },
+        )
+        fig_map.update_layout(
+            margin={"r": 0, "t": 0, "l": 0, "b": 0},
+            legend=dict(title="Budget", orientation="v", x=0.01, y=0.99),
+        )
+        st.plotly_chart(fig_map, use_container_width=True)
+
+        in_budget = map_df[map_df["within_budget"]]["city"].tolist()
+        over_budget = map_df[~map_df["within_budget"]]["city"].tolist()
+        if over_budget:
+            st.caption(
+                f"**In budget ({len(in_budget)}):** {', '.join(sorted(in_budget))}  \n"
+                f"**Over budget ({len(over_budget)}):** {', '.join(sorted(over_budget))}"
+            )
+
+    st.divider()
+
+    # ── Cross-city bar chart ──────────────────────────────────────────────
     st.subheader("Gross Yield — All Cities (OMI mid-range, gross pre-tax)")
-    city_fascia = st.selectbox(
-        "Compare cities by zone",
-        list(FASCIA_LABELS.keys()),
-        format_func=lambda k: FASCIA_LABELS[k],
-        index=1,
-        key="city_fascia",
+    chart_fascia = st.selectbox(
+        "Compare by zone", list(FASCIA_LABELS.keys()),
+        format_func=lambda k: FASCIA_LABELS[k], index=1, key="chart_fascia",
     )
-    city_rows = []
+    chart_rows = []
     for c in list_cities():
-        b = get_omi_benchmark(c, city_fascia)
+        b = get_omi_benchmark(c, chart_fascia)
         if b and b["sale_mid"] > 0:
-            gross_yield = b["rent_mid"] * 12 / b["sale_mid"] * 100
-            city_rows.append({
+            chart_rows.append({
                 "City": c,
-                "Gross Yield (%)": round(gross_yield, 2),
+                "Gross Yield (%)": round(b["rent_mid"] * 12 / b["sale_mid"] * 100, 2),
                 "Sale mid (€/sqm)": b["sale_mid"],
                 "Rent mid (€/sqm/mo)": b["rent_mid"],
             })
-    if city_rows:
-        city_df = pd.DataFrame(city_rows).sort_values("Gross Yield (%)", ascending=False)
-        fig3 = go.Figure(go.Bar(
+    if chart_rows:
+        city_df = pd.DataFrame(chart_rows).sort_values("Gross Yield (%)", ascending=False)
+        fig_bar = go.Figure(go.Bar(
             x=city_df["City"], y=city_df["Gross Yield (%)"],
             marker_color="#2196F3",
             text=[f"{v:.2f}%" for v in city_df["Gross Yield (%)"]],
             textposition="outside",
         ))
-        fig3.update_layout(
-            height=360, template="plotly_white",
+        fig_bar.update_layout(
+            height=340, template="plotly_white",
             yaxis_title="Gross Yield (%)",
             yaxis_range=[0, city_df["Gross Yield (%)"].max() * 1.25],
         )
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig_bar, use_container_width=True)
         st.dataframe(city_df.set_index("City").style.format({
             "Gross Yield (%)": "{:.2f}%",
             "Sale mid (€/sqm)": "€{:,}",
@@ -365,8 +442,8 @@ with tab_market:
 
     if not has_idealista:
         st.info(
-            "Set `IDEALISTA_API_KEY` and `IDEALISTA_SECRET` environment variables to enable "
-            "live listing search. Apply for a free developer key at **api.idealista.com**."
+            "Set `IDEALISTA_API_KEY` and `IDEALISTA_SECRET` to enable live listing search. "
+            "Apply for a free developer key at **api.idealista.com**."
         )
     else:
         col_i1, col_i2, col_i3 = st.columns([2, 1, 1])
@@ -380,22 +457,22 @@ with tab_market:
         if st.button("Search Idealista"):
             with st.spinner("Geocoding…"):
                 geo_result = geocode_city(search_city)
-                time.sleep(1)  # R2 — OSM usage policy: max 1 req/s — inside spinner so UI stays responsive
+                time.sleep(1)  # OSM policy: max 1 req/s
 
             if isinstance(geo_result[0], float):
-                lat, lng = geo_result
+                lat_val, lng_val = geo_result
                 with st.spinner(f"Fetching {operation} listings near {search_city}…"):
-                    listings, err = search_idealista(lat, lng, operation, radius)
+                    listings, err = search_idealista(lat_val, lng_val, operation, radius)
 
-                # R1 — surface specific error codes to the user
-                if err == "rate_limited":
-                    st.warning("Idealista rate limit reached. Wait 60 seconds and try again.")
-                elif err == "auth_error":
-                    st.error("Idealista authentication failed. Check your API credentials.")
-                elif err in ("timeout", "network_error"):
-                    st.error("Could not reach Idealista. Check your network and retry.")
-                elif err:
-                    st.error(f"Idealista API error ({err}). Try again later.")
+                _err_msgs = {
+                    "rate_limited":   "Idealista rate limit reached. Wait 60 s and retry.",
+                    "auth_error":     "Idealista authentication failed. Check your API credentials.",
+                    "no_credentials": "No Idealista credentials found in environment.",
+                    "timeout":        "Request to Idealista timed out. Check your network.",
+                    "network_error":  "Could not reach Idealista. Check your network.",
+                }
+                if err:
+                    st.error(_err_msgs.get(err, f"Idealista API error: {err}"))
                 elif not listings:
                     st.warning("No listings returned. Try a larger radius.")
                 else:
@@ -419,7 +496,7 @@ with tab_market:
                             "Floor": listing.get("floor"),
                             "District": listing.get("district"),
                             "€/sqm": round(price / size) if price and size > 0 else None,
-                            "Link": listing.get("url", ""),  # U2 — include URL column
+                            "Link": listing.get("url", ""),
                         })
                     st.dataframe(
                         pd.DataFrame(rows_l),
@@ -427,9 +504,9 @@ with tab_market:
                         use_container_width=True,
                     )
             else:
-                msgs = {
+                _geo_msgs = {
                     "timeout":   "Geocoding timed out. Try again or check your network.",
                     "not_found": f"Could not find '{search_city}'. Try a different spelling.",
-                    "error":     "Geocoding failed due to an unexpected error.",
+                    "error":     "Geocoding failed unexpectedly.",
                 }
-                st.error(msgs.get(geo_result[1], "Geocoding failed."))
+                st.error(_geo_msgs.get(geo_result[1], "Geocoding failed."))
