@@ -2,11 +2,11 @@
   "_meta": {
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
-    "last_updated": "2026-06-03",
-    "last_request_id": "029",
-    "total_requests_processed": 21,
+    "last_updated": "2026-06-05",
+    "last_request_id": "030",
+    "total_requests_processed": 22,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "029"
+    "last_processed_audit_log": "030"
   },
   "skills": {
     "html_tailwind_css": {
@@ -1317,6 +1317,11 @@
           "count": 1,
           "avg_sec": 120.0,
           "success_rate": 1.0
+        },
+        "real_estate_dashboard": {
+          "count": 1,
+          "avg_sec": 60.0,
+          "success_rate": 0.0
         }
       }
     }
