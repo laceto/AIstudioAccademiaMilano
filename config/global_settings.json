@@ -760,6 +760,16 @@
       "google_cloud_run_deploy"
     ]
   },
+  "lawyer_billing_rates": {
+    "penale":       {"hourly": 350.0, "min_hours": 2.0},
+    "civile":       {"hourly": 250.0, "min_hours": 1.0},
+    "contrattuale": {"hourly": 280.0, "min_hours": 1.5},
+    "societario":   {"hourly": 400.0, "min_hours": 2.0},
+    "famiglia":     {"hourly": 200.0, "min_hours": 1.0},
+    "immobiliare":  {"hourly": 220.0, "min_hours": 1.0},
+    "lavoro":       {"hourly": 230.0, "min_hours": 1.0},
+    "unknown":      {"hourly": 250.0, "min_hours": 1.0}
+  },
   "pricing": {
     "static_landing_page": "€9.90",
     "pdf_document": "€1.90",

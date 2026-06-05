@@ -12,23 +12,17 @@ from __future__ import annotations
 import json
 from datetime import datetime
 
+from langchain_core.messages import AIMessage
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 
+from llm_factory import get_llm
 from state import TwinState
 
-# ── shared LLM helper ──────────────────────────────────────────────────────────
 
-def _get_llm(config: RunnableConfig, tier: str = "fast"):
-    provider = (config or {}).get("configurable", {}).get("provider", "anthropic")
-    if provider == "openai":
-        from langchain_openai import ChatOpenAI
-        model = "gpt-4o-mini" if tier == "fast" else "gpt-4o"
-        return ChatOpenAI(model=model, max_tokens=2048, temperature=0.1)
-    from langchain_anthropic import ChatAnthropic
-    model = "claude-haiku-4-5-20251001" if tier == "fast" else "claude-sonnet-4-6"
-    return ChatAnthropic(model=model, max_tokens=2048, temperature=0.1)
+def _provider(config: RunnableConfig) -> str:
+    return (config or {}).get("configurable", {}).get("provider", "anthropic")
 
 
 _DEPT_SYSTEM = """\
@@ -71,20 +65,34 @@ _DEPT_ROLES = {
 
 
 def _dept_node(department: str, state: TwinState, config: RunnableConfig) -> dict:
-    llm = _get_llm(config, tier="smart")
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", _DEPT_SYSTEM),
-        ("human", "Simulate the impact on {department} ({role})."),
-    ])
-    chain = prompt | llm | JsonOutputParser()
-    impact: dict = chain.invoke({
-        "department": department,
-        "role":       _DEPT_ROLES[department],
-        "baseline":   json.dumps(state["studio_baseline"], indent=2),
-        "event":      json.dumps(state["event"], indent=2),
-    })
-    impact["department"] = department
-    return {"department_impacts": [impact]}
+    try:
+        llm = get_llm(_provider(config), "smart", max_tokens=2048, temperature=0.1)
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", _DEPT_SYSTEM),
+            ("human", "Simulate the impact on {department} ({role})."),
+        ])
+        chain = prompt | llm | JsonOutputParser()
+        impact: dict = chain.invoke({
+            "department": department,
+            "role":       _DEPT_ROLES[department],
+            "baseline":   json.dumps(state["studio_baseline"], indent=2),
+            "event":      json.dumps(state["event"], indent=2),
+        })
+        impact["department"] = department
+        return {
+            "department_impacts": [impact],
+            "messages": [AIMessage(content=(
+                f"[{department}_sim] severity={impact.get('severity')}/5 | "
+                f"delta=€{impact.get('financial_delta_eur', 0):.0f} | "
+                f"confidence={impact.get('confidence', 0):.0%}"
+            ))],
+        }
+    except Exception as exc:
+        return {
+            "department_impacts": [{"department": department, "error": str(exc)}],
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[{department}_sim] ERROR: {exc}")],
+        }
 
 
 # ── five department simulation nodes ──────────────────────────────────────────
@@ -144,21 +152,33 @@ Return ONLY valid JSON — no markdown, no explanation:
 
 
 def synthesizer(state: TwinState, config: RunnableConfig) -> dict:
-    llm = _get_llm(config, tier="smart")
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", _SYNTH_SYSTEM),
-        ("human", "Synthesize the simulation report now."),
-    ])
-    chain = prompt | llm | JsonOutputParser()
-    report: dict = chain.invoke({
-        "baseline": json.dumps(state["studio_baseline"], indent=2),
-        "event":    json.dumps(state["event"], indent=2),
-        "impacts":  json.dumps(state["department_impacts"], indent=2),
-    })
-    report["simulation_timestamp"] = datetime.now().isoformat()
-    report["event"]                = state["event"]
-    report["department_details"]   = state["department_impacts"]
-    return {
-        "simulation_report": report,
-        "finished":          True,
-    }
+    try:
+        llm = get_llm(_provider(config), "smart", max_tokens=2048, temperature=0.1)
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", _SYNTH_SYSTEM),
+            ("human", "Synthesize the simulation report now."),
+        ])
+        chain = prompt | llm | JsonOutputParser()
+        report: dict = chain.invoke({
+            "baseline": json.dumps(state["studio_baseline"], indent=2),
+            "event":    json.dumps(state["event"], indent=2),
+            "impacts":  json.dumps(state["department_impacts"], indent=2),
+        })
+        report["simulation_timestamp"] = datetime.now().isoformat()
+        report["event"]                = state["event"]
+        report["department_details"]   = state["department_impacts"]
+        return {
+            "simulation_report": report,
+            "finished":          True,
+            "messages": [AIMessage(content=(
+                f"[Synthesizer] severity={report.get('overall_severity', '?')}/5 | "
+                f"resilience={report.get('resilience_score', '?')}/10 | "
+                f"recover={report.get('time_to_recover_days', '?')}d"
+            ))],
+        }
+    except Exception as exc:
+        return {
+            "error":    str(exc),
+            "finished": True,
+            "messages": [AIMessage(content=f"[Synthesizer] ERROR: {exc}")],
+        }
