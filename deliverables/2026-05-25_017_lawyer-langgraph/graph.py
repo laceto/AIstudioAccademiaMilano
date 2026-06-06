@@ -11,6 +11,9 @@ Pipeline:
                                           └─► delivery_agent
                                                 └─► END
 """
+import uuid
+
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
@@ -68,7 +71,7 @@ def build_lawyer_graph():
     g.add_edge("billing_agent",   "delivery_agent")
     g.add_edge("delivery_agent",  END)
 
-    return g.compile()
+    return g.compile(checkpointer=MemorySaver())
 
 
 lawyer_graph = build_lawyer_graph()
@@ -112,10 +115,14 @@ def run_case(
         "finished":            False,
     }
 
+    thread_id = f"LAWYER-{uuid.uuid4().hex[:8].upper()}"
+    _config = {**(config or {})}
+    _config.setdefault("configurable", {})["thread_id"] = thread_id
+
     steps: list[dict] = []
     final_state = None
 
-    for event in lawyer_graph.stream(initial, config=config or {}, stream_mode="values"):
+    for event in lawyer_graph.stream(initial, config=_config, stream_mode="values"):
         msgs = event.get("messages", [])
         if msgs:
             last = msgs[-1]

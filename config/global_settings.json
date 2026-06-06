@@ -1,12 +1,12 @@
 {
   "_meta": {
     "version": "1.8",
-    "description": "AI Studio Accademia Milano \u2014 global learned settings.",
-    "last_updated": "2026-05-29",
-    "last_request_id": "028",
-    "total_requests_processed": 20,
-    "v1.7_changes": "Added agent_deploy_streamlit pricing (\u20ac19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "028"
+    "description": "AI Studio Accademia Milano — global learned settings.",
+    "last_updated": "2026-06-05",
+    "last_request_id": "030",
+    "total_requests_processed": 22,
+    "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
+    "last_processed_audit_log": "030"
   },
   "skills": {
     "html_tailwind_css": {
@@ -489,7 +489,7 @@
       "avg_duration_sec": 0
     },
     "dockerfile_authoring": {
-      "description": "Write a production-ready Dockerfile for a Python web app \u2014 small, secure, multi-host (HF Spaces / Cloud Run / Render / Railway / Fly).",
+      "description": "Write a production-ready Dockerfile for a Python web app — small, secure, multi-host (HF Spaces / Cloud Run / Render / Railway / Fly).",
       "intent_mappings": [
         "agent_deploy_streamlit"
       ],
@@ -636,6 +636,61 @@
       "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 0
+    },
+    "reinsurance_claim_workflow": {
+      "description": "Auto-discovered from request 029",
+      "intent_mappings": [
+        "reinsurance_branch_office"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-06-03",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "reinsurance_treaty_evaluation": {
+      "description": "Auto-discovered from request 029",
+      "intent_mappings": [
+        "reinsurance_branch_office"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-06-03",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "reinsurance_monthly_reporting": {
+      "description": "Auto-discovered from request 029",
+      "intent_mappings": [
+        "reinsurance_branch_office"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-06-03",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "medical_underwriting_node": {
+      "description": "Auto-discovered from request 029",
+      "intent_mappings": [
+        "reinsurance_branch_office"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-06-03",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "actuarial_analyst_node": {
+      "description": "Auto-discovered from request 029",
+      "intent_mappings": [
+        "reinsurance_branch_office"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-06-03",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
     }
   },
   "intent_to_skill_map": {
@@ -705,26 +760,38 @@
       "google_cloud_run_deploy"
     ]
   },
+  "lawyer_billing_rates": {
+    "penale":       {"hourly": 350.0, "min_hours": 2.0},
+    "civile":       {"hourly": 250.0, "min_hours": 1.0},
+    "contrattuale": {"hourly": 280.0, "min_hours": 1.5},
+    "societario":   {"hourly": 400.0, "min_hours": 2.0},
+    "famiglia":     {"hourly": 200.0, "min_hours": 1.0},
+    "immobiliare":  {"hourly": 220.0, "min_hours": 1.0},
+    "lavoro":       {"hourly": 230.0, "min_hours": 1.0},
+    "unknown":      {"hourly": 250.0, "min_hours": 1.0}
+  },
   "pricing": {
-    "static_landing_page": "\u20ac9.90",
-    "pdf_document": "\u20ac1.90",
-    "invoice_pdf": "\u20ac3.90",
-    "strategic_report": "\u20ac4.90",
-    "chatbot_app": "\u20ac19.90",
-    "email_delivery": "\u20ac0.50",
-    "rag_knowledge_base": "\u20ac29.90",
-    "calendar_integration": "\u20ac14.90",
-    "weather_dashboard": "\u20ac9.90",
-    "agent_deploy_streamlit": "\u20ac19.90",
-    "algo_trading": "\u20ac24.90",
-    "white_label_pipeline_license": "\u20ac1039.50",
-    "digital_product_publish": "\u20ac51.45",
-    "kiosk_deploy_pilot": "\u20ac0.00",
-    "mind_dashboard_journal": "\u20ac9.90",
-    "micro_syllabus_flashcards": "\u20ac14.90",
-    "family_archivist": "\u20ac14.90",
-    "mediterranean_meal_planner": "\u20ac14.90",
-    "niccolo_chronicles": "\u20ac14.90",
+    "static_landing_page": "€9.90",
+    "premium_landing_page": "€29.90",
+    "commercial_landing_page": "€45.90",
+    "pdf_document": "€1.90",
+    "invoice_pdf": "€3.90",
+    "strategic_report": "€4.90",
+    "chatbot_app": "€19.90",
+    "email_delivery": "€0.50",
+    "rag_knowledge_base": "€29.90",
+    "calendar_integration": "€14.90",
+    "weather_dashboard": "€9.90",
+    "agent_deploy_streamlit": "€19.90",
+    "algo_trading": "€24.90",
+    "white_label_pipeline_license": "€1039.50",
+    "digital_product_publish": "€51.45",
+    "kiosk_deploy_pilot": "€0.00",
+    "mind_dashboard_journal": "€9.90",
+    "micro_syllabus_flashcards": "€14.90",
+    "family_archivist": "€14.90",
+    "mediterranean_meal_planner": "€14.90",
+    "niccolo_chronicles": "€14.90",
     "unknown_product": null
   },
   "hooks": [
@@ -1004,6 +1071,11 @@
           "count": 1,
           "avg_sec": 2.0,
           "success_rate": 0.0
+        },
+        "reinsurance_branch_office": {
+          "count": 1,
+          "avg_sec": 5.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1050,6 +1122,11 @@
           "count": 1,
           "avg_sec": 120.0,
           "success_rate": 0.0
+        },
+        "reinsurance_branch_office": {
+          "count": 1,
+          "avg_sec": 120.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1096,6 +1173,11 @@
           "count": 1,
           "avg_sec": 1.0,
           "success_rate": 0.0
+        },
+        "reinsurance_branch_office": {
+          "count": 1,
+          "avg_sec": 2.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1142,6 +1224,11 @@
           "count": 1,
           "avg_sec": 1.0,
           "success_rate": 0.0
+        },
+        "reinsurance_branch_office": {
+          "count": 1,
+          "avg_sec": 2.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1188,6 +1275,11 @@
           "count": 1,
           "avg_sec": 3.0,
           "success_rate": 0.0
+        },
+        "reinsurance_branch_office": {
+          "count": 1,
+          "avg_sec": 5.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1237,6 +1329,11 @@
           "count": 1,
           "avg_sec": 120.0,
           "success_rate": 1.0
+        },
+        "real_estate_dashboard": {
+          "count": 1,
+          "avg_sec": 60.0,
+          "success_rate": 0.0
         }
       }
     }
@@ -1291,7 +1388,13 @@
     "sentiment_proxy": 1,
     "brainstorm": 1,
     "market_segmentation": 1,
-    "api_discovery": 1
+    "api_discovery": 1,
+    "langgraph_stategraph": 1,
+    "langgraph_parallel_send": 1,
+    "langgraph_hitl_interrupt": 1,
+    "streamlit_app": 1,
+    "suit_manager": 1,
+    "strategic_report": 1
   },
   "github_activity_counters": {
     "commit": 0,

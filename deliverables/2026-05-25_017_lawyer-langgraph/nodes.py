@@ -31,10 +31,11 @@ def _provider(config: RunnableConfig) -> str:
 
 # ── 1. Intake Agent ────────────────────────────────────────────────────────────
 def intake_agent(state: LawyerState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
+    try:
+        llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """Sei un assistente legale dello Studio Legale.
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """Sei un assistente legale dello Studio Legale.
 Analizza la richiesta e restituisci SOLO JSON valido:
 {{
   "matter_type": "penale|civile|contrattuale|societario|famiglia|immobiliare|lavoro|unknown",
@@ -43,38 +44,44 @@ Analizza la richiesta e restituisci SOLO JSON valido:
   "intake_summary": "Riassunto in 2-3 frasi del caso",
   "document_type": "parere|contratto|atto|lettera|clausola"
 }}"""),
-        ("human", "Richiesta: {request}\nNome: {name}"),
-    ])
+            ("human", "Richiesta: {request}\nNome: {name}"),
+        ])
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke({
-        "request": state["client_request"],
-        "name":    state.get("client_name", "Cliente"),
-    })
+        result: dict = (prompt | llm | JsonOutputParser()).invoke({
+            "request": state["client_request"],
+            "name":    state.get("client_name", "Cliente"),
+        })
 
-    matter       = result.get("matter_type", "unknown")
-    matter_label = MATTER_TYPES.get(matter, matter)
+        matter       = result.get("matter_type", "unknown")
+        matter_label = MATTER_TYPES.get(matter, matter)
 
-    return {
-        "matter_type":    matter,
-        "urgency":        result.get("urgency", "standard"),
-        "jurisdiction":   result.get("jurisdiction", "IT"),
-        "intake_summary": result.get("intake_summary", ""),
-        "document_type":  result.get("document_type", "parere"),
-        "messages": [AIMessage(content=(
-            f"[Intake] materia={matter_label} | "
-            f"urgenza={result.get('urgency')} | "
-            f"giurisdizione={result.get('jurisdiction')} | "
-            f"tipo_doc={result.get('document_type')}"
-        ))],
-    }
+        return {
+            "matter_type":    matter,
+            "urgency":        result.get("urgency", "standard"),
+            "jurisdiction":   result.get("jurisdiction", "IT"),
+            "intake_summary": result.get("intake_summary", ""),
+            "document_type":  result.get("document_type", "parere"),
+            "messages": [AIMessage(content=(
+                f"[Intake] materia={matter_label} | "
+                f"urgenza={result.get('urgency')} | "
+                f"giurisdizione={result.get('jurisdiction')} | "
+                f"tipo_doc={result.get('document_type')}"
+            ))],
+        }
+    except Exception as exc:
+        return {
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[Intake] ERROR: {exc}")],
+        }
 
 
 # ── 2. Legal Researcher ────────────────────────────────────────────────────────
 def legal_researcher(state: LawyerState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "smart", max_tokens=4096, temperature=0.1)
+    try:
+        llm = get_llm(_provider(config), "smart", max_tokens=4096, temperature=0.1)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """Sei un ricercatore legale specializzato in diritto italiano ed europeo.
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """Sei un ricercatore legale specializzato in diritto italiano ed europeo.
 Individua normativa e giurisprudenza rilevante.
 Restituisci SOLO JSON valido:
 {{
@@ -87,47 +94,53 @@ Restituisci SOLO JSON valido:
   "relevant_cases": ["Cass. civ. n. 12345/2023"],
   "research_confidence": 0.85
 }}"""),
-        ("human", (
-            "Materia: {matter_type}\n"
-            "Giurisdizione: {jurisdiction}\n"
-            "Riassunto: {summary}\n"
-            "Richiesta: {request}"
-        )),
-    ])
+            ("human", (
+                "Materia: {matter_type}\n"
+                "Giurisdizione: {jurisdiction}\n"
+                "Riassunto: {summary}\n"
+                "Richiesta: {request}"
+            )),
+        ])
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke({
-        "matter_type":  MATTER_TYPES.get(state.get("matter_type", "unknown"), ""),
-        "jurisdiction": state.get("jurisdiction", "IT"),
-        "summary":      state.get("intake_summary", ""),
-        "request":      state["client_request"],
-    })
+        result: dict = (prompt | llm | JsonOutputParser()).invoke({
+            "matter_type":  MATTER_TYPES.get(state.get("matter_type", "unknown"), ""),
+            "jurisdiction": state.get("jurisdiction", "IT"),
+            "summary":      state.get("intake_summary", ""),
+            "request":      state["client_request"],
+        })
 
-    return {
-        "legal_research":      result.get("legal_research", {}),
-        "relevant_articles":   result.get("relevant_articles", []),
-        "relevant_cases":      result.get("relevant_cases", []),
-        "research_confidence": result.get("research_confidence", 0.7),
-        "messages": [AIMessage(content=(
-            f"[Ricercatore] articoli={result.get('relevant_articles')} | "
-            f"casistica={result.get('relevant_cases')} | "
-            f"confidenza={result.get('research_confidence', 0):.0%}"
-        ))],
-    }
+        return {
+            "legal_research":      result.get("legal_research", {}),
+            "relevant_articles":   result.get("relevant_articles", []),
+            "relevant_cases":      result.get("relevant_cases", []),
+            "research_confidence": result.get("research_confidence", 0.7),
+            "messages": [AIMessage(content=(
+                f"[Ricercatore] articoli={result.get('relevant_articles')} | "
+                f"casistica={result.get('relevant_cases')} | "
+                f"confidenza={result.get('research_confidence', 0):.0%}"
+            ))],
+        }
+    except Exception as exc:
+        return {
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[Ricercatore] ERROR: {exc}")],
+        }
 
 
 # ── 3. Document Drafter ────────────────────────────────────────────────────────
 def document_drafter(state: LawyerState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "smart", max_tokens=8192, temperature=0.1)
+    try:
+        llm = get_llm(_provider(config), "smart", max_tokens=8192, temperature=0.1)
 
-    doc_labels = {
-        "parere": "parere legale", "contratto": "bozza di contratto",
-        "atto": "atto giuridico",  "lettera": "lettera legale",
-        "clausola": "clausola contrattuale",
-    }
-    doc_label = doc_labels.get(state.get("document_type", "parere"), "documento legale")
+        doc_labels = {
+            "parere": "parere legale", "contratto": "bozza di contratto",
+            "atto": "atto giuridico",  "lettera": "lettera legale",
+            "clausola": "clausola contrattuale",
+        }
+        doc_label = doc_labels.get(state.get("document_type", "parere"), "documento legale")
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", f"""Sei un avvocato italiano esperto. Redigi un {doc_label} professionale.
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", f"""Sei un avvocato italiano esperto. Redigi un {doc_label} professionale.
 
 Struttura:
 - Intestazione: Studio Legale, data, rif. pratica
@@ -144,89 +157,108 @@ Restituisci SOLO JSON valido:
   "draft_document": "...testo completo...",
   "disclaimer_included": true
 }}"""),
-        ("human", (
-            "Cliente: {client_name}\n"
-            "Richiesta: {request}\n"
-            "Ricerca: {research}\n"
-            "Articoli: {articles}"
-        )),
-    ])
+            ("human", (
+                "Cliente: {client_name}\n"
+                "Richiesta: {request}\n"
+                "Ricerca: {research}\n"
+                "Articoli: {articles}"
+            )),
+        ])
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke({
-        "client_name": state.get("client_name", "Egregio Cliente"),
-        "request":     state["client_request"],
-        "research":    json.dumps(state.get("legal_research", {}), ensure_ascii=False),
-        "articles":    str(state.get("relevant_articles", [])),
-    })
+        result: dict = (prompt | llm | JsonOutputParser()).invoke({
+            "client_name": state.get("client_name", "Egregio Cliente"),
+            "request":     state["client_request"],
+            "research":    json.dumps(state.get("legal_research", {}), ensure_ascii=False),
+            "articles":    str(state.get("relevant_articles", [])),
+        })
 
-    draft = result.get("draft_document", "")
-    if DISCLAIMER_IT[:40] not in draft:
-        draft = draft.rstrip() + "\n\n" + DISCLAIMER_IT
+        draft = result.get("draft_document", "")
+        if DISCLAIMER_IT[:40] not in draft:
+            draft = draft.rstrip() + "\n\n" + DISCLAIMER_IT
 
-    return {
-        "draft_document":     draft,
-        "disclaimer_included": True,
-        "messages": [AIMessage(content=(
-            f"[Redattore] {len(draft)} caratteri | disclaimer={'sì' if DISCLAIMER_IT[:20] in draft else 'MANCANTE!'}"
-        ))],
-    }
+        return {
+            "draft_document":     draft,
+            "disclaimer_included": True,
+            "messages": [AIMessage(content=(
+                f"[Redattore] {len(draft)} caratteri | disclaimer={'sì' if DISCLAIMER_IT[:20] in draft else 'MANCANTE!'}"
+            ))],
+        }
+    except Exception as exc:
+        return {
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[Redattore] ERROR: {exc}")],
+        }
 
 
 # ── 4a. Legal QA ──────────────────────────────────────────────────────────────
 def legal_qa(state: LawyerState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
+    try:
+        llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """Sei un avvocato senior che revisiona il documento. Verifica:
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """Sei un avvocato senior che revisiona il documento. Verifica:
 1. Accuratezza giuridica (norme citate corrette?)
 2. Coerenza con la giurisdizione
 3. Completezza
 4. Disclaimer presente?
 
 Return ONLY valid JSON: {{"passed": true, "issues": [], "reviewer": "legal_qa"}}"""),
-        ("human", "Documento: {doc}\nGiurisdizione: {jur}"),
-    ])
+            ("human", "Documento: {doc}\nGiurisdizione: {jur}"),
+        ])
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke({
-        "doc": (state.get("draft_document") or "")[:3000],
-        "jur": state.get("jurisdiction", "IT"),
-    })
-    result["reviewer"] = "legal_qa"
+        result: dict = (prompt | llm | JsonOutputParser()).invoke({
+            "doc": (state.get("draft_document") or "")[:3000],
+            "jur": state.get("jurisdiction", "IT"),
+        })
+        result["reviewer"] = "legal_qa"
 
-    return {
-        "review_reports": [result],
-        "messages": [AIMessage(content=(
-            f"[LegalQA] {'OK' if result.get('passed') else 'PROBLEMI: ' + str(result.get('issues'))}"
-        ))],
-    }
+        return {
+            "review_reports": [result],
+            "messages": [AIMessage(content=(
+                f"[LegalQA] {'OK' if result.get('passed') else 'PROBLEMI: ' + str(result.get('issues'))}"
+            ))],
+        }
+    except Exception as exc:
+        return {
+            "review_reports": [{"reviewer": "legal_qa", "passed": False, "issues": [str(exc)], "error": str(exc)}],
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[LegalQA] ERROR: {exc}")],
+        }
 
 
 # ── 4b. Compliance Check ──────────────────────────────────────────────────────
 def compliance_check(state: LawyerState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
+    try:
+        llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """Sei un compliance officer legale. Verifica:
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """Sei un compliance officer legale. Verifica:
 1. GDPR: dati personali gestiti correttamente?
 2. Codice Deontologico Forense rispettato?
 3. Rischio esercizio abusivo della professione (AI)?
 4. Disclaimer di responsabilità presente?
 
 Return ONLY valid JSON: {{"passed": true, "issues": [], "reviewer": "compliance_check"}}"""),
-        ("human", "Documento: {doc}"),
-    ])
+            ("human", "Documento: {doc}"),
+        ])
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke({
-        "doc": (state.get("draft_document") or "")[:2000],
-    })
-    result["reviewer"] = "compliance_check"
+        result: dict = (prompt | llm | JsonOutputParser()).invoke({
+            "doc": (state.get("draft_document") or "")[:2000],
+        })
+        result["reviewer"] = "compliance_check"
 
-    return {
-        "review_reports": [result],
-        "messages": [AIMessage(content=(
-            f"[Compliance] {'OK' if result.get('passed') else 'PROBLEMI: ' + str(result.get('issues'))}"
-        ))],
-    }
+        return {
+            "review_reports": [result],
+            "messages": [AIMessage(content=(
+                f"[Compliance] {'OK' if result.get('passed') else 'PROBLEMI: ' + str(result.get('issues'))}"
+            ))],
+        }
+    except Exception as exc:
+        return {
+            "review_reports": [{"reviewer": "compliance_check", "passed": False, "issues": [str(exc)], "error": str(exc)}],
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[Compliance] ERROR: {exc}")],
+        }
 
 
 # ── 5. QA Merge ───────────────────────────────────────────────────────────────

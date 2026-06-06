@@ -12,6 +12,9 @@ on:
     - cron: '0 6 * * *'   # daily 06:00 UTC — before research pipeline at 07:00
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   rebuild-index:
     runs-on: ubuntu-latest
@@ -74,6 +77,8 @@ jobs:
       # RAG Team: Indexer — commit updated rag_registry.tsv so Retriever/Synthesizer/Injector pick it up
       - name: Commit registry
         if: steps.rag_check.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -81,7 +86,14 @@ jobs:
           if git diff --staged --quiet; then
             echo "No registry changes — nothing to commit."
           else
+            BRANCH="ops/rag-index-$(date +%Y%m%d)"
+            git checkout -b "$BRANCH"
             git commit -m "rag: rebuild index $(date +%Y-%m-%d) [skip ci]"
-            git pull --rebase origin main
-            git push origin HEAD:main
+            git push origin "$BRANCH"
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "rag: daily index rebuild $(date +%Y-%m-%d)" \
+              --body "Automated RAG registry update from daily maintenance workflow." \
+              --auto-merge
           fi

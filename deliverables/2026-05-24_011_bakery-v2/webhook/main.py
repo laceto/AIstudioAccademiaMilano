@@ -14,6 +14,8 @@ Credentials are read from environment variables — never hard-coded
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import os
 import json
 from flask import Flask, request, jsonify
@@ -22,8 +24,21 @@ from templates.web.order_webhook import handle_order, OrderValidationError
 
 app = Flask(__name__)
 
-BAKERY_NAME = os.environ.get("BAKERY_NAME", "Forno di Marta")
-OWNER_EMAIL = os.environ["MARTA_NOTIFY_EMAIL"]   # required; fail fast at boot
+BAKERY_NAME   = os.environ.get("BAKERY_NAME", "Forno di Marta")
+OWNER_EMAIL   = os.environ["MARTA_NOTIFY_EMAIL"]     # required; fail fast at boot
+_WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")  # HMAC-SHA256 signing secret
+
+
+def _verify_signature(raw_body: bytes, header: str | None) -> bool:
+    """Return True when WEBHOOK_SECRET is unset (dev) or signature matches."""
+    if not _WEBHOOK_SECRET:
+        return True
+    if not header:
+        return False
+    expected = "sha256=" + hmac.new(
+        _WEBHOOK_SECRET.encode(), raw_body, hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, header)
 
 
 def _gmail_send(to: str, subject: str, body: str) -> None:
@@ -48,8 +63,12 @@ def _create_calendar_event(title, starts_at, duration_min, notes) -> str:
 
 @app.post("/api/order")
 def order_endpoint():
+    raw = request.get_data()
+    if not _verify_signature(raw, request.headers.get("X-Webhook-Signature")):
+        return jsonify(error="invalid_signature"), 401
+
     try:
-        payload = request.get_json(force=True, silent=False) or {}
+        payload = json.loads(raw) if raw else {}
     except Exception:
         return jsonify(error="invalid_json"), 400
 

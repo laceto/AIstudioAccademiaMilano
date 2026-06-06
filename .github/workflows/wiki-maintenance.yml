@@ -12,6 +12,9 @@ on:
     - cron: '0 10 * * 0'   # weekly Sunday 10:00 UTC — full sweep
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   wiki-checks:
     runs-on: ubuntu-latest

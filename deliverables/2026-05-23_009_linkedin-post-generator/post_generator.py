@@ -1,8 +1,19 @@
+"""
+post_generator.py — LinkedIn post generation.
+
+Priority order:
+  1. GA + OPENAI_API_KEY  → kitai.batch (gpt-4o, async, 50% cheaper)
+  2. OPENAI_API_KEY only  → direct OpenAI sync (gpt-4o)
+  3. ANTHROPIC_API_KEY    → direct Anthropic sync (claude-sonnet-4-6)
+  4. neither              → RuntimeError
+"""
 import os
+import sys
+from pathlib import Path
 from typing import Optional
 
-ANTHROPIC_MODEL = "claude-sonnet-4-6"
-OPENAI_MODEL = "gpt-4o"
+MODEL_ANTHROPIC = "claude-sonnet-4-6"
+MODEL_OPENAI = "gpt-4o"
 
 SYSTEM_PROMPT = """You are Luigi, founder of AI Studio Accademia Milano.
 
@@ -23,6 +34,16 @@ Post structure:
 Target: 150-250 words.
 Never use: "excited", "thrilled", "leverage", "ecosystem", "game-changer", "seamless".
 """
+
+_REPO_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(_REPO_ROOT))
+
+
+def _is_ga_batch() -> bool:
+    return (
+        os.environ.get("GITHUB_ACTIONS") == "true"
+        and bool(os.environ.get("OPENAI_API_KEY"))
+    )
 
 
 def _format_activity(summary: dict) -> str:
@@ -54,55 +75,84 @@ def _format_activity(summary: dict) -> str:
     return "\n".join(lines)
 
 
-def _generate_with_anthropic(activity_text: str, api_key: Optional[str]) -> str:
-    import anthropic
-    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
-    message = client.messages.create(
-        model=ANTHROPIC_MODEL,
-        max_tokens=1024,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": (
-            f"Here is the recent GitHub activity:\n\n{activity_text}\n\n"
-            "Write a LinkedIn post about this in my voice. "
-            "Focus on what was actually built and why it matters. "
-            "If commits are small or incremental, find the narrative thread across them."
-        )}],
+def _user_message(activity_text: str) -> str:
+    return (
+        f"Here is the recent GitHub activity:\n\n{activity_text}\n\n"
+        "Write a LinkedIn post about this in my voice. "
+        "Focus on what was actually built and why it matters. "
+        "If commits are small or incremental, find the narrative thread across them."
     )
-    return message.content[0].text
 
 
-def _generate_with_openai(activity_text: str, api_key: Optional[str]) -> str:
+def _generate_via_batch(activity_text: str) -> str:
+    """kitai.batch path — GA only, 50% cheaper."""
+    from scripts.batch_utils import submit_and_wait
+
+    tasks = [{
+        "custom_id": "linkedin-post",
+        "method": "POST",
+        "url": "/v1/chat/completions",
+        "body": {
+            "model": MODEL_OPENAI,
+            "temperature": 0.7,
+            "max_tokens": 1024,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": _user_message(activity_text)},
+            ],
+        },
+    }]
+
+    results = submit_and_wait(tasks, poll_interval=20.0)
+    return results[0]["response"]["body"]["choices"][0]["message"]["content"]
+
+
+def _generate_via_openai(activity_text: str, api_key: Optional[str] = None) -> str:
+    """Direct OpenAI sync path — non-GA fallback when OPENAI_API_KEY is set."""
     from openai import OpenAI
     client = OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
     response = client.chat.completions.create(
-        model=OPENAI_MODEL,
+        model=MODEL_OPENAI,
         max_tokens=1024,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": (
-                f"Here is the recent GitHub activity:\n\n{activity_text}\n\n"
-                "Write a LinkedIn post about this in my voice. "
-                "Focus on what was actually built and why it matters. "
-                "If commits are small or incremental, find the narrative thread across them."
-            )},
+            {"role": "user", "content": _user_message(activity_text)},
         ],
     )
     return response.choices[0].message.content
 
 
-def generate_linkedin_post(
-    summary: dict, api_key: Optional[str] = None
-) -> str:
+def _generate_via_anthropic(activity_text: str, api_key: Optional[str] = None) -> str:
+    """Direct Anthropic path — local dev / fallback."""
+    import anthropic
+    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
+    message = client.messages.create(
+        model=MODEL_ANTHROPIC,
+        max_tokens=1024,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": _user_message(activity_text)}],
+    )
+    return message.content[0].text
+
+
+def generate_linkedin_post(summary: dict, api_key: Optional[str] = None) -> str:
     activity_text = _format_activity(summary)
+
+    if _is_ga_batch():
+        print("     [kitai.batch] GA detected — using batch API (gpt-4o, 50% cheaper)")
+        return _generate_via_batch(activity_text)
+
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if openai_key:
+        print("     LLM: GPT-4o (OpenAI direct)")
+        return _generate_via_openai(activity_text, openai_key)
+
     anthropic_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
     if anthropic_key:
         print("     LLM: Claude (Anthropic)")
-        return _generate_with_anthropic(activity_text, anthropic_key)
-    openai_key = os.environ.get("OPENAI_API_KEY")
-    if openai_key:
-        print("     LLM: GPT-4o (OpenAI fallback)")
-        return _generate_with_openai(activity_text, openai_key)
+        return _generate_via_anthropic(activity_text, anthropic_key)
+
     raise RuntimeError(
-        'Could not resolve authentication method. Expected one of api_key, auth_token, or credentials to be set. '
-        'Set ANTHROPIC_API_KEY or OPENAI_API_KEY.'
+        "Could not resolve authentication method. "
+        "Set ANTHROPIC_API_KEY or OPENAI_API_KEY."
     )

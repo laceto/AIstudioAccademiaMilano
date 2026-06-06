@@ -22,7 +22,7 @@ MATTER_TYPES = {
     "unknown":      "Da classificare",
 }
 
-BILLING_RATES = {
+_BILLING_RATES_FALLBACK = {
     "penale":       {"hourly": 350.0, "min_hours": 2.0},
     "civile":       {"hourly": 250.0, "min_hours": 1.0},
     "contrattuale": {"hourly": 280.0, "min_hours": 1.5},
@@ -32,6 +32,21 @@ BILLING_RATES = {
     "lavoro":       {"hourly": 230.0, "min_hours": 1.0},
     "unknown":      {"hourly": 250.0, "min_hours": 1.0},
 }
+
+
+def _load_billing_rates() -> dict:
+    import json
+    from pathlib import Path
+    try:
+        cfg = Path(__file__).resolve().parents[2] / "config" / "global_settings.json"
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+        loaded = data.get("lawyer_billing_rates", {})
+        return loaded if loaded else _BILLING_RATES_FALLBACK
+    except Exception:
+        return _BILLING_RATES_FALLBACK
+
+
+BILLING_RATES: dict = _load_billing_rates()
 
 DISCLAIMER_IT = (
     "⚠️ AVVERTENZA LEGALE: Il presente documento ha carattere esclusivamente "

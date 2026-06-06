@@ -16,9 +16,17 @@ Pipeline:
                                                             marco_invoice
                                                               └─► francesca_deliver
                                                                     └─► END
+
+NOTE: interrupt_before=["luigi_escalate"] fires unconditionally on every
+execution that reaches luigi_escalate, regardless of auto_approve.
+In auto_approve=True mode run_pipeline() handles resume automatically via
+update_state() + stream(None). Any caller that invokes studio_graph.stream()
+directly must replicate this resume step, otherwise the graph stalls.
 """
+import uuid
 from typing import Literal
 
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
@@ -117,60 +125,79 @@ def build_studio_graph():
     # Luigi → Gianni (approved) | END (rejected)
     g.add_conditional_edges("luigi_escalate", route_after_luigi)
 
-    return g.compile()
+    return g.compile(checkpointer=MemorySaver(), interrupt_before=["luigi_escalate"])
 
 
 studio_graph = build_studio_graph()
 
 # ── Helper for Streamlit streaming ────────────────────────────────────────────
 
-def run_pipeline(request: str, user_name: str = "Cliente", user_email: str | None = None, config: dict | None = None) -> list[dict]:
-    """Stream the pipeline and return a list of step dicts for the UI."""
-    from .state import PRICING_TABLE
+def run_pipeline(
+    request: str,
+    user_name: str = "Cliente",
+    user_email: str | None = None,
+    config: dict | None = None,
+    auto_approve: bool = True,
+) -> tuple[list[dict], dict]:
+    """Stream the pipeline and return (steps, final_state)."""
+    thread_id = f"PIPELINE-{uuid.uuid4().hex[:8].upper()}"
+    _config = {**(config or {})}
+    _config.setdefault("configurable", {})
+    _config["configurable"]["thread_id"] = thread_id
 
     initial: StudioState = {
-        "request":            request,
-        "user_name":          user_name,
-        "user_email":         user_email,
-        "input_type":         "text",
-        "intent":             None,
-        "product_type":       None,
-        "dependencies_ok":    True,
-        "technical_spec":     None,
-        "stack":              None,
-        "deployment_target":  None,
-        "estimated_hours":    None,
-        "blockers":           None,
+        "request":             request,
+        "user_name":           user_name,
+        "user_email":          user_email,
+        "input_type":          "text",
+        "intent":              None,
+        "product_type":        None,
+        "dependencies_ok":     True,
+        "technical_spec":      None,
+        "stack":               None,
+        "deployment_target":   None,
+        "estimated_hours":     None,
+        "blockers":            None,
         "deliverable_content": None,
-        "deliverable_path":   None,
-        "skills_used":        None,
-        "qa_iteration":       0,
-        "risk_reports":       [],
-        "risk_passed":        True,
+        "deliverable_path":    None,
+        "skills_used":         None,
+        "qa_iteration":        0,
+        "risk_reports":        [],
+        "risk_passed":         True,
         "aggregate_risk_score": 0.0,
-        "qa_result":          None,
-        "qa_passed":          False,
-        "product_price":      None,
-        "invoice":            None,
-        "invoice_id":         None,
-        "delivery_result":    None,
-        "audit_log_path":     None,
-        "escalate_to_luigi":  False,
-        "luigi_decision":     None,
-        "escalation_reason":  None,
-        "messages":           [],
-        "error":              None,
-        "finished":           False,
+        "qa_result":           None,
+        "qa_passed":           False,
+        "product_price":       None,
+        "invoice":             None,
+        "invoice_id":          None,
+        "delivery_result":     None,
+        "audit_log_path":      None,
+        "escalate_to_luigi":   False,
+        "luigi_decision":      None,
+        "escalation_reason":   None,
+        "messages":            [],
+        "error":               None,
+        "finished":            False,
     }
 
     steps: list[dict] = []
-    final_state = None
+    final_state: dict = {}
 
-    for event in studio_graph.stream(initial, config=config or {}, stream_mode="values"):
+    for event in studio_graph.stream(initial, config=_config, stream_mode="values"):
         msgs = event.get("messages", [])
         if msgs:
-            last = msgs[-1]
-            steps.append({"content": last.content, "state_snapshot": event})
+            steps.append({"content": msgs[-1].content, "state_snapshot": event})
         final_state = event
+
+    # HITL resume: inject approved decision then continue (up to 3 escalations)
+    resumes = 0
+    while not final_state.get("finished") and auto_approve and resumes < 3:
+        studio_graph.update_state(_config, {"luigi_decision": "approved"})
+        for event in studio_graph.stream(None, config=_config, stream_mode="values"):
+            msgs = event.get("messages", [])
+            if msgs:
+                steps.append({"content": msgs[-1].content, "state_snapshot": event})
+            final_state = event
+        resumes += 1
 
     return steps, final_state

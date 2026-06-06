@@ -8,6 +8,7 @@ The provider is read from config["configurable"]["provider"] (default: "anthropi
   smart tier → sonnet-4.6 / gpt-4o       (Gianni scope, Chiara implement)
 """
 import json
+import threading
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -29,10 +30,11 @@ def _provider(config: RunnableConfig) -> str:
 
 # ── Stacy Step 1: Intent Classifier ───────────────────────────────────────────
 def stacy_classify(state: StudioState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
+    try:
+        llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are Stacy, Input-Orchestrator for AI Studio Accademia Milano.
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are Stacy, Input-Orchestrator for AI Studio Accademia Milano.
 Classify the user request and return ONLY valid JSON:
 {{
   "intent": "website_creation|pdf_creation|invoice_generation|chatbot_app|rag_knowledge_base|strategic_report|calendar_integration|weather_dashboard|agent_deploy_streamlit|other",
@@ -40,34 +42,40 @@ Classify the user request and return ONLY valid JSON:
   "dependencies_ok": true,
   "input_type": "text"
 }}"""),
-        ("human", "{request}"),
-    ])
+            ("human", "{request}"),
+        ])
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke({"request": state["request"]})
+        result: dict = (prompt | llm | JsonOutputParser()).invoke({"request": state["request"]})
 
-    product_type = result.get("product_type", "unknown_product")
-    price = PRICING_TABLE.get(product_type)
-    escalate = price is None
+        product_type = result.get("product_type", "unknown_product")
+        price = PRICING_TABLE.get(product_type)
+        escalate = price is None
 
-    return {
-        "intent":            result.get("intent", "unknown"),
-        "product_type":      product_type,
-        "dependencies_ok":   result.get("dependencies_ok", True),
-        "escalate_to_luigi": escalate,
-        "escalation_reason": f"Unknown product: {product_type}" if escalate else None,
-        "messages": [AIMessage(content=(
-            f"[Stacy] intent={result.get('intent')} | product={product_type} | "
-            f"price={'€' + price if price else 'UNKNOWN → escalate to Luigi'}"
-        ))],
-    }
+        return {
+            "intent":            result.get("intent", "unknown"),
+            "product_type":      product_type,
+            "dependencies_ok":   result.get("dependencies_ok", True),
+            "escalate_to_luigi": escalate,
+            "escalation_reason": f"Unknown product: {product_type}" if escalate else None,
+            "messages": [AIMessage(content=(
+                f"[Stacy] intent={result.get('intent')} | product={product_type} | "
+                f"price={'€' + price if price else 'UNKNOWN → escalate to Luigi'}"
+            ))],
+        }
+    except Exception as exc:
+        return {
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[Stacy] ERROR: {exc}")],
+        }
 
 
 # ── Gianni: Technical Scoper ───────────────────────────────────────────────────
 def gianni_scope(state: StudioState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "smart", max_tokens=4096, temperature=0.2)
+    try:
+        llm = get_llm(_provider(config), "smart", max_tokens=4096, temperature=0.2)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are Gianni, Request-Analyzer for AI Studio Accademia Milano.
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are Gianni, Request-Analyzer for AI Studio Accademia Milano.
 Decompose the request into a full technical spec. Return ONLY valid JSON:
 {{
   "technical_spec": {{
@@ -81,28 +89,33 @@ Decompose the request into a full technical spec. Return ONLY valid JSON:
   "estimated_hours": 2.5,
   "blockers": []
 }}"""),
-        ("human", "Request: {request}\nIntent: {intent}\nProduct: {product_type}"),
-    ])
+            ("human", "Request: {request}\nIntent: {intent}\nProduct: {product_type}"),
+        ])
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke({
-        "request":      state["request"],
-        "intent":       state.get("intent", ""),
-        "product_type": state.get("product_type", ""),
-    })
+        result: dict = (prompt | llm | JsonOutputParser()).invoke({
+            "request":      state["request"],
+            "intent":       state.get("intent", ""),
+            "product_type": state.get("product_type", ""),
+        })
 
-    return {
-        "technical_spec":    result.get("technical_spec", {}),
-        "stack":             result.get("stack", []),
-        "deployment_target": result.get("deployment_target", "local"),
-        "estimated_hours":   result.get("estimated_hours", 1.0),
-        "blockers":          result.get("blockers", []),
-        "messages": [AIMessage(content=(
-            f"[Gianni] stack={result.get('stack')} | "
-            f"deploy={result.get('deployment_target')} | "
-            f"eta={result.get('estimated_hours')}h | "
-            f"blockers={result.get('blockers', [])}"
-        ))],
-    }
+        return {
+            "technical_spec":    result.get("technical_spec", {}),
+            "stack":             result.get("stack", []),
+            "deployment_target": result.get("deployment_target", "local"),
+            "estimated_hours":   result.get("estimated_hours", 1.0),
+            "blockers":          result.get("blockers", []),
+            "messages": [AIMessage(content=(
+                f"[Gianni] stack={result.get('stack')} | "
+                f"deploy={result.get('deployment_target')} | "
+                f"eta={result.get('estimated_hours')}h | "
+                f"blockers={result.get('blockers', [])}"
+            ))],
+        }
+    except Exception as exc:
+        return {
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[Gianni] ERROR: {exc}")],
+        }
 
 
 # ── Chiara: strategy helpers ───────────────────────────────────────────────────
@@ -215,101 +228,129 @@ _CHIARA_STRATEGIES = {
 
 
 def chiara_implement(state: StudioState, config: RunnableConfig) -> dict:
-    product_type = state.get("product_type") or "unknown_product"
-    provider     = _provider(config)
-    strategy     = _CHIARA_STRATEGIES.get(product_type, _chiara_llm_codegen)
-    via          = "template" if product_type in _CHIARA_STRATEGIES else "llm-codegen"
+    try:
+        product_type = state.get("product_type") or "unknown_product"
+        provider     = _provider(config)
+        strategy     = _CHIARA_STRATEGIES.get(product_type, _chiara_llm_codegen)
+        via          = "template" if product_type in _CHIARA_STRATEGIES else "llm-codegen"
 
-    content, filename, skills = strategy(state, config, provider)
-    iteration = state.get("qa_iteration", 0)
+        content, filename, skills = strategy(state, config, provider)
+        iteration = state.get("qa_iteration", 0)
 
-    return {
-        "deliverable_content": content,
-        "deliverable_path":    f"deliverables/output/{filename}",
-        "skills_used":         skills,
-        "qa_iteration":        iteration + 1,
-        "risk_reports":        [],
-        "messages": [AIMessage(content=(
-            f"[Chiara] {filename} via {via} "
-            f"(attempt {iteration + 1}) | skills={skills}"
-        ))],
-    }
+        return {
+            "deliverable_content": content,
+            "deliverable_path":    f"deliverables/output/{filename}",
+            "skills_used":         skills,
+            "qa_iteration":        iteration + 1,
+            "risk_reports":        [],
+            "messages": [AIMessage(content=(
+                f"[Chiara] {filename} via {via} "
+                f"(attempt {iteration + 1}) | skills={skills}"
+            ))],
+        }
+    except Exception as exc:
+        return {
+            "error":        str(exc),
+            "qa_iteration": state.get("qa_iteration", 0) + 1,
+            "messages": [AIMessage(content=f"[Chiara] ERROR: {exc}")],
+        }
 
 
 # ── Risk agents (run in parallel via Send) ─────────────────────────────────────
 
 def technical_auditor(state: StudioState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
+    try:
+        llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are the Technical Auditor. Scan for:
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are the Technical Auditor. Scan for:
 - Hardcoded secrets / API keys
 - Injection vectors (SQL, command, XSS)
 - Missing error handling / rollback paths
 
 Return ONLY valid JSON: {{"risk_score": 1, "findings": [], "agent": "technical_auditor"}}
 Scale: 1=safe, 5=critical."""),
-        ("human", "Deliverable (first 2000 chars): {content}"),
-    ])
+            ("human", "Deliverable (first 2000 chars): {content}"),
+        ])
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke(
-        {"content": (state.get("deliverable_content") or "")[:2000]}
-    )
-    result["agent"] = "technical_auditor"
+        result: dict = (prompt | llm | JsonOutputParser()).invoke(
+            {"content": (state.get("deliverable_content") or "")[:2000]}
+        )
+        result["agent"] = "technical_auditor"
 
-    return {
-        "risk_reports": [result],
-        "messages": [AIMessage(content=f"[TechAuditor] risk={result.get('risk_score')}/5 | findings={result.get('findings')}")],
-    }
+        return {
+            "risk_reports": [result],
+            "messages": [AIMessage(content=f"[TechAuditor] risk={result.get('risk_score')}/5 | findings={result.get('findings')}")],
+        }
+    except Exception as exc:
+        return {
+            "risk_reports": [{"agent": "technical_auditor", "risk_score": 1, "findings": [], "error": str(exc)}],
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[TechAuditor] ERROR: {exc}")],
+        }
 
 
 def compliance_agent(state: StudioState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
+    try:
+        llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are the Compliance Agent. Check:
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are the Compliance Agent. Check:
 - GDPR: personal data, consent, right to erasure
 - API ToS adherence
 - Advisory disclaimer present?
 
 Return ONLY valid JSON: {{"risk_score": 1, "findings": [], "agent": "compliance_agent"}}"""),
-        ("human", "Deliverable: {content}\nIntent: {intent}"),
-    ])
+            ("human", "Deliverable: {content}\nIntent: {intent}"),
+        ])
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke({
-        "content": (state.get("deliverable_content") or "")[:1500],
-        "intent":  state.get("intent", ""),
-    })
-    result["agent"] = "compliance_agent"
+        result: dict = (prompt | llm | JsonOutputParser()).invoke({
+            "content": (state.get("deliverable_content") or "")[:1500],
+            "intent":  state.get("intent", ""),
+        })
+        result["agent"] = "compliance_agent"
 
-    return {
-        "risk_reports": [result],
-        "messages": [AIMessage(content=f"[Compliance] risk={result.get('risk_score')}/5 | findings={result.get('findings')}")],
-    }
+        return {
+            "risk_reports": [result],
+            "messages": [AIMessage(content=f"[Compliance] risk={result.get('risk_score')}/5 | findings={result.get('findings')}")],
+        }
+    except Exception as exc:
+        return {
+            "risk_reports": [{"agent": "compliance_agent", "risk_score": 1, "findings": [], "error": str(exc)}],
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[Compliance] ERROR: {exc}")],
+        }
 
 
 def reputation_guardian(state: StudioState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
+    try:
+        llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are the Reputation Guardian. Assess:
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are the Reputation Guardian. Assess:
 - Output quality (professional standards?)
 - Factual accuracy
 - Brand voice alignment
 
 Return ONLY valid JSON: {{"risk_score": 1, "findings": [], "agent": "reputation_guardian"}}"""),
-        ("human", "Deliverable preview: {content}"),
-    ])
+            ("human", "Deliverable preview: {content}"),
+        ])
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke(
-        {"content": (state.get("deliverable_content") or "")[:1000]}
-    )
-    result["agent"] = "reputation_guardian"
+        result: dict = (prompt | llm | JsonOutputParser()).invoke(
+            {"content": (state.get("deliverable_content") or "")[:1000]}
+        )
+        result["agent"] = "reputation_guardian"
 
-    return {
-        "risk_reports": [result],
-        "messages": [AIMessage(content=f"[Reputation] risk={result.get('risk_score')}/5 | findings={result.get('findings')}")],
-    }
+        return {
+            "risk_reports": [result],
+            "messages": [AIMessage(content=f"[Reputation] risk={result.get('risk_score')}/5 | findings={result.get('findings')}")],
+        }
+    except Exception as exc:
+        return {
+            "risk_reports": [{"agent": "reputation_guardian", "risk_score": 1, "findings": [], "error": str(exc)}],
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[Reputation] ERROR: {exc}")],
+        }
 
 
 # ── Risk Aggregator ────────────────────────────────────────────────────────────
@@ -339,10 +380,11 @@ def risk_aggregator(state: StudioState) -> dict:
 
 # ── Stacy QA ───────────────────────────────────────────────────────────────────
 def stacy_qa(state: StudioState, config: RunnableConfig) -> dict:
-    llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
+    try:
+        llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are Stacy in QA mode. Validate:
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are Stacy in QA mode. Validate:
 1. Format matches technical spec
 2. No hardcoded secrets
 3. Disclaimer present if advisory content
@@ -354,21 +396,26 @@ Return ONLY valid JSON:
   "checks": {{"format": true, "security": true, "disclaimer": true, "completeness": true}},
   "issues": []
 }}"""),
-        ("human", "Spec: {spec}\nDeliverable (first 2000 chars): {content}"),
-    ])
+            ("human", "Spec: {spec}\nDeliverable (first 2000 chars): {content}"),
+        ])
 
-    result: dict = (prompt | llm | JsonOutputParser()).invoke({
-        "spec":    json.dumps(state.get("technical_spec", {})),
-        "content": (state.get("deliverable_content") or "")[:2000],
-    })
+        result: dict = (prompt | llm | JsonOutputParser()).invoke({
+            "spec":    json.dumps(state.get("technical_spec", {})),
+            "content": (state.get("deliverable_content") or "")[:2000],
+        })
 
-    return {
-        "qa_result": result,
-        "qa_passed": result.get("qa_passed", False),
-        "messages": [AIMessage(content=(
-            f"[Stacy QA] {'PASS' if result.get('qa_passed') else 'FAIL: ' + str(result.get('issues', []))}"
-        ))],
-    }
+        return {
+            "qa_result": result,
+            "qa_passed": result.get("qa_passed", False),
+            "messages": [AIMessage(content=(
+                f"[Stacy QA] {'PASS' if result.get('qa_passed') else 'FAIL: ' + str(result.get('issues', []))}"
+            ))],
+        }
+    except Exception as exc:
+        return {
+            "error": str(exc),
+            "messages": [AIMessage(content=f"[Stacy QA] ERROR: {exc}")],
+        }
 
 
 # ── Marco: Finance ─────────────────────────────────────────────────────────────
@@ -403,16 +450,20 @@ def marco_invoice(state: StudioState) -> dict:
 
 # ── Francesca: Delivery ────────────────────────────────────────────────────────
 
+_audit_id_lock = threading.Lock()
+
+
 def _next_audit_id(audit_dir) -> int:
     import re
     from pathlib import Path
-    pattern = re.compile(r"^\d{4}-\d{2}-\d{2}_(\d+)_")
-    ids = [
-        int(m.group(1))
-        for f in Path(audit_dir).iterdir()
-        if (m := pattern.match(f.name))
-    ]
-    return (max(ids) + 1) if ids else 1
+    with _audit_id_lock:
+        pattern = re.compile(r"^\d{4}-\d{2}-\d{2}_(\d+)_")
+        ids = [
+            int(m.group(1))
+            for f in Path(audit_dir).iterdir()
+            if (m := pattern.match(f.name))
+        ]
+        return (max(ids) + 1) if ids else 1
 
 
 def _write_audit_log(path, state: StudioState, req_id: int, datestr: str, deliverable_path: str) -> None:
@@ -556,8 +607,14 @@ def francesca_deliver(state: StudioState) -> dict:
     filename        = Path(raw_path).name or "main.py"
     deliverable_dir = ROOT / "deliverables" / slug
     deliverable_dir.mkdir(parents=True, exist_ok=True)
-    actual_path = deliverable_dir / filename
-    actual_path.write_text(state.get("deliverable_content") or "", encoding="utf-8")
+    actual_path     = deliverable_dir / filename
+    content_to_write = state.get("deliverable_content") or ""
+    if not content_to_write.strip():
+        return {
+            "error": "empty deliverable — Chiara produced no content",
+            "messages": [AIMessage(content="[Francesca] ERROR: empty deliverable, aborting delivery")],
+        }
+    actual_path.write_text(content_to_write, encoding="utf-8")
 
     rel_deliverable = str(actual_path.relative_to(ROOT))
 
@@ -606,6 +663,16 @@ def francesca_deliver(state: StudioState) -> dict:
 
 # ── Luigi: Human-in-the-loop escalation ───────────────────────────────────────
 def luigi_escalate(state: StudioState) -> dict:
+    # Honour a decision already injected via update_state() before HITL resume
+    existing = state.get("luigi_decision")
+    if existing:
+        return {
+            "luigi_decision":    existing,
+            "escalate_to_luigi": False,
+            "finished":          existing == "rejected",
+            "messages": [AIMessage(content=f"[Luigi] Decision received: {existing}")],
+        }
+
     reason       = state.get("escalation_reason", "unknown reason")
     product_type = state.get("product_type", "unknown_product")
 

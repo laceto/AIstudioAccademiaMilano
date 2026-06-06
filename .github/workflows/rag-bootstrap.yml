@@ -11,11 +11,15 @@ on:
     paths:
       - '.github/workflows/rag-bootstrap.yml'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -32,20 +36,27 @@ jobs:
         run: pip install -r requirements-rag.txt
 
       - name: Guard — OPENAI_API_KEY must be set
+        id: guard
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           if [ -z "$OPENAI_API_KEY" ]; then
-            echo "::error::OPENAI_API_KEY is not set in repo secrets — embed_repo has no local fallback path"
-            exit 1
+            echo "::warning::OPENAI_API_KEY not set in repo secrets — skipping bootstrap. Add it at Settings > Secrets > Actions."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build FAISS index
+        if: steps.guard.outputs.skip != 'true'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python -m scripts.rag.embed_repo
 
       - name: Commit vectorstore + registry back to main
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -53,6 +64,14 @@ jobs:
           if git diff --staged --quiet; then
             echo "Nothing to commit — index is already current"
           else
+            BRANCH="ops/rag-bootstrap-$(date +%Y%m%d-%H%M%S)"
+            git checkout -b "$BRANCH"
             git commit -m "rag: bootstrap vectorstore $(date +%Y-%m-%d) [skip ci]"
-            git push
+            git push origin "$BRANCH"
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "rag: bootstrap vectorstore $(date +%Y-%m-%d)" \
+              --body "Auto-generated RAG index update from bootstrap workflow." \
+              --auto-merge
           fi

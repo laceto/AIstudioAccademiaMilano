@@ -83,6 +83,8 @@ class XboxPresence:
     Minimal Xbox Live presence check via Microsoft Graph.
     Requires: Azure app registration with XboxLive.signin scope.
     Full docs: https://learn.microsoft.com/en-us/gaming/gdk/_content/gc/reference/live/rest/
+
+    TODO ISS-003: wire access_token acquisition through unified credential manager (credentials/registry.md)
     """
 
     def __init__(self, access_token: Optional[str] = None):
