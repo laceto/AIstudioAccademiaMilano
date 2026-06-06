@@ -1,8 +1,8 @@
+import os
 from typing import Optional
 
-import anthropic
-
-MODEL = "claude-sonnet-4-6"
+ANTHROPIC_MODEL = "claude-sonnet-4-6"
+OPENAI_MODEL = "gpt-4o"
 
 SYSTEM_PROMPT = """You are Luigi, founder of AI Studio Accademia Milano.
 
@@ -54,26 +54,55 @@ def _format_activity(summary: dict) -> str:
     return "\n".join(lines)
 
 
+def _generate_with_anthropic(activity_text: str, api_key: Optional[str]) -> str:
+    import anthropic
+    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
+    message = client.messages.create(
+        model=ANTHROPIC_MODEL,
+        max_tokens=1024,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": (
+            f"Here is the recent GitHub activity:\n\n{activity_text}\n\n"
+            "Write a LinkedIn post about this in my voice. "
+            "Focus on what was actually built and why it matters. "
+            "If commits are small or incremental, find the narrative thread across them."
+        )}],
+    )
+    return message.content[0].text
+
+
+def _generate_with_openai(activity_text: str, api_key: Optional[str]) -> str:
+    from openai import OpenAI
+    client = OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
+    response = client.chat.completions.create(
+        model=OPENAI_MODEL,
+        max_tokens=1024,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": (
+                f"Here is the recent GitHub activity:\n\n{activity_text}\n\n"
+                "Write a LinkedIn post about this in my voice. "
+                "Focus on what was actually built and why it matters. "
+                "If commits are small or incremental, find the narrative thread across them."
+            )},
+        ],
+    )
+    return response.choices[0].message.content
+
+
 def generate_linkedin_post(
     summary: dict, api_key: Optional[str] = None
 ) -> str:
-    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
     activity_text = _format_activity(summary)
-
-    message = client.messages.create(
-        model=MODEL,
-        max_tokens=1024,
-        system=SYSTEM_PROMPT,
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    f"Here is the recent GitHub activity:\n\n{activity_text}\n\n"
-                    "Write a LinkedIn post about this in my voice. "
-                    "Focus on what was actually built and why it matters. "
-                    "If commits are small or incremental, find the narrative thread across them."
-                ),
-            }
-        ],
+    anthropic_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+    if anthropic_key:
+        print("     LLM: Claude (Anthropic)")
+        return _generate_with_anthropic(activity_text, anthropic_key)
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if openai_key:
+        print("     LLM: GPT-4o (OpenAI fallback)")
+        return _generate_with_openai(activity_text, openai_key)
+    raise RuntimeError(
+        'Could not resolve authentication method. Expected one of api_key, auth_token, or credentials to be set. '
+        'Set ANTHROPIC_API_KEY or OPENAI_API_KEY.'
     )
-    return message.content[0].text
