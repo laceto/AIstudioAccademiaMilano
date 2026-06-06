@@ -44,7 +44,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install anthropic requests tweepy pyperclip openai
+          pip install anthropic openai requests tweepy pyperclip
           pip install "git+https://github.com/laceto/kitai.git"
 
       - name: Check required secrets
