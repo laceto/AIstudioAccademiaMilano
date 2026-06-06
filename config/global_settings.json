@@ -2,11 +2,11 @@
   "_meta": {
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
-    "last_updated": "2026-06-03",
-    "last_request_id": "029",
-    "total_requests_processed": 21,
+    "last_updated": "2026-06-06",
+    "last_request_id": "030",
+    "total_requests_processed": 22,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "029"
+    "last_processed_audit_log": "030"
   },
   "skills": {
     "html_tailwind_css": {
@@ -761,14 +761,38 @@
     ]
   },
   "lawyer_billing_rates": {
-    "penale":       {"hourly": 350.0, "min_hours": 2.0},
-    "civile":       {"hourly": 250.0, "min_hours": 1.0},
-    "contrattuale": {"hourly": 280.0, "min_hours": 1.5},
-    "societario":   {"hourly": 400.0, "min_hours": 2.0},
-    "famiglia":     {"hourly": 200.0, "min_hours": 1.0},
-    "immobiliare":  {"hourly": 220.0, "min_hours": 1.0},
-    "lavoro":       {"hourly": 230.0, "min_hours": 1.0},
-    "unknown":      {"hourly": 250.0, "min_hours": 1.0}
+    "penale": {
+      "hourly": 350.0,
+      "min_hours": 2.0
+    },
+    "civile": {
+      "hourly": 250.0,
+      "min_hours": 1.0
+    },
+    "contrattuale": {
+      "hourly": 280.0,
+      "min_hours": 1.5
+    },
+    "societario": {
+      "hourly": 400.0,
+      "min_hours": 2.0
+    },
+    "famiglia": {
+      "hourly": 200.0,
+      "min_hours": 1.0
+    },
+    "immobiliare": {
+      "hourly": 220.0,
+      "min_hours": 1.0
+    },
+    "lavoro": {
+      "hourly": 230.0,
+      "min_hours": 1.0
+    },
+    "unknown": {
+      "hourly": 250.0,
+      "min_hours": 1.0
+    }
   },
   "pricing": {
     "static_landing_page": "€9.90",
@@ -1331,6 +1355,17 @@
           "success_rate": 1.0
         }
       }
+    },
+    "deep-research": {
+      "roles": [],
+      "capabilities": [],
+      "task_stats": {
+        "merchant_of_record_evaluation": {
+          "count": 1,
+          "avg_sec": 550.0,
+          "success_rate": 0.0
+        }
+      }
     }
   },
   "pattern_counters": {
@@ -1389,7 +1424,8 @@
     "langgraph_hitl_interrupt": 1,
     "streamlit_app": 1,
     "suit_manager": 1,
-    "strategic_report": 1
+    "strategic_report": 1,
+    "deep-research": 1
   },
   "github_activity_counters": {
     "commit": 0,
