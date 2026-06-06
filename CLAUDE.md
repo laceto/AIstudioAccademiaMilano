@@ -349,6 +349,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 029 | 2026-06-03 | Reinsurance Branch Office — LangGraph 3-workflow (claim/treaty/report) + Streamlit | 0.00 (internal) |
 | —   | 2026-06-05 | Input Gateway — FastAPI `/submit`, PipelineAdapter, Streamlit form, Telegram+WhatsApp bots, QueueWorker | 0.00 (internal) |
 | —   | 2026-06-05 | Crash-Recovery Checkpoint — scripts/checkpoint_state.py + Stop hook (ISS-022) | 0.00 (internal) |
+| 030 | 2026-06-06 | MoR Evaluation — Lemon Squeezy vs Payhip (ISS-025): recommendation Payhip Free + fee tables | 4.90 |
 
 ---
 
@@ -375,6 +376,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | ISS-022 | P1 | Crash-recovery flush: checkpoint periodico su project_state.md | DELIVERED |
 | ISS-023 | P2 | Scope `etsy_digital_product_pack` intent | OPEN |
 | ISS-024 | P2 | Scope `digital_product_listing_pack` intent | OPEN |
-| ISS-025 | P1 | Valutare Lemon Squeezy vs Payhip come merchant-of-record (EU VAT) | OPEN |
+| ISS-025 | P1 | Valutare Lemon Squeezy vs Payhip come merchant-of-record (EU VAT) | DELIVERED → Payhip |
 | ISS-026 | P3 | HF Spaces paid deployment lane per chatbot/agent/techa deliverable | OPEN |
 | ISS-027 | P3 | Gumroad secondary-channel publisher per PDF, planner, flashcard, journal | OPEN |
+| ISS-028 | P2 | Build `gateway/webhook_payhip.py` — purchase.completed → PipelineAdapter | OPEN |
