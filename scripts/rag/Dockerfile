@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements-rag.txt
 COPY scripts/ ./scripts/
 COPY config/ ./config/
 COPY data/vectorstore/ ./data/vectorstore/
+COPY data/rag_registry.tsv ./data/rag_registry.tsv
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
