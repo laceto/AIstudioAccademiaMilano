@@ -111,7 +111,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
-            BRANCH="ops/digital-presence-$(date +%Y%m%d)"
+            BRANCH="ops/digital-presence-$(date +%Y%m%d-%H%M%S)"
             git checkout -b "$BRANCH"
             git commit -m "content: weekly LinkedIn post $(date +%Y-%m-%d) [skip ci]"
             git push origin "$BRANCH"
