@@ -210,7 +210,7 @@ def chat_stream(req: ChatRequest):
 
 @app.post("/webhook/telegram")
 async def webhook_telegram(request: _Request):
-    token   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    token   = os.environ.get("TELEGRAM_RAG_BOT_TOKEN", "")
     body    = await request.json()
     msg     = body.get("message", {})
     text    = (msg.get("text") or "").strip()
@@ -225,7 +225,7 @@ async def webhook_telegram(request: _Request):
                 json={"chat_id": chat_id, "text": answer},
             )
     else:
-        log.warning("/webhook/telegram: TELEGRAM_BOT_TOKEN unset — reply suppressed")
+        log.warning("/webhook/telegram: TELEGRAM_RAG_BOT_TOKEN unset — reply suppressed")
     return {}
 
 

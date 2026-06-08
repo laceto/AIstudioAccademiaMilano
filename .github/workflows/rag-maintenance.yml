@@ -36,6 +36,7 @@ jobs:
       - name: Install RAG dependencies
         run: |
           pip install -r requirements-rag.txt
+          pip install langchain-chroma
           pip install "git+https://github.com/laceto/kitai.git"
 
       # RAG Team: Indexer — guard: skip if embed_repo.py not yet on branch
