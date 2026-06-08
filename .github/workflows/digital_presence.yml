@@ -115,12 +115,12 @@ jobs:
             git checkout -b "$BRANCH"
             git commit -m "content: weekly LinkedIn post $(date +%Y-%m-%d) [skip ci]"
             git push origin "$BRANCH"
-            gh pr create \
+            PR_URL=$(gh pr create \
               --base main \
               --head "$BRANCH" \
               --title "content: weekly digital presence post $(date +%Y-%m-%d)" \
-              --body "Auto-generated weekly digital presence post." \
-              --auto-merge
+              --body "Auto-generated weekly digital presence post.")
+            gh pr merge "$PR_URL" --merge --admin
           fi
 
       - name: Upload LinkedIn post as artifact
