@@ -52,10 +52,10 @@ jobs:
             git checkout -b "$BRANCH"
             git commit -m "learn: update global settings from delivery [skip ci]"
             git push origin "$BRANCH"
-            gh pr create \
+            PR_URL=$(gh pr create \
               --base main \
               --head "$BRANCH" \
               --title "learn: update global settings [auto]" \
-              --body "Automated settings update from Studio Ops learning loop." \
-              --auto-merge
+              --body "Automated settings update from Studio Ops learning loop.")
+            gh pr merge "$PR_URL" --merge --admin
           fi
