@@ -105,7 +105,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No research changes — nothing to commit."
           else
-            BRANCH="ops/research-$(date +%Y%m%d)"
+            BRANCH="ops/research-$(date +%Y%m%d-%H%M%S)"
             git checkout -b "$BRANCH"
             git commit -m "research: weekly AI digest ${{ env.RUN_DATE }} [skip ci]"
             git push origin "$BRANCH"
