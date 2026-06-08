@@ -5,25 +5,24 @@
 git+https://github.com/laceto/kitai.git
 
 # Vector store
-faiss-cpu>=1.7.4
-langchain-core>=0.3.0
-langchain-community>=0.3.0
-langchain-openai>=0.2.0
-langchain-chroma>=0.1.0
+faiss-cpu==1.13.2
+langchain-core==1.2.29
+langchain-community==0.4.1
+langchain-openai==1.1.13
 
 # BM25 keyword retrieval (used by kitai.retriever)
-rank-bm25>=0.2.2
+rank-bm25==0.2.2
 
 # OpenAI client
-openai>=1.0.0
+openai==2.31.0
 
 # Env + data
 python-dotenv>=1.0.0
-numpy>=1.24.0
-pandas>=2.0.0
+numpy==2.3.4
+pandas==2.3.3
 
 # Offline fallback (local embedding without API key)
 sentence-transformers>=2.7.0
 
 # HTTP client (webhook outbound calls)
-httpx>=0.27.0
+httpx==0.28.1
