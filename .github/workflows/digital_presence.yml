@@ -120,7 +120,7 @@ jobs:
               --head "$BRANCH" \
               --title "content: weekly digital presence post $(date +%Y-%m-%d)" \
               --body "Auto-generated weekly digital presence post.")
-            gh pr merge "$PR_URL" --merge --admin
+            gh pr merge "$PR_URL" --squash --admin
           fi
 
       - name: Upload LinkedIn post as artifact

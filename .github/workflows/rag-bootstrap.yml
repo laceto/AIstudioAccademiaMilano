@@ -73,5 +73,5 @@ jobs:
               --head "$BRANCH" \
               --title "rag: bootstrap vectorstore $(date +%Y-%m-%d)" \
               --body "Auto-generated RAG index update from bootstrap workflow.")
-            gh pr merge "$PR_URL" --merge --admin
+            gh pr merge "$PR_URL" --squash --admin
           fi

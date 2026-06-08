@@ -114,7 +114,7 @@ jobs:
               --head "$BRANCH" \
               --title "research: weekly AI digest ${{ env.RUN_DATE }}" \
               --body "Automated weekly AI research digest.")
-            gh pr merge "$PR_URL" --merge --admin
+            gh pr merge "$PR_URL" --squash --admin
           fi
 
       - name: Weekly — open digest issue
