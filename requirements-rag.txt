@@ -1,8 +1,7 @@
 # RAG team dependencies — kitai + FAISS + BM25 + LangChain
 # pip install -r requirements-rag.txt
 
-# kitai — batch embeddings, hybrid retriever, query translation
-git+https://github.com/laceto/kitai.git
+# kitai installed separately in Dockerfile with --no-deps (stale langchain<1.0 constraint)
 
 # Vector store
 faiss-cpu==1.13.2
