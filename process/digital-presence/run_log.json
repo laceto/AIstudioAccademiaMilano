@@ -1,0 +1,14 @@
+[
+  {
+    "ts": "2026-06-08T21:23:42.793868",
+    "repo": "laceto/AIstudioAccademiaMilano",
+    "days": 7,
+    "commits": 15,
+    "releases": 0,
+    "dry_run": false,
+    "platforms": {
+      "telegram": "error: 404 Client Error: Not Found for url: https://api.telegram.org/bot/sendMessage"
+    },
+    "output": "/home/runner/work/AIstudioAccademiaMilano/AIstudioAccademiaMilano/process/digital-presence/2026-06-08_linkedin_post.txt"
+  }
+]
