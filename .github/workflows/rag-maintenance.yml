@@ -95,5 +95,5 @@ jobs:
               --head "$BRANCH" \
               --title "rag: daily index rebuild $(date +%Y-%m-%d)" \
               --body "Automated RAG registry update from daily maintenance workflow.")
-            gh pr merge "$PR_URL" --merge --admin
+            gh pr merge "$PR_URL" --squash --admin
           fi

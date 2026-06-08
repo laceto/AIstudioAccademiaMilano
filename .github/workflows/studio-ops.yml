@@ -57,5 +57,5 @@ jobs:
               --head "$BRANCH" \
               --title "learn: update global settings [auto]" \
               --body "Automated settings update from Studio Ops learning loop.")
-            gh pr merge "$PR_URL" --merge --admin
+            gh pr merge "$PR_URL" --squash --admin
           fi
