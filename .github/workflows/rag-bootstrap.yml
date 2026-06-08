@@ -33,7 +33,9 @@ jobs:
           cache-dependency-path: requirements-rag.txt
 
       - name: Install RAG dependencies
-        run: pip install -r requirements-rag.txt
+        run: |
+          pip install -r requirements-rag.txt
+          pip install "git+https://github.com/laceto/kitai.git"
 
       - name: Guard — OPENAI_API_KEY must be set
         id: guard

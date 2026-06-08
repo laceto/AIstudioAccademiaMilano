@@ -34,7 +34,9 @@ jobs:
 
       # RAG Team: Indexer — install embed dependencies
       - name: Install RAG dependencies
-        run: pip install -r requirements-rag.txt
+        run: |
+          pip install -r requirements-rag.txt
+          pip install "git+https://github.com/laceto/kitai.git"
 
       # RAG Team: Indexer — guard: skip if embed_repo.py not yet on branch
       - name: Check RAG scripts available
