@@ -107,5 +107,6 @@ class StudioState(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
 
     # ── Control ───────────────────────────────────────────────────────────
-    error: Optional[str]
+    # Annotated so parallel risk agents can each write error without conflict
+    error: Annotated[Optional[str], lambda a, b: b if b is not None else a]
     finished: bool
