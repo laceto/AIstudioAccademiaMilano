@@ -349,6 +349,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 029 | 2026-06-03 | Reinsurance Branch Office — LangGraph 3-workflow (claim/treaty/report) + Streamlit | 0.00 (internal) |
 | —   | 2026-06-05 | Input Gateway — FastAPI `/submit`, PipelineAdapter, Streamlit form, Telegram+WhatsApp bots, QueueWorker | 0.00 (internal) |
 | —   | 2026-06-05 | Crash-Recovery Checkpoint — scripts/checkpoint_state.py + Stop hook (ISS-022) | 0.00 (internal) |
+| 031 | 2026-06-10 | Medical Receipt Vault — FastAPI + Streamlit, GPT-4o OCR, SQLite, Excel/PDF 730 export | 0.00 (internal) |
 
 ---
 
