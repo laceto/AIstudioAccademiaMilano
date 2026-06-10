@@ -1,3 +1,8 @@
+# DEPRECATED — RAG API migrated to Google Cloud Run (2026-06-10).
+# Deploy target: scripts/rag/deploy_gcr.sh
+# CI/CD: .github/workflows/rag-deploy-gcr.yml
+# Kept for reference only; do not use for new deployments.
+
 [build]
 dockerfilePath = "scripts/rag/Dockerfile"
 
