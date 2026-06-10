@@ -114,92 +114,140 @@ with tab_new:
     original_name = getattr(source_file, "name", "receipt.jpg") or "receipt.jpg"
 
     if file_bytes:
-        st.image(file_bytes, use_container_width=True) if not original_name.lower().endswith(".pdf") else st.info("PDF caricato.")
-
-        with st.spinner("Analisi automatica in corso..."):
-            is_pdf = original_name.lower().endswith(".pdf")
-            ext = extract_from_pdf(file_bytes) if is_pdf else extract_from_image(file_bytes)
-
-        if ext.confidence > 0:
-            st.success(f"Estrazione completata (confidenza: {ext.confidence*100:.0f}%)")
+        from app.constants import MAX_UPLOAD_BYTES, ALLOWED_EXTENSIONS
+        from pathlib import Path as _Path
+        _ext_check = _Path(original_name).suffix.lower()
+        if len(file_bytes) > MAX_UPLOAD_BYTES:
+            st.error(f"File troppo grande ({len(file_bytes) // (1024*1024)} MB). Massimo 20 MB.")
+        elif _ext_check not in ALLOWED_EXTENSIONS:
+            st.error(f"Formato '{_ext_check}' non supportato. Usa JPG, PNG, WebP o PDF.")
         else:
-            st.info("Nessuna chiave API OpenAI — inserisci i dati manualmente.")
-
-        st.subheader("Verifica i dati estratti")
-
-        with st.form("new_receipt_form"):
-            provider = st.text_input("Fornitore *", value=ext.provider_name or "")
-            provider_tax = st.text_input("P.IVA / CF fornitore", value=ext.provider_tax_id or "")
-
-            col1, col2 = st.columns(2)
-            with col1:
-                receipt_date = st.date_input(
-                    "Data ricevuta",
-                    value=date.fromisoformat(ext.date) if ext.date else date.today(),
-                )
-            with col2:
-                receipt_num = st.text_input("N. Scontrino/Fattura", value=ext.receipt_number or "")
-
-            exp_type = st.selectbox(
-                "Tipo di spesa *",
-                options=list(EXPENSE_TYPES.keys()),
-                format_func=_expense_label,
-                index=list(EXPENSE_TYPES.keys()).index(ext.expense_type)
-                if ext.expense_type in EXPENSE_TYPES else 0,
-            )
-            description = st.text_area("Descrizione", value=ext.description or "", height=80)
-
-            col3, col4 = st.columns(2)
-            with col3:
-                total = st.number_input(
-                    "Importo totale (€) *", min_value=0.0, step=0.01,
-                    value=float(ext.total_amount or 0.0), format="%.2f",
-                )
-            with col4:
-                ded_default = float(ext.deductible_amount or total or 0.0)
-                deductible = st.number_input(
-                    "Importo detraibile (€)", min_value=0.0, step=0.01,
-                    value=ded_default, format="%.2f",
-                )
-
-            payment = st.selectbox(
-                "Metodo di pagamento",
-                options=[""] + PAYMENT_METHODS,
-                index=([""] + PAYMENT_METHODS).index(ext.payment_method)
-                if ext.payment_method in PAYMENT_METHODS else 0,
-            )
-            tax_ded = st.checkbox("Detraibile al 19% (730)", value=bool(ext.tax_deductible))
-            notes = st.text_area("Note aggiuntive", height=60)
-
-            submitted = st.form_submit_button("✅ Salva Ricevuta", type="primary")
-
-        if submitted:
-            if not provider.strip():
-                st.error("Il campo Fornitore è obbligatorio.")
+            if not original_name.lower().endswith(".pdf"):
+                st.image(file_bytes, use_container_width=True)
             else:
-                file_path, file_type = save_file(file_bytes, original_name, int(fiscal_year))
-                data = ReceiptCreate(
-                    fiscal_year=int(fiscal_year),
-                    date=receipt_date.isoformat(),
-                    receipt_number=receipt_num or None,
-                    provider_name=provider.strip(),
-                    provider_tax_id=provider_tax or None,
-                    expense_type=exp_type,
-                    description=description or None,
-                    payment_method=payment or None,
-                    total_amount=total,
-                    deductible_amount=deductible if tax_ded else 0.0,
-                    tax_deductible=tax_ded,
-                    notes=notes or None,
-                    original_file_path=file_path,
-                    file_type=file_type,
-                    raw_extraction=ext.model_dump() if ext.confidence > 0 else None,
-                    status="confirmed",
+                st.info("PDF caricato.")
+
+            ext = None
+            with st.spinner("Analisi automatica in corso..."):
+                try:
+                    is_pdf = original_name.lower().endswith(".pdf")
+                    ext = extract_from_pdf(file_bytes) if is_pdf else extract_from_image(file_bytes)
+                except Exception as _exc:
+                    st.warning(f"Estrazione automatica non disponibile: {_exc}. Inserisci i dati manualmente.")
+
+            if ext is None:
+                from app.schemas import ExtractionResult as _ER
+                ext = _ER(confidence=0.0)
+
+            if ext.confidence > 0:
+                msg = f"Estrazione completata (confidenza: {ext.confidence*100:.0f}%)"
+                if ext.pages_extracted > 1:
+                    msg += f" — documento di {ext.pages_extracted} pagine, analizzate le prime 3."
+                st.success(msg)
+                if ext.tax_deductible is None:
+                    st.warning("⚠️ Detraibilità incerta — verifica il campo 'Detraibile 730' prima di salvare.")
+            else:
+                st.info("Nessuna chiave API OpenAI — inserisci i dati manualmente.")
+
+            st.subheader("Verifica i dati estratti")
+
+            with st.form("new_receipt_form"):
+                provider = st.text_input("Fornitore *", value=ext.provider_name or "")
+                provider_tax = st.text_input("P.IVA / CF fornitore", value=ext.provider_tax_id or "")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    try:
+                        _date_val = date.fromisoformat(ext.date) if ext.date else date.today()
+                    except ValueError:
+                        _date_val = date.today()
+                    receipt_date = st.date_input("Data ricevuta", value=_date_val)
+                with col2:
+                    receipt_num = st.text_input("N. Scontrino/Fattura", value=ext.receipt_number or "")
+
+                exp_type = st.selectbox(
+                    "Tipo di spesa *",
+                    options=list(EXPENSE_TYPES.keys()),
+                    format_func=_expense_label,
+                    index=list(EXPENSE_TYPES.keys()).index(ext.expense_type)
+                    if ext.expense_type in EXPENSE_TYPES else 0,
                 )
-                with db() as session:
-                    r = create_receipt(session, data)
-                st.success(f"Ricevuta salvata! ID: `{r.id[:8]}…`")
-                st.balloons()
+                description = st.text_area("Descrizione", value=ext.description or "", height=80)
+
+                col3, col4 = st.columns(2)
+                with col3:
+                    total = st.number_input(
+                        "Importo totale (€) *", min_value=0.0, step=0.01,
+                        value=float(ext.total_amount or 0.0), format="%.2f",
+                    )
+                with col4:
+                    ded_default = float(ext.deductible_amount or total or 0.0)
+                    deductible = st.number_input(
+                        "Importo detraibile (€)", min_value=0.0, step=0.01,
+                        value=ded_default, format="%.2f",
+                    )
+
+                payment = st.selectbox(
+                    "Metodo di pagamento",
+                    options=[""] + PAYMENT_METHODS,
+                    index=([""] + PAYMENT_METHODS).index(ext.payment_method)
+                    if ext.payment_method in PAYMENT_METHODS else 0,
+                )
+
+                _ded_options = ["Sì", "No", "Da verificare"]
+                if ext.tax_deductible is True:
+                    _ded_default_idx = 0
+                elif ext.tax_deductible is False:
+                    _ded_default_idx = 1
+                else:
+                    _ded_default_idx = 2
+                tax_ded_str = st.selectbox(
+                    "Detraibile al 19% (730)",
+                    options=_ded_options,
+                    index=_ded_default_idx,
+                    help="Scegli 'Da verificare' se non sei sicuro — sarà evidenziato nel report 730.",
+                )
+                tax_ded_value: Optional[bool] = True if tax_ded_str == "Sì" else (False if tax_ded_str == "No" else None)
+                notes = st.text_area("Note aggiuntive", height=60)
+
+                submitted = st.form_submit_button("✅ Salva Ricevuta", type="primary")
+
+            if submitted:
+                if not provider.strip():
+                    st.error("Il campo Fornitore è obbligatorio.")
+                else:
+                    try:
+                        file_path, file_type = save_file(file_bytes, original_name, int(fiscal_year))
+                    except ValueError as _ve:
+                        st.error(str(_ve))
+                        file_path = None
+                    except OSError as _oe:
+                        st.error(f"Errore di salvataggio file: {_oe}")
+                        file_path = None
+
+                    if file_path:
+                        data = ReceiptCreate(
+                            fiscal_year=int(fiscal_year),
+                            date=receipt_date.isoformat(),
+                            receipt_number=receipt_num or None,
+                            provider_name=provider.strip(),
+                            provider_tax_id=provider_tax or None,
+                            expense_type=exp_type,
+                            description=description or None,
+                            payment_method=payment or None,
+                            total_amount=total,
+                            deductible_amount=deductible if tax_ded_value is True else 0.0,
+                            tax_deductible=tax_ded_value,
+                            notes=notes or None,
+                            original_file_path=file_path,
+                            file_type=file_type,
+                            raw_extraction=ext.model_dump() if ext.confidence > 0 else None,
+                            status="confirmed",
+                        )
+                        with db() as session:
+                            r = create_receipt(session, data)
+                        st.success(f"Ricevuta salvata! ID: `{r.id[:8]}…`")
+                        st.balloons()
 
 
 # ─── TAB 2 · REVISIONE PENDENTI ──────────────────────────────────────────────
@@ -243,7 +291,10 @@ with tab_review:
                     payment = st.selectbox("Pagamento", [""] + PAYMENT_METHODS,
                                            index=([""] + PAYMENT_METHODS).index(r.payment_method)
                                            if r.payment_method in PAYMENT_METHODS else 0)
-                    tax_ded = st.checkbox("Detraibile 730", value=bool(r.tax_deductible))
+                    _r_ded_opts = ["Sì", "No", "Da verificare"]
+                    _r_ded_idx = 0 if r.tax_deductible is True else (1 if r.tax_deductible is False else 2)
+                    tax_ded_str = st.selectbox("Detraibile 730", _r_ded_opts, index=_r_ded_idx)
+                    tax_ded_val: Optional[bool] = True if tax_ded_str == "Sì" else (False if tax_ded_str == "No" else None)
 
                     col_save, col_del = st.columns(2)
                     with col_save:
@@ -257,8 +308,8 @@ with tab_review:
                         date=r_date.isoformat(), receipt_number=r_num or None,
                         expense_type=exp_type, description=desc or None,
                         payment_method=payment or None, total_amount=total,
-                        deductible_amount=ded if tax_ded else 0.0,
-                        tax_deductible=tax_ded, status="confirmed",
+                        deductible_amount=ded if tax_ded_val is True else 0.0,
+                        tax_deductible=tax_ded_val, status="confirmed",
                     )
                     with db() as session:
                         update_receipt(session, r.id, upd)
@@ -266,12 +317,15 @@ with tab_review:
                     st.rerun()
 
                 if discard:
+                    file_to_del = r.original_file_path
                     with db() as session:
-                        receipt_obj = get_receipt(session, r.id)
-                        if receipt_obj and receipt_obj.original_file_path:
-                            from app.storage import delete_file
-                            delete_file(receipt_obj.original_file_path)
                         delete_receipt(session, r.id)
+                    if file_to_del:
+                        from app.storage import delete_file as _del_file
+                        try:
+                            _del_file(file_to_del)
+                        except Exception:
+                            pass
                     st.warning("Ricevuta eliminata.")
                     st.rerun()
 
@@ -328,8 +382,13 @@ with tab_browse:
                     if r.receipt_number:
                         st.markdown(f"**N. Scontrino:** {r.receipt_number}")
                     st.markdown(f"**Importo:** {_format_euro(r.total_amount)}")
-                    ded = float(r.deductible_amount or r.total_amount or 0) if r.tax_deductible else 0
-                    st.markdown(f"**Detraibile 730:** {'Sì — ' + _format_euro(ded) if r.tax_deductible else 'No'}")
+                    if r.tax_deductible is True:
+                        ded = float(r.deductible_amount or r.total_amount or 0)
+                        st.markdown(f"**Detraibile 730:** Sì — {_format_euro(ded)}")
+                    elif r.tax_deductible is None:
+                        st.markdown("**Detraibile 730:** ⚠️ Da verificare")
+                    else:
+                        st.markdown("**Detraibile 730:** No")
                     if r.payment_method:
                         st.markdown(f"**Pagamento:** {r.payment_method}")
                     if r.notes:
@@ -352,12 +411,15 @@ with tab_browse:
                     st.rerun()
 
                 if del_btn:
+                    file_to_del = r.original_file_path
                     with db() as session:
-                        receipt_obj = get_receipt(session, r.id)
-                        if receipt_obj and receipt_obj.original_file_path:
-                            from app.storage import delete_file
-                            delete_file(receipt_obj.original_file_path)
                         delete_receipt(session, r.id)
+                    if file_to_del:
+                        from app.storage import delete_file as _del_file2
+                        try:
+                            _del_file2(file_to_del)
+                        except Exception:
+                            pass
                     st.warning("Ricevuta eliminata.")
                     st.rerun()
 
@@ -380,6 +442,8 @@ with tab_dash:
 
         if summary.pending_review:
             st.warning(f"⚠️ {summary.pending_review} ricevuta/e in attesa di revisione — vai alla tab ✏️ Revisione.")
+        if summary.unknown_deductibility:
+            st.warning(f"⚠️ {summary.unknown_deductibility} ricevuta/e con detraibilità 'Da verificare' — non incluse nel calcolo 730.")
 
         c1, c2, c3 = st.columns(3)
         c1.metric("Ricevute", summary.total_receipts)
@@ -387,11 +451,12 @@ with tab_dash:
         c3.metric("Detrazione stimata 730", _format_euro(summary.estimated_tax_saving))
 
         st.markdown("---")
+        from app.constants import FRANCHISE_EUR
         col_a, col_b = st.columns(2)
         with col_a:
             st.markdown(f"**Totale detraibile lordo:** {_format_euro(summary.total_deductible)}")
-            st.markdown("**Franchigia 730:** € 129,11")
-            taxable = max(0.0, summary.total_deductible - 129.11)
+            st.markdown(f"**Franchigia 730:** {_format_euro(FRANCHISE_EUR)}")
+            taxable = max(0.0, summary.total_deductible - FRANCHISE_EUR)
             st.markdown(f"**Base imponibile:** {_format_euro(taxable)}")
             st.markdown(f"**Detrazione 19%:** {_format_euro(summary.estimated_tax_saving)}")
         with col_b:

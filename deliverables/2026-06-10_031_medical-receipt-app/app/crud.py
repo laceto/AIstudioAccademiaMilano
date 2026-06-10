@@ -3,14 +3,11 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.constants import DEDUCTION_RATE, FRANCHISE_EUR
 from app.models import Receipt
-from app.schemas import DashboardSummary, DEDUCTIBLE_TYPES, ReceiptCreate, ReceiptUpdate
-
-_FRANCHISE = 129.11
-_DEDUCTION_RATE = 0.19
+from app.schemas import DashboardSummary, ReceiptCreate, ReceiptUpdate, TaxSummary
 
 
 def create_receipt(db: Session, data: ReceiptCreate) -> Receipt:
@@ -76,15 +73,16 @@ def get_dashboard(db: Session, fiscal_year: int) -> DashboardSummary:
     receipts = list_receipts(db, fiscal_year=fiscal_year)
     confirmed = [r for r in receipts if r.status == "confirmed"]
     pending = len([r for r in receipts if r.status == "pending_review"])
+    unknown_ded = len([r for r in confirmed if r.tax_deductible is None])
 
     total_amount = sum(float(r.total_amount or 0) for r in confirmed)
     total_deductible = sum(
         float(r.deductible_amount or r.total_amount or 0)
         for r in confirmed
-        if r.tax_deductible
+        if r.tax_deductible is True
     )
-    taxable_base = max(0.0, total_deductible - _FRANCHISE)
-    estimated_saving = round(taxable_base * _DEDUCTION_RATE, 2)
+    taxable_base = max(0.0, total_deductible - FRANCHISE_EUR)
+    estimated_saving = round(taxable_base * DEDUCTION_RATE, 2)
 
     by_type: dict[str, float] = {}
     for r in confirmed:
@@ -98,6 +96,32 @@ def get_dashboard(db: Session, fiscal_year: int) -> DashboardSummary:
         estimated_tax_saving=estimated_saving,
         by_type=by_type,
         pending_review=pending,
+        unknown_deductibility=unknown_ded,
+    )
+
+
+def get_tax_summary(db: Session, fiscal_year: int) -> TaxSummary:
+    receipts = list_receipts(db, fiscal_year=fiscal_year, status="confirmed")
+    total_amount = sum(float(r.total_amount or 0) for r in receipts)
+    total_deductible = sum(
+        float(r.deductible_amount or r.total_amount or 0)
+        for r in receipts
+        if r.tax_deductible is True
+    )
+    taxable_base = max(0.0, total_deductible - FRANCHISE_EUR)
+    by_type: dict[str, float] = {}
+    for r in receipts:
+        by_type[r.expense_type] = by_type.get(r.expense_type, 0.0) + float(r.total_amount or 0)
+
+    return TaxSummary(
+        fiscal_year=fiscal_year,
+        total_receipts=len(receipts),
+        total_amount=round(total_amount, 2),
+        total_deductible=round(total_deductible, 2),
+        franchise_eur=FRANCHISE_EUR,
+        taxable_base=round(taxable_base, 2),
+        estimated_saving=round(taxable_base * DEDUCTION_RATE, 2),
+        by_type=by_type,
     )
 
 
