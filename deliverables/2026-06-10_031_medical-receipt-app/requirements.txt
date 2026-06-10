@@ -1,0 +1,27 @@
+# Web framework
+fastapi==0.136.3
+uvicorn==0.48.0
+python-multipart==0.0.29
+
+# Database
+sqlalchemy==2.0.41
+
+# Streamlit UI
+streamlit>=1.35.0
+
+# AI extraction
+openai==2.31.0
+
+# Export
+openpyxl>=3.1.0
+reportlab>=4.0.0
+
+# PDF to image (optional, for PDF receipt extraction)
+# PyMuPDF>=1.24.0   # installa separatamente: pip install PyMuPDF
+
+# Charts
+altair>=5.0.0
+pandas>=2.0.0
+
+# Environment
+python-dotenv>=1.0.0
