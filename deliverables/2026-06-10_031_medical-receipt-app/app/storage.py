@@ -2,12 +2,17 @@
 from __future__ import annotations
 
 import abc
+import os
 import uuid
 from pathlib import Path
 
 from app.constants import ALLOWED_EXTENSIONS, MAX_UPLOAD_BYTES
 
-_UPLOADS_DIR = Path(__file__).parent.parent / "uploads"
+def _default_uploads_dir() -> Path:
+    env = os.getenv("UPLOADS_DIR")
+    return Path(env) if env else Path(__file__).parent.parent / "uploads"
+
+_UPLOADS_DIR = _default_uploads_dir()
 
 
 class StorageBackend(abc.ABC):
