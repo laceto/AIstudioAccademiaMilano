@@ -19,7 +19,7 @@ class Receipt(Base):
     payment_method = Column(String(50), nullable=True)
     total_amount = Column(Numeric(10, 2), nullable=False, default=0)
     deductible_amount = Column(Numeric(10, 2), nullable=True)
-    tax_deductible = Column(Boolean, default=True)
+    tax_deductible = Column(Boolean, nullable=True)   # None = unknown/to-verify
     line_items = Column(JSON, nullable=True)
     original_file_path = Column(String(500), nullable=True)
     file_type = Column(String(10), nullable=True)     # "image" | "pdf"

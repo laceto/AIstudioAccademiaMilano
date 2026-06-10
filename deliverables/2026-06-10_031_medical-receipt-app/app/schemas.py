@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_validator
 
+from app.constants import EXPENSE_TYPE_VALUES, RECEIPT_STATUSES
 
 EXPENSE_TYPES = {
     "farmaco": "Farmaco",
@@ -21,6 +23,19 @@ PAYMENT_METHODS = [
     "Contanti", "Carta di credito", "Carta di debito", "Bancomat",
     "Bonifico", "Satispay", "PayPal", "Altro",
 ]
+
+ReceiptStatus = Literal["pending_review", "confirmed", "rejected"]
+ExpenseType = Literal["farmaco", "visita", "esame", "ticket", "dentista", "altro"]
+
+_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _validate_iso_date(v: Optional[str]) -> Optional[str]:
+    if v is None:
+        return v
+    if not _ISO_DATE_RE.match(v):
+        raise ValueError(f"date must be YYYY-MM-DD, got '{v}'")
+    return v
 
 
 class LineItem(BaseModel):
@@ -40,9 +55,10 @@ class ExtractionResult(BaseModel):
     payment_method: Optional[str] = None
     total_amount: Optional[float] = None
     deductible_amount: Optional[float] = None
-    tax_deductible: Optional[bool] = True
+    tax_deductible: Optional[bool] = None   # None = unknown/uncertain
     line_items: Optional[list[LineItem]] = None
     confidence: float = 0.0
+    pages_extracted: int = 1
 
 
 class ReceiptCreate(BaseModel):
@@ -56,13 +72,32 @@ class ReceiptCreate(BaseModel):
     payment_method: Optional[str] = None
     total_amount: float = 0.0
     deductible_amount: Optional[float] = None
-    tax_deductible: bool = True
+    tax_deductible: Optional[bool] = None   # None = "da verificare"
     line_items: Optional[list[dict]] = None
     notes: Optional[str] = None
     original_file_path: Optional[str] = None
     file_type: Optional[str] = None
     raw_extraction: Optional[dict] = None
-    status: str = "confirmed"
+    status: ReceiptStatus = "pending_review"
+
+    @field_validator("date", mode="before")
+    @classmethod
+    def validate_date(cls, v):
+        return _validate_iso_date(v)
+
+    @field_validator("expense_type", mode="before")
+    @classmethod
+    def validate_expense_type(cls, v):
+        if v not in EXPENSE_TYPE_VALUES:
+            return "altro"
+        return v
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def validate_status(cls, v):
+        if v not in RECEIPT_STATUSES:
+            raise ValueError(f"status must be one of {RECEIPT_STATUSES}")
+        return v
 
 
 class ReceiptUpdate(BaseModel):
@@ -79,7 +114,19 @@ class ReceiptUpdate(BaseModel):
     tax_deductible: Optional[bool] = None
     line_items: Optional[list[dict]] = None
     notes: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[ReceiptStatus] = None
+
+    @field_validator("date", mode="before")
+    @classmethod
+    def validate_date(cls, v):
+        return _validate_iso_date(v)
+
+    @field_validator("expense_type", mode="before")
+    @classmethod
+    def validate_expense_type(cls, v):
+        if v is not None and v not in EXPENSE_TYPE_VALUES:
+            return "altro"
+        return v
 
 
 class ReceiptOut(BaseModel):
@@ -94,8 +141,8 @@ class ReceiptOut(BaseModel):
     payment_method: Optional[str]
     total_amount: float
     deductible_amount: Optional[float]
-    tax_deductible: bool
-    line_items: Optional[Any]
+    tax_deductible: Optional[bool]
+    line_items: Optional[list[dict]]
     original_file_path: Optional[str]
     file_type: Optional[str]
     status: str
@@ -110,6 +157,18 @@ class DashboardSummary(BaseModel):
     total_receipts: int
     total_amount: float
     total_deductible: float
-    estimated_tax_saving: float          # 19% × (deductible - 129.11 franchise)
+    estimated_tax_saving: float
     by_type: dict[str, float]
     pending_review: int
+    unknown_deductibility: int
+
+
+class TaxSummary(BaseModel):
+    fiscal_year: int
+    total_receipts: int
+    total_amount: float
+    total_deductible: float
+    franchise_eur: float
+    taxable_base: float
+    estimated_saving: float
+    by_type: dict[str, float]
