@@ -9,6 +9,17 @@ from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from dotenv import load_dotenv
+
+def _find_env() -> Path:
+    here = Path(__file__).parent
+    for candidate in [here / ".env", here.parent.parent.parent / ".env"]:
+        if candidate.exists():
+            return candidate
+    return here / ".env"
+
+load_dotenv(_find_env(), override=True)
+
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response

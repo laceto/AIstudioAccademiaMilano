@@ -9,8 +9,16 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import streamlit as st
 from dotenv import load_dotenv
+from pathlib import Path as _Path
 
-load_dotenv(Path(__file__).parent / ".env")
+def _find_env() -> _Path:
+    here = _Path(__file__).parent
+    for candidate in [here / ".env", here.parent.parent.parent / ".env"]:
+        if candidate.exists():
+            return candidate
+    return here / ".env"
+
+load_dotenv(_find_env(), override=True)
 
 from app.crud import (
     available_years,
