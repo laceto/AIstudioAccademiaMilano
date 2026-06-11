@@ -17,6 +17,16 @@ agents_invoked:
     action: built full application (API, DB, extractor, export, Streamlit UI)
     duration_sec: 0
     status: completed
+  - name: V2 Team
+    role: review
+    action: API Product Designer + Core Architect + Devil's Advocate + Quality Reliability Lead — 36 tests, all P0–P3 issues resolved
+    duration_sec: 0
+    status: completed
+  - name: Francesca
+    role: delivery
+    action: Railway deployment config (railway.toml, nixpacks.toml, env-based DB/storage paths)
+    duration_sec: 0
+    status: completed
 skills_used: []
 learning_flags:
   new_skills: []
@@ -59,10 +69,20 @@ Full-stack application for capturing, extracting, storing, and exporting Italian
 - Rate: 19% on (total_deductible - franchise)
 - Estimated saving shown in dashboard and PDF export
 
-## Tests Passed
+## Tests Passed (36/36)
 
-- All imports
-- SQLite CRUD (create, list, dashboard, years)
-- Excel export: 6361 bytes
-- PDF export: 3022 bytes
-- FastAPI health, list, dashboard, export endpoints
+- SQLite CRUD: create, list, dashboard, fiscal years, delete order
+- Franchise math: €129.11 threshold, 19% rate, strict `is True` guard for None deductibility
+- Schema validation: ISO date, Literal status/expense_type, 3-state tax_deductible
+- Export: Excel (openpyxl) + PDF (reportlab) with 730 riepilogo
+- Storage: size limit (20 MB), extension validation, save/load/delete
+- Extractor: no-API-key fallback, JSON decode error, happy path, null deductibility preserved, APIError propagation (all mocked)
+- API: health, upload size/extension guard, delete order (DB first), confirm endpoint, JSON summary export
+
+## Railway Deployment
+
+- `railway.toml` + `nixpacks.toml`: Nixpacks Python 3.11, `streamlit run --server.port $PORT`
+- `.streamlit/config.toml`: headless, CORS off
+- `DATABASE_URL` env var: auto-fixes `postgres://` → `postgresql://`; defaults to local SQLite
+- `UPLOADS_DIR` env var: points to Railway Volume mount path
+- Persistent storage: mount Volume at `/data`, set `DATABASE_URL=sqlite:////data/receipts.db` and `UPLOADS_DIR=/data/uploads`
