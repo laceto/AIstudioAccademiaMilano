@@ -1,0 +1,11 @@
+Just pushed the Medical Receipt Vault live. 
+
+FastAPI meets Streamlit. GPT-4o for OCR. SQLite under the hood. Export straight to Excel or PDF. It’s a smooth operator for managing medical receipts with precision. We nailed 36 tests. All P0–P3 issues ironed out. That’s what matters when you’re handling sensitive data.
+
+Why it matters? Efficiency. Security. Simplicity. Medical data needs to be handled with care, and this vault does just that. Plus, we’ve got Railway deployment in place. No fuss, just function.
+
+Lesson learned? Keep your API keys close. Security is no joke. Placeholder keys are your friends. 
+
+Building with AI is a constant lesson in humility. It’s not magic; it’s a lot of moving parts and a keen eye for detail.
+
+#AI #OCR #FastAPI #DataSecurity #Python
