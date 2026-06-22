@@ -22,5 +22,17 @@
       "telegram": "error: 404 Client Error: Not Found for url: https://api.telegram.org/bot/sendMessage"
     },
     "output": "/home/runner/work/AIstudioAccademiaMilano/AIstudioAccademiaMilano/process/digital-presence/2026-06-15_linkedin_post.txt"
+  },
+  {
+    "ts": "2026-06-22T14:40:07.527229",
+    "repo": "laceto/AIstudioAccademiaMilano",
+    "days": 7,
+    "commits": 1,
+    "releases": 0,
+    "dry_run": false,
+    "platforms": {
+      "telegram": "error: 404 Client Error: Not Found for url: https://api.telegram.org/bot/sendMessage"
+    },
+    "output": "/home/runner/work/AIstudioAccademiaMilano/AIstudioAccademiaMilano/process/digital-presence/2026-06-22_linkedin_post.txt"
   }
 ]
