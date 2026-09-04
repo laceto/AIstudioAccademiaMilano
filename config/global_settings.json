@@ -2,11 +2,11 @@
   "_meta": {
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
-    "last_updated": "2026-06-10",
-    "last_request_id": "031",
-    "total_requests_processed": 23,
+    "last_updated": "2026-09-04",
+    "last_request_id": "032",
+    "total_requests_processed": 24,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "031"
+    "last_processed_audit_log": "032"
   },
   "skills": {
     "html_tailwind_css": {
@@ -1105,6 +1105,11 @@
           "count": 1,
           "avg_sec": 0.0,
           "success_rate": 0.0
+        },
+        "event_planning_pack": {
+          "count": 1,
+          "avg_sec": 4.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1161,6 +1166,11 @@
           "count": 1,
           "avg_sec": 0.0,
           "success_rate": 0.0
+        },
+        "event_planning_pack": {
+          "count": 1,
+          "avg_sec": 22.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1212,6 +1222,11 @@
           "count": 1,
           "avg_sec": 2.0,
           "success_rate": 1.0
+        },
+        "event_planning_pack": {
+          "count": 2,
+          "avg_sec": 4.5,
+          "success_rate": 0.0
         }
       }
     },
@@ -1263,6 +1278,11 @@
           "count": 1,
           "avg_sec": 2.0,
           "success_rate": 1.0
+        },
+        "event_planning_pack": {
+          "count": 1,
+          "avg_sec": 3.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1313,6 +1333,11 @@
         "reinsurance_branch_office": {
           "count": 1,
           "avg_sec": 5.0,
+          "success_rate": 1.0
+        },
+        "event_planning_pack": {
+          "count": 1,
+          "avg_sec": 8.0,
           "success_rate": 1.0
         }
       }
