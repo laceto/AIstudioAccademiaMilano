@@ -5,7 +5,7 @@ Dedicated bot for querying the AI Studio repo knowledge base.
 Every message is answered by the RAG pipeline — no production pipeline.
 
 Setup:
-  export RAG_BOT_TOKEN=...      # from @BotFather (/newbot)
+  export TELEGRAM_RAG_BOT_TOKEN=...   # from @BotFather (/newbot)
   export RAG_API_URL=http://localhost:8000   # or deployed RAG service
   python -m gateway.rag_bot_telegram
 
