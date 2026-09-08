@@ -189,6 +189,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `process/runbook_local_telegram_stack.md` | Runbook: far girare i canali Telegram su laptop, senza URL pubblico |
 | `process/runbook_cloudrun.md` | Runbook: deploy dei canali Telegram su Cloud Run (webhook, scale-to-zero, free tier) |
 | `deploy/cloudbuild.*.yaml` | Cloud Build: nomina esplicitamente il Dockerfile giusto per ciascun servizio |
+| `scripts/deploy_cloudrun.sh` | Deploy end-to-end su Cloud Run: API, secret da `.env`, build, deploy, webhook, verifica (`--dry-run` per anteprima) |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
