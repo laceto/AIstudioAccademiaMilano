@@ -47,6 +47,26 @@ No polling, so **nothing runs between messages** — which is precisely why it's
 
 ---
 
+## The short version
+
+Steps 1–6 below are what the deploy script does. Once you have a GCP project with
+billing linked and `.env` filled in:
+
+```bash
+./scripts/deploy_cloudrun.sh --dry-run   # print every command, change nothing
+./scripts/deploy_cloudrun.sh
+```
+
+It enables the APIs, creates the image repo, pushes the secrets out of `.env`, builds
+both images, deploys both services, wires them together, registers both webhooks and
+runs `check_telegram.py`. It is idempotent — re-run it after a code change, or with
+`--skip-build` to redeploy without rebuilding.
+
+It refuses to run if the two bot tokens are identical, or if `.env` still holds
+placeholder values. Read the rest of this runbook to understand what it is doing.
+
+---
+
 ## Step 1 — Project and prerequisites
 
 Cloud Run's free tier still requires a billing account attached; you are simply not
