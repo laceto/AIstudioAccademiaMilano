@@ -53,8 +53,23 @@ _queue_dir = os.environ.get("GATEWAY_QUEUE_DIR", "gateway/queue")
 _adapter = PipelineAdapter(queue_dir=_queue_dir)
 
 
+def _sync_reply_enabled() -> bool:
+    """True when jobs must be classified inside the request.
+
+    Set GATEWAY_SYNC_REPLY=1 on scale-to-zero hosts (Cloud Run, Lambda-style):
+    they freeze the container after the response, so a background polling loop
+    never advances and the user only ever sees the acknowledgement.
+    """
+    return os.environ.get("GATEWAY_SYNC_REPLY", "").strip().lower() in {"1", "true", "yes"}
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if _sync_reply_enabled():
+        logger.info("GATEWAY_SYNC_REPLY set — classifying inline, background worker disabled")
+        yield
+        return
+
     from gateway.worker import QueueWorker
     worker = QueueWorker(queue_dir=_queue_dir)
     task = asyncio.create_task(worker.run())
@@ -64,7 +79,6 @@ async def lifespan(app: FastAPI):
         await task
     except asyncio.CancelledError:
         pass
-    pass
 
 
 app = FastAPI(title=b("studio.name") + " Input Gateway", version="1.0.0", lifespan=lifespan)
@@ -533,6 +547,15 @@ async def telegram_webhook(request: Request):
                 chat_id=chat_id,
                 text="Non riesco a elaborare questa richiesta. Prova con una diversa.",
             )
+        elif _sync_reply_enabled():
+            # Scale-to-zero host: the container is frozen once we return, so the
+            # background worker would never run. Classify inline and send the real
+            # answer now, instead of a Job ID the user never hears back about.
+            from gateway.worker import QueueWorker
+
+            job = _adapter.get_status(result["job_id"])
+            _, reply = await QueueWorker(queue_dir=_queue_dir).process_job(job)
+            await bot.send_message(chat_id=chat_id, text=reply, parse_mode="Markdown")
         else:
             await bot.send_message(
                 chat_id=chat_id,

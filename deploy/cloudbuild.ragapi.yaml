@@ -1,0 +1,15 @@
+# Build the RAG API image (scripts/rag/Dockerfile) from the repo root.
+#
+# This image bakes in data/vectorstore/repo/ (8.5 MB FAISS index), so the
+# knowledge base ships with the container — no volume, nothing to restore.
+#
+#   gcloud builds submit --config deploy/cloudbuild.ragapi.yaml \
+#     --substitutions _IMAGE=us-central1-docker.pkg.dev/$PROJECT/aistudio/rag-api
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "scripts/rag/Dockerfile", "-t", "${_IMAGE}", "."]
+images: ["${_IMAGE}"]
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8   # faiss-cpu + torch deps; the default builder is slow here
+timeout: 1800s

@@ -1,0 +1,14 @@
+# Build the Input Gateway image (gateway/Dockerfile) from the repo root.
+#
+# The repo holds two Dockerfiles and Cloud Build's default source deploy picks
+# neither reliably — same trap that would have brought the gateway back up as a
+# second copy of the RAG API on Railway. So name the Dockerfile explicitly.
+#
+#   gcloud builds submit --config deploy/cloudbuild.gateway.yaml \
+#     --substitutions _IMAGE=us-central1-docker.pkg.dev/$PROJECT/aistudio/gateway
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "gateway/Dockerfile", "-t", "${_IMAGE}", "."]
+images: ["${_IMAGE}"]
+options:
+  logging: CLOUD_LOGGING_ONLY

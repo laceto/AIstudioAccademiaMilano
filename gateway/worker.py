@@ -178,7 +178,13 @@ class QueueWorker:
         except Exception as exc:
             logger.warning("[worker] Telegram notify failed for chat_id=%s: %s", chat_id, exc)
 
-    async def _process(self, job: dict) -> None:
+    async def process_job(self, job: dict) -> tuple[str, str]:
+        """Classify one job and persist the result. Returns (status, reply_text).
+
+        Split out of _process so a request handler can drive a job to completion
+        inline — on a scale-to-zero host (Cloud Run) the container is frozen once
+        the response is sent, so the polling loop in run() never gets to it.
+        """
         job_file = self.queue_dir / f"{job['job_id']}.json"
 
         job["status"] = "processing"
@@ -188,13 +194,14 @@ class QueueWorker:
             cls = await self.classify(job["text"])
         except Exception as exc:
             logger.error("[worker] classify failed for job %s: %s", job["job_id"], exc)
+            reply = f"Classification failed: {exc}"
             job.update(
                 status="error",
-                result=f"Classification failed: {exc}",
+                result=reply,
                 processed_at=datetime.now(timezone.utc).isoformat(),
             )
             job_file.write_text(json.dumps(job, indent=2, ensure_ascii=False), encoding="utf-8")
-            return
+            return "error", reply
 
         status, reply = self._build_reply(job, cls)
         job.update(
@@ -206,6 +213,12 @@ class QueueWorker:
         job_file.write_text(json.dumps(job, indent=2, ensure_ascii=False), encoding="utf-8")
 
         logger.info("[worker] job %s -> %s (product=%s)", job["job_id"], status, cls.get("product_type"))
+        return status, reply
+
+    async def _process(self, job: dict) -> None:
+        status, reply = await self.process_job(job)
+        if status == "error":
+            return
 
         if job.get("channel") == "telegram":
             chat_id = job.get("metadata", {}).get("chat_id")
