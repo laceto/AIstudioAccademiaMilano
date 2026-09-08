@@ -184,6 +184,9 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `.env.example` | Template variabili d'ambiente — copia in `.env` e compila |
 | `scripts/learning_loop.py` | Auto-aggiorna settings dopo ogni request |
 | `scripts/git-hooks/pre-commit` | Blocca `.env` + pattern segreti noti |
+| `scripts/check_telegram.py` | Doctor canali Telegram: `getMe` + `getWebhookInfo` per bot, rileva conflitti webhook/polling |
+| `scripts/run_local_stack.py` | Avvia lo stack Telegram in locale (RAG API + 2 bot polling + worker) |
+| `process/runbook_local_telegram_stack.md` | Runbook: far girare i canali Telegram su laptop, senza URL pubblico |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
