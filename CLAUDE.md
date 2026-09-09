@@ -357,6 +357,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | —   | 2026-06-05 | Crash-Recovery Checkpoint — scripts/checkpoint_state.py + Stop hook (ISS-022) | 0.00 (internal) |
 | 031 | 2026-06-10 | Medical Receipt Vault — FastAPI + Streamlit, GPT-4o OCR, SQLite, Excel/PDF 730 export | 0.00 (internal) |
 | 032 | 2026-09-04 | Festa compleanno Niccolò — piano operativo parchetto via Zanoia (merenda, torta, intrattenimento, lista spesa e negozi) | null (pending Luigi — proposta 4.90) |
+| 033 | 2026-09-09 | YouTube Playlist Builder — YouTube Data API v3 + OAuth2, CLI con `--dry-run`, quota budgeting (50 + 50N unità) | null (pending Luigi — proposta 14.90) |
 
 ---
 
