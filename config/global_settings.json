@@ -2,11 +2,11 @@
   "_meta": {
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
-    "last_updated": "2026-09-07",
-    "last_request_id": "032",
-    "total_requests_processed": 24,
+    "last_updated": "2026-09-09",
+    "last_request_id": "033",
+    "total_requests_processed": 25,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "032"
+    "last_processed_audit_log": "033"
   },
   "skills": {
     "html_tailwind_css": {
@@ -691,6 +691,28 @@
       "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 0
+    },
+    "youtube_data_api_v3": {
+      "description": "Auto-discovered from request 033",
+      "intent_mappings": [
+        "youtube_playlist_creation"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-09-09",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "quota_budgeting": {
+      "description": "Auto-discovered from request 033",
+      "intent_mappings": [
+        "youtube_playlist_creation"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-09-09",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
     }
   },
   "intent_to_skill_map": {
@@ -898,6 +920,17 @@
       "promoted_from_pattern": true,
       "times_fired": 0,
       "risk_score": 3
+    },
+    {
+      "id": "auto_preload_google_oauth2_desktop_flow",
+      "event": "PreToolUse",
+      "matcher": "google_oauth2_desktop_flow",
+      "description": "Auto-promoted: pre-load google_oauth2_desktop_flow context after 1 uses",
+      "command": "\"/usr/local/bin/python\" scripts/preload_google_oauth2_desktop_flow.py 2>&1",
+      "added": "2026-09-09",
+      "promoted_from_pattern": true,
+      "times_fired": 0,
+      "risk_score": 1
     }
   ],
   "mcp": {
@@ -1110,6 +1143,11 @@
           "count": 1,
           "avg_sec": 4.0,
           "success_rate": 1.0
+        },
+        "youtube_playlist_creation": {
+          "count": 1,
+          "avg_sec": 10.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1171,6 +1209,11 @@
           "count": 1,
           "avg_sec": 22.0,
           "success_rate": 1.0
+        },
+        "youtube_playlist_creation": {
+          "count": 1,
+          "avg_sec": 150.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1227,6 +1270,11 @@
           "count": 2,
           "avg_sec": 4.5,
           "success_rate": 0.0
+        },
+        "youtube_playlist_creation": {
+          "count": 1,
+          "avg_sec": 3.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1282,6 +1330,11 @@
         "event_planning_pack": {
           "count": 1,
           "avg_sec": 3.0,
+          "success_rate": 0.0
+        },
+        "youtube_playlist_creation": {
+          "count": 1,
+          "avg_sec": 4.0,
           "success_rate": 0.0
         }
       }
@@ -1377,6 +1430,11 @@
           "count": 1,
           "avg_sec": 5.0,
           "success_rate": 0.0
+        },
+        "youtube_playlist_creation": {
+          "count": 1,
+          "avg_sec": 8.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1453,7 +1511,10 @@
     "langgraph_hitl_interrupt": 1,
     "streamlit_app": 1,
     "suit_manager": 1,
-    "strategic_report": 1
+    "strategic_report": 1,
+    "google_oauth2_desktop_flow": 1,
+    "youtube_data_api_v3": 1,
+    "quota_budgeting": 1
   },
   "github_activity_counters": {
     "commit": 0,
