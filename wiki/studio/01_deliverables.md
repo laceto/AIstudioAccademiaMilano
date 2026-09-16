@@ -1,7 +1,7 @@
 # Deliverables Catalogue
 
 Every shipped product. Auto-updated by `scripts/learning_loop.py` after each delivery.
-Last updated: 2026-05-25
+Last updated: 2026-09-16
 
 | ID | Date | Product | Stack | Price | Path |
 |----|------|---------|-------|-------|------|
@@ -19,6 +19,7 @@ Last updated: 2026-05-25
 | 013 | 2026-05-24 | techa deploy: LangGraph trading agents | LangGraph, TA-Lib, HF Spaces / Cloud Run | €19.90 | `deliverables/2026-05-24_013_techa-deploy/` |
 | 014 | 2026-05-24 | Dispenser input v1 | Stripe, Twilio, Telegram Bot, Streamlit | €0.00 (internal infra) | `deliverables/2026-05-24_014_dispenser-input/` |
 | 001✓ | 2026-05-24 | Warranty fix: bakery placeholder + form sentinel | JS, SVG | €0.00 (courtesy) | `deliverables/2026-05-23_001_bakery-website/` |
+| 034 | 2026-09-16 | deepagents-gcal — deepagents agent + Google Calendar tools (pip package) | deepagents, LangGraph, LangChain, Google Calendar API v3 | €14.90 | `deliverables/2026-09-16_034_deepagents-gcal/` |
 
 ## Revenue Summary
 
