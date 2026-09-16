@@ -2,11 +2,11 @@
   "_meta": {
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
-    "last_updated": "2026-09-07",
-    "last_request_id": "032",
-    "total_requests_processed": 24,
+    "last_updated": "2026-09-16",
+    "last_request_id": "034",
+    "total_requests_processed": 25,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "032"
+    "last_processed_audit_log": "034"
   },
   "skills": {
     "html_tailwind_css": {
@@ -691,6 +691,39 @@
       "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 0
+    },
+    "deepagents_package_authoring": {
+      "description": "Auto-discovered from request 034",
+      "intent_mappings": [
+        "calendar_integration"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-09-16",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "google_calendar_api_v3": {
+      "description": "Auto-discovered from request 034",
+      "intent_mappings": [
+        "calendar_integration"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-09-16",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "python_packaging_hatchling": {
+      "description": "Auto-discovered from request 034",
+      "intent_mappings": [
+        "calendar_integration"
+      ],
+      "agent": "unknown",
+      "first_seen": "2026-09-16",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
     }
   },
   "intent_to_skill_map": {
@@ -1110,6 +1143,11 @@
           "count": 1,
           "avg_sec": 4.0,
           "success_rate": 1.0
+        },
+        "calendar_integration": {
+          "count": 1,
+          "avg_sec": 25.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1171,6 +1209,11 @@
           "count": 1,
           "avg_sec": 22.0,
           "success_rate": 1.0
+        },
+        "calendar_integration": {
+          "count": 1,
+          "avg_sec": 900.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1227,6 +1270,11 @@
           "count": 2,
           "avg_sec": 4.5,
           "success_rate": 0.0
+        },
+        "calendar_integration": {
+          "count": 1,
+          "avg_sec": 4.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1280,6 +1328,11 @@
           "success_rate": 1.0
         },
         "event_planning_pack": {
+          "count": 1,
+          "avg_sec": 3.0,
+          "success_rate": 0.0
+        },
+        "calendar_integration": {
           "count": 1,
           "avg_sec": 3.0,
           "success_rate": 0.0
@@ -1339,6 +1392,11 @@
           "count": 1,
           "avg_sec": 8.0,
           "success_rate": 1.0
+        },
+        "calendar_integration": {
+          "count": 1,
+          "avg_sec": 60.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1377,6 +1435,11 @@
           "count": 1,
           "avg_sec": 5.0,
           "success_rate": 0.0
+        },
+        "calendar_integration": {
+          "count": 1,
+          "avg_sec": 120.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1392,6 +1455,28 @@
         "real_estate_dashboard": {
           "count": 1,
           "avg_sec": 60.0,
+          "success_rate": 0.0
+        }
+      }
+    },
+    "agentic-router": {
+      "roles": [],
+      "capabilities": [],
+      "task_stats": {
+        "calendar_integration": {
+          "count": 1,
+          "avg_sec": 6.0,
+          "success_rate": 0.0
+        }
+      }
+    },
+    "Technical Auditor": {
+      "roles": [],
+      "capabilities": [],
+      "task_stats": {
+        "calendar_integration": {
+          "count": 1,
+          "avg_sec": 120.0,
           "success_rate": 0.0
         }
       }
@@ -1453,7 +1538,16 @@
     "langgraph_hitl_interrupt": 1,
     "streamlit_app": 1,
     "suit_manager": 1,
-    "strategic_report": 1
+    "strategic_report": 1,
+    "deep-agents-core": 1,
+    "deep-agents-orchestration": 1,
+    "langgraph-subagents": 1,
+    "langgraph-persistence": 1,
+    "langchain-fundamentals": 1,
+    "deepagents_package_authoring": 1,
+    "google_calendar_api_v3": 1,
+    "langgraph_human_in_the_loop": 1,
+    "python_packaging_hatchling": 1
   },
   "github_activity_counters": {
     "commit": 0,
