@@ -14,6 +14,7 @@ Every deepagents keyword argument (`middleware`, `store`, `response_format`,
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any, Sequence
 
@@ -30,6 +31,8 @@ from .tools import WRITE_TOOL_NAMES, build_calendar_tools
 DEFAULT_MODEL = "anthropic:claude-sonnet-5"
 
 APPROVAL_DECISIONS = ["approve", "edit", "reject"]
+
+logger = logging.getLogger(__name__)
 
 
 def default_model() -> str:
@@ -129,14 +132,30 @@ def create_calendar_agent(
     if interrupt_on and checkpointer is None:
         from langgraph.checkpoint.memory import InMemorySaver
 
+        # Interrupts need a checkpointer to resume from. An in-memory one is fine for a
+        # CLI or a notebook, but a paused write cannot survive a restart or reach a second
+        # worker — pass SqliteSaver/PostgresSaver for anything long-lived.
+        logger.warning(
+            "Approval is enabled with no checkpointer; using an in-memory one. "
+            "Pending approvals will not survive a restart — pass a persistent "
+            "checkpointer (SqliteSaver, PostgresSaver) in production."
+        )
         checkpointer = InMemorySaver()
 
-    return create_deep_agent(
-        model=model or default_model(),
-        tools=all_tools,
-        system_prompt=system_prompt or CALENDAR_SYSTEM_PROMPT,
-        subagents=all_subagents or None,
-        interrupt_on=interrupt_on,
-        checkpointer=checkpointer,
-        **deep_agent_kwargs,
-    )
+    try:
+        return create_deep_agent(
+            model=model or default_model(),
+            tools=all_tools,
+            system_prompt=system_prompt or CALENDAR_SYSTEM_PROMPT,
+            subagents=all_subagents or None,
+            interrupt_on=interrupt_on,
+            checkpointer=checkpointer,
+            **deep_agent_kwargs,
+        )
+    except ImportError as exc:
+        # Model providers are optional extras, so the default model's package may be absent.
+        raise ImportError(
+            f"{exc}. The model provider package is not installed — try "
+            "`pip install deepagents-gcal[anthropic]` (or [openai]), or pass a model "
+            "instance you built yourself."
+        ) from exc

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -10,6 +10,7 @@ import pytest
 from deepagents_gcal.errors import TimeParseError
 from deepagents_gcal.timeutils import (
     day_bounds,
+    get_timezone,
     humanize_range,
     is_date_only,
     now_in,
@@ -107,3 +108,29 @@ def test_humanize_range_collapses_same_day():
     end = datetime(2026, 9, 17, 11, 30, tzinfo=ZoneInfo(TZ))
     assert humanize_range(start, end) == "2026-09-17 10:00–11:30"
     assert "→" in humanize_range(start, end.replace(day=18))
+
+
+def test_hour_offsets_are_elapsed_time_across_a_dst_boundary():
+    """25 Oct 2026 02:00 CEST falls back to 01:00 CET; +2h must still be two real hours."""
+    before_fallback = datetime(2026, 10, 25, 1, 30, tzinfo=ZoneInfo(TZ))
+    moved = parse_datetime("+2h", TZ, reference=before_fallback)
+    # Same-zone subtraction in Python is wall-clock, so elapsed time is measured in UTC.
+    elapsed = moved.astimezone(timezone.utc) - before_fallback.astimezone(timezone.utc)
+    assert elapsed.total_seconds() == 2 * 3600
+    # Wall clock advances by one hour only, because 02:00 CEST falls back to 01:00 CET.
+    assert moved.hour == 2 and moved.utcoffset().total_seconds() == 3600
+
+
+def test_day_offsets_stay_wall_clock_across_a_dst_boundary():
+    before_fallback = datetime(2026, 10, 25, 1, 30, tzinfo=ZoneInfo(TZ))
+    moved = parse_datetime("+1d", TZ, reference=before_fallback)
+    assert (moved.hour, moved.minute) == (1, 30)
+
+
+@pytest.mark.parametrize(
+    ("name", "offset_hours"),
+    [("GMT+02:00", 2), ("GMT-05:00", -5), ("UTC+1", 1), ("GMT+0530", 5.5)],
+)
+def test_google_fixed_offset_zones_are_accepted(name, offset_hours):
+    zone = get_timezone(name)
+    assert zone.utcoffset(datetime(2026, 9, 17)).total_seconds() == offset_hours * 3600

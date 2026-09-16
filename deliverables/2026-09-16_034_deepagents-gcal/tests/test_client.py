@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -10,7 +11,12 @@ import pytest
 from conftest import FakeCalendarService, FakeHttpError, api_event
 from deepagents_gcal.client import GoogleCalendarClient
 from deepagents_gcal.config import CalendarSettings
-from deepagents_gcal.errors import ApiError, EventNotFoundError, ReadOnlyError
+from deepagents_gcal.errors import (
+    ApiError,
+    CalendarNotAllowedError,
+    EventNotFoundError,
+    ReadOnlyError,
+)
 from deepagents_gcal.models import EventDraft
 
 TZ = "Europe/Rome"
@@ -190,3 +196,101 @@ def test_cancelled_recurring_instances_are_skipped(client, fake_service):
     fake_service.stored_events["evt_cancelled"] = {"id": "evt_cancelled", "status": "cancelled"}
     events = client.list_events(time_min="2026-09-17", time_max="2026-09-18")
     assert [e.id for e in events] == ["evt_1", "evt_2"]
+
+
+def test_allowlist_is_a_boundary_not_a_default(fake_service):
+    """Google has no per-calendar scope, so this is the only containment there is."""
+    client = GoogleCalendarClient(
+        service=fake_service,
+        settings=CalendarSettings(
+            calendar_id="team@studio.it", allowed_calendar_ids=["team@studio.it"], timezone=TZ
+        ),
+    )
+    assert client.list_events(calendar_id="team@studio.it") is not None
+    for call in (
+        lambda: client.list_events(calendar_id="primary"),
+        lambda: client.get_event("evt_1", calendar_id="primary"),
+        lambda: client.create_event(
+            EventDraft(summary="x", start="2026-09-18T10:00", duration_minutes=30),
+            calendar_id="primary",
+        ),
+        lambda: client.delete_event("evt_1", calendar_id="primary"),
+    ):
+        with pytest.raises(CalendarNotAllowedError):
+            call()
+
+
+def test_allowlist_covers_multi_calendar_freebusy(fake_service):
+    client = GoogleCalendarClient(
+        service=fake_service,
+        settings=CalendarSettings(
+            calendar_id="team@studio.it", allowed_calendar_ids=["team@studio.it"], timezone=TZ
+        ),
+    )
+    with pytest.raises(CalendarNotAllowedError):
+        client.find_free_slots(60, calendar_ids=["team@studio.it", "someone-else@acme.it"])
+
+
+def test_settings_reject_a_default_calendar_outside_its_own_allowlist():
+    with pytest.raises(ValueError):
+        CalendarSettings(calendar_id="primary", allowed_calendar_ids=["team@studio.it"])
+
+
+def test_unreadable_calendar_raises_instead_of_reporting_it_free(settings):
+    service = FakeCalendarService(freebusy_errors={"typo@acme.it": [{"reason": "notFound"}]})
+    client = GoogleCalendarClient(service=service, settings=settings)
+    with pytest.raises(ApiError) as excinfo:
+        client.find_free_slots(60, calendar_ids=["typo@acme.it"])
+    assert "notFound" in str(excinfo.value)
+
+
+def test_listing_follows_pagination_up_to_the_cap(settings):
+    events = [
+        api_event(f"evt_{i}", f"Event {i}", "2026-09-17T09:00:00+02:00", "2026-09-17T09:30:00+02:00")
+        for i in range(7)
+    ]
+    service = FakeCalendarService(events=events, page_size=3)
+    client = GoogleCalendarClient(service=service, settings=settings)
+
+    assert len(client.list_events(max_results=7)) == 7
+    assert len([c for c, _ in service.calls if c == "events.list"]) == 3
+    assert len(client.list_events(max_results=2)) == 2
+
+
+def test_get_event_on_a_cancelled_instance_is_a_calendar_error(client, fake_service):
+    fake_service.stored_events["evt_cancelled"] = {"id": "evt_cancelled", "status": "cancelled"}
+    with pytest.raises(EventNotFoundError):
+        client.get_event("evt_cancelled")
+
+
+def test_google_error_bodies_are_truncated_before_they_reach_callers(settings):
+    service = FakeCalendarService(errors={"events.list": FakeHttpError(500, "x" * 2000)})
+    client = GoogleCalendarClient(service=service, settings=settings)
+    with pytest.raises(ApiError) as excinfo:
+        client.list_events()
+    assert len(str(excinfo.value)) < 500
+
+
+def test_retries_are_requested_when_the_service_supports_them(settings):
+    seen: dict[str, Any] = {}
+
+    class RetryAwareService(FakeCalendarService):
+        def calendarList(self):
+            outer = self
+
+            class _CalendarList:
+                def list(self, **params):
+                    class _R:
+                        def execute(self, num_retries=0):
+                            seen["num_retries"] = num_retries
+                            return {"items": outer.calendars}
+
+                    return _R()
+
+            return _CalendarList()
+
+    client = GoogleCalendarClient(
+        service=RetryAwareService(), settings=settings.model_copy(update={"max_retries": 3})
+    )
+    client.list_calendars()
+    assert seen["num_retries"] == 3

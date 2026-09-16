@@ -19,6 +19,10 @@ class ReadOnlyError(CalendarError):
     """A write was attempted on a client configured as read-only."""
 
 
+class CalendarNotAllowedError(CalendarError):
+    """A calendar outside `allowed_calendar_ids` was addressed."""
+
+
 class EventNotFoundError(CalendarError):
     """The requested event does not exist on the given calendar."""
 

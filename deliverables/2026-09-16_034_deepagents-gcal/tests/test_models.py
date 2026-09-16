@@ -137,3 +137,49 @@ def test_free_slot_duration():
     )
     assert slot.duration_minutes == 90
     assert slot.to_summary()["duration_minutes"] == 90
+
+
+def test_all_day_duration_rounds_up_to_an_exclusive_end():
+    """Google rejects an all-day body whose end date is not strictly after its start."""
+    body = EventDraft(summary="Ferie", start="2026-09-17", duration_minutes=30, all_day=True).to_api(TZ)
+    assert body["start"] == {"date": "2026-09-17"}
+    assert body["end"] == {"date": "2026-09-18"}
+
+
+def test_all_day_multi_day_range_is_preserved():
+    body = EventDraft(summary="Ferie", start="2026-09-17", end="2026-09-21", all_day=True).to_api(TZ)
+    assert body["end"] == {"date": "2026-09-21"}
+
+
+def test_all_day_with_times_still_yields_a_valid_date_pair():
+    body = EventDraft(
+        summary="Ferie", start="2026-09-17T10:00", end="2026-09-17T11:00", all_day=True
+    ).to_api(TZ)
+    assert body["start"]["date"] < body["end"]["date"]
+
+
+def test_google_fixed_offset_timezone_does_not_break_parsing():
+    """Legacy and Exchange-imported calendars return zones like GMT+02:00, not IANA names."""
+    parsed = EventTime.from_api({"dateTime": "2026-09-17T10:00:00+02:00", "timeZone": "GMT+02:00"})
+    assert parsed.date_time.hour == 10
+
+
+def test_unusable_timezone_falls_back_instead_of_failing_the_listing():
+    parsed = EventTime.from_api({"dateTime": "2026-09-17T10:00:00+02:00", "timeZone": "Bogus/Zone"})
+    assert parsed.date_time.utcoffset().total_seconds() == 2 * 3600
+
+
+def test_long_untrusted_text_is_clipped_in_summaries():
+    event = Event.from_api(
+        {
+            "id": "evt_x",
+            "summary": "A" * 5000,
+            "description": "B" * 5000,
+            "start": {"dateTime": "2026-09-17T09:00:00+02:00"},
+            "end": {"dateTime": "2026-09-17T09:15:00+02:00"},
+        }
+    )
+    summary = event.to_summary()
+    assert len(summary["summary"]) < 400
+    assert len(summary["description"]) < 1100
+    assert "truncated" in summary["description"]

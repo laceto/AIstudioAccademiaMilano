@@ -44,16 +44,24 @@ agents_invoked:
   - name: Stacy QA
     role: output_validator
     action: >
-      QA pass — see qa_result. 123/123 package tests and 8/8 repo contract tests green;
-      no credentials in code; token files gitignored; README claims verified against code.
-    duration_sec: 120
-    status: ok
+      FAIL on first pass — 9 defects, all documentation/completeness: CLI flags rejected
+      after the subcommand (the README's own quick-start command), all-day events built
+      with a non-exclusive end date, `pip install deepagents-gcal` documented but
+      unpublished, `.env` documented but never loaded, token file world-readable during
+      the write, no packaged `.gitignore`, `get_event` raising an untranslated error on a
+      cancelled instance. One claim rejected: the Haiku model id is valid as written.
+    duration_sec: 416
+    status: fail_then_fixed
   - name: Technical Auditor
     role: risk_agent
     action: >
-      Code, security and architecture review of the package; Risk Units scored below.
-    duration_sec: 120
-    status: ok
+      4.58 RU (baseline 2.4, flag 3.6) — above threshold. One P0 (documented
+      `calendar_id` containment that did not hold) and five P1s: prompt injection via
+      event text, freebusy reporting an unreadable calendar as free, all-day end dates,
+      non-IANA Google timezones aborting a listing, undocumented release rollback.
+      All P0/P1 code defects fixed and regression-tested; see Review pass below.
+    duration_sec: 396
+    status: fail_then_fixed
   - name: Marco
     role: transaction_manager
     action: >
@@ -82,7 +90,7 @@ delivery:
   method: github
   destination: deliverables/2026-09-16_034_deepagents-gcal/
   confirmed: true
-qa_result: pass
+qa_result: pass_after_fixes
 payment:
   amount: "14.90"
   method: pending
@@ -94,6 +102,8 @@ learning_flags:
     - python_packaging_hatchling
   new_mcp: []
   risk_score: 2
+  risk_units_pre_fix: 4.58
+  risk_units_flagged: true
   cost_overrun: false
   loss_development_flag: false
 ---
@@ -155,7 +165,7 @@ tool in this package that can flood a context window.
 
 ## Testing
 
-123 tests in the package (`pytest` from the package root) plus 8 repo contract tests in
+160 tests in the package (`pytest` from the package root) plus 10 repo contract tests in
 `tests/test_034_deepagents_gcal.py`. All offline: a fake Google service object is injected
 into `GoogleCalendarClient`, so the real request-building path is exercised without a
 credential or a network call.
@@ -175,6 +185,62 @@ contract is written from Google Calendar API v3 documentation and exercised agai
 that mirrors the `googleapiclient` chained-builder shape. Packaging *is* verified: the wheel
 builds and installs, and the `deepagents-gcal` CLI runs from the installed entry point.
 
+## Review pass — what the two reviews changed
+
+Both reviews failed the first cut, and they failed it on different axes: Stacy on
+documentation that did not match the code, the auditor on defects that would only show up
+against the real Google API. Every claim below was reproduced before being fixed, and one
+was rejected: `claude-haiku-4-5-20251001` is a valid model id, so the comment stands.
+
+**The finding that mattered most.** The README told developers to contain the agent with a
+narrow `calendar_id`. That is not containment: Google's `calendar.events` scope is
+account-wide, every tool takes a `calendar_id`, and `settings.calendar_id` was only a
+default — a prompt that passes `calendar_id="primary"` writes to the main calendar. Shipping
+a security control that does not hold is worse than shipping none, because someone relies on
+it. Fixed with a real boundary: `allowed_calendar_ids`, enforced in `_calendar()` below the
+tool layer, refusing any other calendar before a request is built.
+
+Fixed, each with a regression test:
+
+| Finding | Fix |
+|---------|-----|
+| `calendar_id` documented as containment but wasn't | `allowed_calendar_ids` allowlist enforced in the client |
+| Event text reached the model unlabelled (Google files emailed invitations into the primary calendar) | Untrusted-content note in every payload carrying event text, injection rules in both prompts, free text truncated |
+| freebusy reported an unreadable calendar as completely free | Per-calendar `errors` now raise instead of silently returning an empty schedule |
+| All-day events built a non-exclusive end date Google rejects | End date rounds up and is floored at start + 1 day |
+| `GMT+02:00`-style zones aborted a whole listing | Fixed-offset zones parsed; unusable zone names fall back instead of raising |
+| `+2h` was wall-clock, so it meant 3 hours across a DST fallback | Minute/hour offsets resolve through UTC; day/week offsets stay wall-clock |
+| CLI rejected `chat --dry-run` — the README's first command | Global flags on a shared parent parser, `SUPPRESS` defaults so both orders win |
+| Enter at the approval prompt approved an irreversible write | Approval is explicit; a bare Return rejects |
+| One answer could be applied to a different pending call | One decision per action request, each prompted after the call it names |
+| `update_event` broke all-day events and could invert start/end | Reads the event first, preserves its shape, carries duration when only the start moves |
+| Token file was 0644 during the write | Created 0600 via `os.open`, written to a temp file, atomically renamed |
+| A read-only token failed with a 403 *after* a human approved the write | Scopes verified at load time |
+| Listings silently truncated at `max_results` | Pagination followed to the cap, `truncated` reported |
+| `get_event` on a cancelled instance raised an untranslated error | Translated to `EventNotFoundError` |
+| Transient 429/5xx became user-visible failures | `num_retries` passed to services that accept it |
+| Google error bodies forwarded verbatim into model context | Clipped to 300 chars |
+| `pip install deepagents-gcal` documented but unpublished; `.env` documented but never read | README corrected; optional `dotenv` extra loads it in the CLI |
+| No packaged `.gitignore` — token lands in the project root when lifted out of this repo | Shipped with the package |
+| Malformed `GCAL_*` values produced a traceback | Wrapped as `CalendarError`, which the CLI handles |
+
+Tests went 124 → 160. Re-verified after the fixes: full suite green, `ruff` clean, wheel
+builds, clean-virtualenv install works and `deepagents-gcal tools --read-only` runs from the
+installed entry point. The re-verification was mine, not a second Stacy pass — worth knowing
+when reading `qa_result: pass_after_fixes`.
+
+## For Luigi
+
+Three things deliberately left open rather than decided by an agent:
+
+1. **Publishing.** The auditor withheld sign-off on any package-index release until a
+   rollback procedure existed; that is now written into the README (yank + patch release,
+   never reuse a version). Whether to publish at all is still your call.
+2. **No request timeout** on the Google service object — a hung request blocks the agent.
+   Documented under Known limitations rather than papered over.
+3. **In-memory approval state** is the default. Fine for a CLI, wrong for a server: a paused
+   write cannot survive a restart. The code now warns when it auto-provisions one.
+
 ## Open follow-ups
 
 - Real-credential smoke test once Luigi runs `deepagents-gcal auth` (D007 already has the
@@ -185,3 +251,4 @@ builds and installs, and the `deepagents-gcal` CLI runs from the installed entry
   (or a private index) is a Luigi decision, not an agent one
 - `GCAL_TIMEZONE` defaults to `Europe/Rome` — studio-centric, and the right default for
   this studio's clients, but worth revisiting if the package is published publicly
+- Request timeouts and a `RecurrenceRule` for series creation, if this grows past 0.1.0

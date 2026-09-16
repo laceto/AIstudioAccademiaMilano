@@ -15,7 +15,7 @@ Everything here is pure: no network, no Google client libraries.
 from __future__ import annotations
 
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .errors import TimeParseError
@@ -26,11 +26,24 @@ _UNIT_TO_KWARG = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
 DATE_ONLY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
-def get_timezone(name: str) -> ZoneInfo:
-    """Return a `ZoneInfo`, raising `TimeParseError` for unknown zone names."""
+_GMT_OFFSET_RE = re.compile(r"^(?:GMT|UTC)([+-])(\d{1,2})(?::?(\d{2}))?$", re.IGNORECASE)
+
+
+def get_timezone(name: str) -> tzinfo:
+    """Return a timezone for `name`.
+
+    Accepts IANA names plus the fixed-offset forms Google returns on legacy and
+    Exchange-imported calendars (`GMT+02:00`, `UTC-5`), which are not IANA zones
+    and would otherwise blow up a whole listing over one odd event.
+    """
+    fixed = _GMT_OFFSET_RE.match(name.strip())
+    if fixed:
+        sign, hours, minutes = fixed.groups()
+        delta = timedelta(hours=int(hours), minutes=int(minutes or 0))
+        return timezone(-delta if sign == "-" else delta, name)
     try:
         return ZoneInfo(name)
-    except (ZoneInfoNotFoundError, ValueError) as exc:  # pragma: no cover - platform dependent
+    except (ZoneInfoNotFoundError, ValueError) as exc:
         raise TimeParseError(f"Unknown timezone {name!r}") from exc
 
 
@@ -77,8 +90,16 @@ def parse_datetime(value: str | datetime | date, tz: str, *, reference: datetime
     relative = _RELATIVE_RE.match(lowered)
     if relative:
         sign, amount, unit = relative.groups()
-        delta = timedelta(**{_UNIT_TO_KWARG[unit.lower()]: int(amount)})
-        return ref + delta if sign == "+" else ref - delta
+        unit = unit.lower()
+        delta = timedelta(**{_UNIT_TO_KWARG[unit]: int(amount)})
+        if sign == "-":
+            delta = -delta
+        if unit in ("m", "h"):
+            # Minutes and hours are elapsed time: add them in UTC so "+2h" stays two
+            # real hours across a DST boundary instead of two turns of the clock face.
+            return (ref.astimezone(timezone.utc) + delta).astimezone(zone)
+        # Days and weeks are wall-clock: "+1d" means the same time tomorrow.
+        return ref + delta
 
     candidate = raw.replace("Z", "+00:00") if raw.endswith("Z") else raw
     try:

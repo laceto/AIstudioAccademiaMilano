@@ -42,6 +42,8 @@ class FakeCalendarService:
         calendars: list[dict[str, Any]] | None = None,
         busy: list[dict[str, str]] | None = None,
         errors: dict[str, Exception] | None = None,
+        freebusy_errors: dict[str, list[dict[str, str]]] | None = None,
+        page_size: int | None = None,
     ) -> None:
         self.stored_events = {e["id"]: e for e in (events or [])}
         self.calendars = calendars or [
@@ -51,6 +53,8 @@ class FakeCalendarService:
         ]
         self.busy = busy or []
         self.errors = errors or {}
+        self.freebusy_errors = freebusy_errors or {}
+        self.page_size = page_size  # when set, events.list paginates like the real API
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
     def _record(self, name: str, params: dict[str, Any]) -> None:
@@ -76,7 +80,14 @@ class FakeCalendarService:
                 query = params.get("q")
                 if query:
                     items = [e for e in items if query.lower() in e.get("summary", "").lower()]
-                return _Request({"items": items}, outer.errors.get("events.list"))
+                if outer.page_size is None:
+                    return _Request({"items": items}, outer.errors.get("events.list"))
+                offset = int(params.get("pageToken") or 0)
+                page = items[offset : offset + outer.page_size]
+                payload: dict[str, Any] = {"items": page}
+                if offset + outer.page_size < len(items):
+                    payload["nextPageToken"] = str(offset + outer.page_size)
+                return _Request(payload, outer.errors.get("events.list"))
 
             def get(self, **params: Any) -> _Request:
                 outer._record("events.get", params)
@@ -114,7 +125,13 @@ class FakeCalendarService:
         class _FreeBusy:
             def query(self, body: dict[str, Any]) -> _Request:
                 outer._record("freebusy.query", body)
-                calendars = {item["id"]: {"busy": outer.busy} for item in body["items"]}
+                calendars: dict[str, Any] = {}
+                for item in body["items"]:
+                    cid = item["id"]
+                    if cid in outer.freebusy_errors:
+                        calendars[cid] = {"busy": [], "errors": outer.freebusy_errors[cid]}
+                    else:
+                        calendars[cid] = {"busy": outer.busy}
                 return _Request({"calendars": calendars}, outer.errors.get("freebusy.query"))
 
         return _FreeBusy()

@@ -13,12 +13,16 @@ drop them into your own graph.
 ## Install
 
 ```bash
-pip install deepagents-gcal            # from a package index
-pip install -e ".[anthropic,dev]"      # from a checkout, with a model provider and test deps
+pip install -e ".[anthropic]"          # from a checkout — this is how you install it today
+pip install -e ".[anthropic,dev,dotenv]"   # plus test deps and .env loading
 ```
 
+Not yet published to an index, so `pip install deepagents-gcal` does not resolve — install
+from a checkout (or a git URL) until it is.
+
 Python 3.11+. Model providers are extras — pick `anthropic`, `openai`, or install your own
-LangChain chat model package.
+LangChain chat model package. Installing without one and calling `create_calendar_agent()`
+raises an ImportError telling you which extra you need.
 
 ## Google setup (once)
 
@@ -143,9 +147,32 @@ Allowed decisions are `approve`, `edit` (supply `edited_action`) and `reject` (o
 | `require_approval=True` (default) | Interrupts before each write so a human approves, edits or rejects it |
 
 `read_only` and `dry_run` are enforced in `GoogleCalendarClient`, below the tool layer, so a
-jailbroken prompt cannot talk its way past them. `require_approval` is orchestration: turning it
-off means an unattended agent can change a real calendar, so pair it with `dry_run` in testing
-and with a narrow, non-primary `calendar_id` in production.
+jailbroken prompt cannot talk its way past them. `require_approval` is orchestration: turning
+it off means an unattended agent can change a real calendar, so pair it with `dry_run` in
+testing and with an allowlist in production.
+
+**`calendar_id` alone is a default, not a boundary.** Google's `calendar.events` scope is
+account-wide and every tool takes a `calendar_id`, so an agent can name any calendar the
+account can reach. To actually contain it, set an allowlist — enforced in the client, like
+the other two:
+
+```python
+client = GoogleCalendarClient.from_env(
+    calendar_id="agent@studio.it",
+    allowed_calendar_ids=["agent@studio.it"],   # or GCAL_ALLOWED_CALENDAR_IDS
+)
+```
+
+Any call naming another calendar then fails with `CalendarNotAllowedError` before a request
+is built.
+
+**Event text is untrusted input.** Google files emailed invitations straight into the primary
+calendar, so anyone who can email the user can put text in the agent's context. The tools
+label event content as data in every payload that carries it, the system prompts tell the
+agent never to follow instructions found there, and free text is truncated. That is
+mitigation, not a guarantee — with `require_approval=False` there is no human between an
+injected instruction and a calendar write, so keep approval on when the calendar receives
+mail from outside.
 
 Other guarantees worth knowing:
 
@@ -167,20 +194,27 @@ Every setting comes from a `GCAL_*` environment variable, an argument to
 | `GCAL_SERVICE_ACCOUNT_FILE` | `$GOOGLE_APPLICATION_CREDENTIALS` | Service-account key |
 | `GCAL_SUBJECT` | — | Impersonated user for domain-wide delegation |
 | `GCAL_CALENDAR_ID` | `primary` | Default calendar |
+| `GCAL_ALLOWED_CALENDAR_IDS` | — | Comma-separated allowlist; any other calendar is refused |
 | `GCAL_TIMEZONE` | `Europe/Rome` | IANA zone for parsing and display |
 | `GCAL_READ_ONLY` | `false` | Load no write tools |
 | `GCAL_DRY_RUN` | `false` | Validate writes without sending them |
-| `GCAL_MAX_RESULTS` | `25` | Default page size for listings |
+| `GCAL_MAX_RESULTS` | `25` | Cap on events returned per listing |
+| `GCAL_MAX_RETRIES` | `2` | Retries for transient Google failures (429/5xx) |
 | `GCAL_WORK_START` / `GCAL_WORK_END` | `9` / `18` | Working hours for `find_free_slots` |
 | `GCAL_AGENT_MODEL` | `anthropic:claude-sonnet-5` | Default model id |
 
-Copy `.env.example` to `.env` as a starting point. Never commit either credential file.
+Copy `.env.example` to `.env` as a starting point. Nothing reads that file automatically
+unless you install the `dotenv` extra (`pip install -e ".[dotenv]"`), which makes the CLI
+load it at startup; otherwise export the variables yourself (`set -a; . ./.env; set +a`) or
+let your process manager do it. `deepagents-gcal doctor` prints what actually resolved.
+Never commit `.env` or either credential file — the package ships a `.gitignore` covering
+them.
 
 ## Development
 
 ```bash
 pip install -e ".[dev,anthropic]"
-pytest                    # 100+ tests, fully offline — a fake Google service, no network, no key
+pytest                    # 160 tests, fully offline — a fake Google service, no network, no key
 ruff check src tests
 ```
 
@@ -204,6 +238,34 @@ src/deepagents_gcal/
 ├── prompts.py     system prompts
 └── cli.py         deepagents-gcal entry point
 ```
+
+## Known limitations
+
+- **Listings are capped, not exhaustive.** `list_events` follows pagination up to
+  `max_results` (≤250) and sets `"truncated": true` when it stops there. Narrow the window
+  rather than assuming you saw everything.
+- **All-day events usually do not block free slots.** Google's freebusy endpoint honours
+  event transparency, and all-day events default to *free* — so a full-day holiday will not
+  remove those hours from `find_free_slots` unless it is marked busy.
+- **Approval state is in memory by default.** The auto-provisioned `InMemorySaver` cannot
+  resume a pending approval after a restart, and a second worker will not see the thread.
+  Pass `SqliteSaver` or `PostgresSaver` for anything long-lived.
+- **No recurring-event creation.** Recurring events are read (expanded into instances), but
+  `create_event` does not write an RRULE series.
+- **No request timeout.** A hung Google request blocks the agent; set one on a service object
+  you build yourself if that matters to you.
+
+## Releasing
+
+Versions follow semver in `pyproject.toml`; `__version__` in `src/deepagents_gcal/__init__.py`
+must match. To cut a release: bump both, run `pytest` and `ruff check src tests examples`,
+build with `pip wheel . --no-deps -w dist/`, and install the wheel into an empty virtualenv
+before publishing it anywhere.
+
+Rollback, if a bad version ships: a package index will not let you re-upload a version, so
+**yank the bad one and release a fixed patch version** — never reuse the number. Consumers
+who pinned it need the new version; consumers on a range get it automatically once the bad
+one is yanked.
 
 ## License
 

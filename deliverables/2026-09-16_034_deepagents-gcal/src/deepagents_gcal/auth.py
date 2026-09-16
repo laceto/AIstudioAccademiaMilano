@@ -12,6 +12,7 @@ tool schemas, planning logic) stays importable — and testable — without them
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 from typing import Any
@@ -59,7 +60,7 @@ def load_credentials(settings: CalendarSettings, *, allow_interactive: bool = Fa
         except json.JSONDecodeError as exc:
             raise AuthError(f"{TOKEN_JSON_ENV} is not valid JSON") from exc
         creds = Credentials.from_authorized_user_info(info, scopes)
-        return _refreshed(creds, Request)
+        return _check_scopes(_refreshed(creds, Request), scopes)
 
     if settings.service_account_file:
         return _service_account_credentials(settings, scopes)
@@ -69,7 +70,7 @@ def load_credentials(settings: CalendarSettings, *, allow_interactive: bool = Fa
         creds = _refreshed(creds, Request)
         if creds and creds.valid:
             _persist(creds, settings.token_file)
-            return creds
+            return _check_scopes(creds, scopes)
 
     if not allow_interactive:
         raise AuthError(
@@ -78,6 +79,22 @@ def load_credentials(settings: CalendarSettings, *, allow_interactive: bool = Fa
         )
 
     return _run_installed_flow(settings, scopes)
+
+
+def _check_scopes(creds: Any, scopes: list[str]) -> Any:
+    """Fail at load time if the user never consented to what this client needs.
+
+    Without this a token minted in read-only mode fails with a 403 at the moment of
+    the write — after a human has already approved it in the interrupt.
+    """
+    has_scopes = getattr(creds, "has_scopes", None)
+    if callable(has_scopes) and not has_scopes(scopes):
+        granted = " ".join(getattr(creds, "scopes", None) or []) or "none"
+        raise AuthError(
+            f"The cached token does not grant the scopes this client needs "
+            f"({' '.join(scopes)}; granted: {granted}). Re-run `deepagents-gcal auth`."
+        )
+    return creds
 
 
 def _refreshed(creds: Any, Request: Any) -> Any:
@@ -121,15 +138,25 @@ def _run_installed_flow(settings: CalendarSettings, scopes: list[str]) -> Any:
 
 
 def _persist(creds: Any, token_file: str) -> None:
-    """Write the token with owner-only permissions; never echo its contents."""
-    directory = os.path.dirname(os.path.abspath(token_file))
+    """Write the token owner-only and atomically; never echo its contents.
+
+    The mode is set at creation rather than chmod-ed afterwards: under the usual
+    umask the file would otherwise sit at 0644 for the length of the write, with a
+    live refresh token in it. The rename keeps a crash from truncating a good token.
+    """
+    path = os.path.abspath(token_file)
+    directory = os.path.dirname(path)
     os.makedirs(directory, exist_ok=True)
-    with open(token_file, "w", encoding="utf-8") as handle:
-        handle.write(creds.to_json())
+    temp_path = f"{path}.tmp{os.getpid()}"
+    descriptor = os.open(temp_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     try:
-        os.chmod(token_file, 0o600)
-    except OSError:  # pragma: no cover - non-POSIX filesystems
-        pass
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(creds.to_json())
+        os.replace(temp_path, path)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(temp_path)
+        raise
 
 
 def build_service(settings: CalendarSettings, credentials: Any | None = None) -> Any:

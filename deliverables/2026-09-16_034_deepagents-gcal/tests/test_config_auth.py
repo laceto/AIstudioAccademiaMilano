@@ -8,7 +8,7 @@ import pytest
 
 from deepagents_gcal.auth import SCOPE_EVENTS, SCOPE_READONLY, load_credentials, scopes_for
 from deepagents_gcal.config import CalendarSettings
-from deepagents_gcal.errors import AuthError
+from deepagents_gcal.errors import AuthError, CalendarError
 
 
 def test_defaults_are_conservative():
@@ -42,7 +42,14 @@ def test_overrides_beat_the_environment(monkeypatch):
 
 def test_invalid_boolean_is_rejected_loudly(monkeypatch):
     monkeypatch.setenv("GCAL_DRY_RUN", "maybe")
-    with pytest.raises(ValueError):
+    with pytest.raises(CalendarError):
+        CalendarSettings.from_env()
+
+
+def test_malformed_numeric_env_var_is_a_calendar_error(monkeypatch):
+    """CLI error handling catches CalendarError — a bare ValueError would be a traceback."""
+    monkeypatch.setenv("GCAL_MAX_RESULTS", "abc")
+    with pytest.raises(CalendarError):
         CalendarSettings.from_env()
 
 
@@ -59,6 +66,7 @@ def test_describe_never_leaks_secret_material(monkeypatch, tmp_path):
     assert "SUPER-SECRET" not in json.dumps(described)
     assert set(described) == {
         "calendar_id",
+        "allowed_calendar_ids",
         "timezone",
         "read_only",
         "dry_run",
@@ -95,3 +103,42 @@ def test_missing_service_account_file_is_reported(monkeypatch, tmp_path):
     with pytest.raises(AuthError) as excinfo:
         load_credentials(settings)
     assert "Service-account key not found" in str(excinfo.value)
+
+
+def test_allowed_calendar_ids_come_from_the_environment(monkeypatch):
+    monkeypatch.setenv("GCAL_CALENDAR_ID", "team@studio.it")
+    monkeypatch.setenv("GCAL_ALLOWED_CALENDAR_IDS", "team@studio.it, projects@studio.it")
+    settings = CalendarSettings.from_env()
+    assert settings.allowed_calendar_ids == ["team@studio.it", "projects@studio.it"]
+
+
+def test_token_file_is_never_world_readable_even_briefly(tmp_path):
+    """Set the mode at creation: chmod-after-write leaves a refresh token at 0644."""
+    from deepagents_gcal.auth import _persist
+
+    token = tmp_path / "nested" / "token.json"
+
+    class FakeCreds:
+        def to_json(self):
+            return '{"refresh_token": "secret"}'
+
+    _persist(FakeCreds(), str(token))
+    assert token.read_text() == '{"refresh_token": "secret"}'
+    assert oct(token.stat().st_mode & 0o777) == "0o600"
+    assert not list(token.parent.glob("*.tmp*"))
+
+
+def test_a_read_only_token_is_rejected_for_a_write_client(monkeypatch):
+    """Better to fail at load than with a 403 after a human approved the write."""
+    from deepagents_gcal.auth import SCOPE_EVENTS, _check_scopes
+
+    class Creds:
+        scopes = [SCOPE_READONLY]
+
+        def has_scopes(self, scopes):
+            return all(s in self.scopes for s in scopes)
+
+    with pytest.raises(AuthError) as excinfo:
+        _check_scopes(Creds(), [SCOPE_READONLY, SCOPE_EVENTS])
+    assert "deepagents-gcal auth" in str(excinfo.value)
+    assert _check_scopes(Creds(), [SCOPE_READONLY]) is not None

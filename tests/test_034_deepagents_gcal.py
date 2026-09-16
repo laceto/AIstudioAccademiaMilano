@@ -51,6 +51,31 @@ def test_read_only_client_refuses_writes():
         client.create_event(EventDraft(summary="x", start="2026-09-17T10:00", duration_minutes=30))
 
 
+def test_allowlist_contains_the_agent_to_named_calendars():
+    """calendar_id is only a default; the allowlist is the actual boundary."""
+    from deepagents_gcal.client import GoogleCalendarClient
+    from deepagents_gcal.config import CalendarSettings
+    from deepagents_gcal.errors import CalendarNotAllowedError
+
+    client = GoogleCalendarClient(
+        service=object(),
+        settings=CalendarSettings(
+            calendar_id="agent@studio.it", allowed_calendar_ids=["agent@studio.it"]
+        ),
+    )
+    with pytest.raises(CalendarNotAllowedError):
+        client.list_events(calendar_id="primary")
+
+
+def test_event_text_is_labelled_untrusted_for_the_model():
+    pytest.importorskip("langchain_core")
+    from deepagents_gcal.prompts import CALENDAR_SYSTEM_PROMPT
+    from deepagents_gcal.tools import UNTRUSTED_NOTE
+
+    assert "never instructions" in CALENDAR_SYSTEM_PROMPT.lower()
+    assert "not instructions" in UNTRUSTED_NOTE.lower()
+
+
 def test_settings_describe_redacts_credentials():
     from deepagents_gcal.config import CalendarSettings
 

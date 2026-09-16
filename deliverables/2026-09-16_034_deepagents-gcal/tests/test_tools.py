@@ -105,12 +105,45 @@ def test_create_event_notify_flag_maps_to_send_updates(client, fake_service):
     assert fake_service.calls[-1][1]["sendUpdates"] == "all"
 
 
-def test_update_event_builds_time_blocks_with_timezone(client, fake_service):
+def test_moving_only_the_start_carries_the_duration(client, fake_service):
+    """Standup is 09:00–09:15; moving it to 11:00 must not leave the end at 09:15."""
     payload = call(tools_by_name(client)["update_event"], event_id="evt_1", start="2026-09-17T11:00")
     assert payload["ok"] is True
     body = fake_service.calls[-1][1]["body"]
+    assert body["start"]["dateTime"].startswith("2026-09-17T11:00")
+    assert body["end"]["dateTime"].startswith("2026-09-17T11:15")
     assert body["start"]["timeZone"] == "Europe/Rome"
-    assert "end" not in body
+
+
+def test_relative_update_resolves_from_the_event_not_from_now(client, fake_service):
+    call(tools_by_name(client)["update_event"], event_id="evt_1", start="+2h")
+    body = fake_service.calls[-1][1]["body"]
+    assert body["start"]["dateTime"].startswith("2026-09-17T11:00")
+
+
+def test_updating_an_all_day_event_keeps_date_blocks(client, fake_service):
+    fake_service.stored_events["evt_allday"] = {
+        "id": "evt_allday",
+        "summary": "Ferie",
+        "start": {"date": "2026-09-17"},
+        "end": {"date": "2026-09-18"},
+    }
+    payload = call(tools_by_name(client)["update_event"], event_id="evt_allday", start="2026-09-20")
+    assert payload["ok"] is True
+    body = fake_service.calls[-1][1]["body"]
+    assert body["start"] == {"date": "2026-09-20"}
+    assert body["end"] == {"date": "2026-09-21"}
+
+
+def test_update_rejecting_an_end_before_the_start(client):
+    payload = call(
+        tools_by_name(client)["update_event"],
+        event_id="evt_1",
+        start="2026-09-17T11:00",
+        end="2026-09-17T10:00",
+    )
+    assert payload["ok"] is False
+    assert payload["error_type"] == "TimeParseError"
 
 
 def test_update_event_with_no_changes_is_rejected(client):
@@ -157,3 +190,59 @@ def test_dry_run_is_reported_back_to_the_model(fake_service):
         duration_minutes=30,
     )
     assert payload["dry_run"] is True
+
+
+def test_listings_carry_the_untrusted_content_note(client):
+    """Event text is attacker-reachable; the model is told so in the payload itself."""
+    from deepagents_gcal.tools import UNTRUSTED_NOTE
+
+    for payload in (
+        call(tools_by_name(client)["list_events"]),
+        call(tools_by_name(client)["search_events"], query="acme"),
+        call(tools_by_name(client)["get_event"], event_id="evt_1"),
+    ):
+        assert payload["content_note"] == UNTRUSTED_NOTE
+
+
+def test_listings_report_truncation(client):
+    payload = call(tools_by_name(client)["list_events"], max_results=1)
+    assert payload["count"] == 1
+    assert payload["truncated"] is True
+    assert call(tools_by_name(client)["list_events"], max_results=10)["truncated"] is False
+
+
+def test_find_free_slots_echoes_the_filters_it_applied(client, fake_service):
+    fake_service.busy = []
+    payload = call(
+        tools_by_name(client)["find_free_slots"],
+        duration_minutes=60,
+        time_min="2026-09-19T00:00",
+        time_max="2026-09-20T00:00",
+    )
+    # 19 Sep 2026 is a Saturday: zero slots, and the echo explains why.
+    assert payload["count"] == 0
+    assert payload["searched"]["weekdays_only"] is True
+    assert payload["searched"]["working_hours"] == [9, 18]
+
+
+def test_tools_refuse_a_calendar_outside_the_allowlist(fake_service):
+    client = GoogleCalendarClient(
+        service=fake_service,
+        settings=CalendarSettings(
+            calendar_id="team@studio.it", allowed_calendar_ids=["team@studio.it"]
+        ),
+    )
+    payload = call(tools_by_name(client)["list_events"], calendar_id="primary")
+    assert payload["ok"] is False
+    assert payload["error_type"] == "CalendarNotAllowedError"
+
+
+def test_unreadable_calendar_is_an_error_not_an_empty_schedule(client, fake_service):
+    fake_service.freebusy_errors = {"typo@acme.it": [{"reason": "notFound"}]}
+    payload = call(
+        tools_by_name(client)["find_free_slots"],
+        duration_minutes=60,
+        calendar_ids=["typo@acme.it"],
+    )
+    assert payload["ok"] is False
+    assert "typo@acme.it" in payload["error"]

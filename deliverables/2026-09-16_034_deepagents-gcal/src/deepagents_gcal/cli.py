@@ -22,8 +22,10 @@ from typing import Any
 from .config import CalendarSettings
 from .errors import CalendarError
 
-APPROVE = {"y", "yes", "a", "approve", ""}
-REJECT = {"n", "no", "r", "reject"}
+#: Approval is explicit — a bare Return rejects. These writes are irreversible, and the
+#: operator pressing Enter to get past a prompt must not be how a deletion gets approved.
+APPROVE = {"y", "yes", "approve"}
+REJECT = {"n", "no", "r", "reject", ""}
 
 
 def _settings_from_args(args: argparse.Namespace) -> CalendarSettings:
@@ -54,34 +56,40 @@ def _build_agent(args: argparse.Namespace) -> tuple[Any, Any]:
     return agent, settings
 
 
-def _print_interrupt(interrupt: Any) -> None:
+def _action_requests(interrupt: Any) -> list[dict[str, Any]]:
     value = getattr(interrupt, "value", interrupt)
-    requests = (value or {}).get("action_requests", []) if isinstance(value, dict) else []
-    for request in requests:
-        name = request.get("name") or request.get("action") or "tool call"
-        args = request.get("args", {})
-        print(f"\n  ⚠  The agent wants to run: {name}")
-        print(f"     {json.dumps(args, ensure_ascii=False, indent=6, default=str)}")
+    if not isinstance(value, dict):
+        return []
+    return list(value.get("action_requests", []))
+
+
+def _describe(request: dict[str, Any]) -> str:
+    name = request.get("name") or request.get("action") or "tool call"
+    args = json.dumps(request.get("args", {}), ensure_ascii=False, indent=6, default=str)
+    return f"  ⚠  The agent wants to run: {name}\n     {args}"
 
 
 def _resume_decisions(interrupt: Any) -> list[dict[str, Any]]:
-    """Ask the operator about each pending action and build the resume payload."""
-    value = getattr(interrupt, "value", interrupt)
-    requests = (value or {}).get("action_requests", []) if isinstance(value, dict) else []
+    """Ask the operator about each pending action and build the resume payload.
+
+    One decision per action request, in order, each prompted right after the call it
+    refers to — a batched interrupt otherwise invites answering about one call and having
+    it applied to another.
+    """
     decisions: list[dict[str, Any]] = []
-    for _ in requests or [None]:
-        answer = input("     approve? [Y/n] ").strip().lower()
-        if answer in REJECT:
-            reason = input("     reason (optional): ").strip()
-            decision: dict[str, Any] = {"type": "reject"}
-            if reason:
-                decision["message"] = reason
-            decisions.append(decision)
-        elif answer in APPROVE:
+    for request in _action_requests(interrupt) or [{}]:
+        print(f"\n{_describe(request)}")
+        answer = input("     approve? [y/N] ").strip().lower()
+        if answer in APPROVE:
             decisions.append({"type": "approve"})
-        else:
+            continue
+        if answer not in REJECT:
             print("     Unrecognised answer — treating as reject.")
-            decisions.append({"type": "reject", "message": "operator did not approve"})
+        reason = input("     reason (optional): ").strip()
+        decision: dict[str, Any] = {"type": "reject"}
+        if reason:
+            decision["message"] = reason
+        decisions.append(decision)
     return decisions
 
 
@@ -91,8 +99,6 @@ def _run_turn(agent: Any, payload: Any, config: dict[str, Any]) -> str:
 
     result = agent.invoke(payload, config=config)
     while result.get("__interrupt__"):
-        for interrupt in result["__interrupt__"]:
-            _print_interrupt(interrupt)
         decisions = _resume_decisions(result["__interrupt__"][0])
         result = agent.invoke(Command(resume={"decisions": decisions}), config=config)
 
@@ -165,24 +171,51 @@ def _cmd_chat(args: argparse.Namespace) -> int:
         print(f"\nagent › {answer}\n")
 
 
+def _add_global_flags(parser: argparse.ArgumentParser, *, suppress: bool = False) -> None:
+    """Register the global flags.
+
+    `suppress` is for the parent shared by the subcommands: with `SUPPRESS` defaults the
+    subparser leaves the attribute alone when the flag is absent, so a flag typed *before*
+    the subcommand is not overwritten by the subparser's own default.
+    """
+    unset: Any = argparse.SUPPRESS if suppress else None
+    parser.add_argument("--calendar", default=unset, help="Calendar id (default: primary)")
+    parser.add_argument("--timezone", default=unset, help="IANA timezone, e.g. Europe/Rome")
+    parser.add_argument(
+        "--read-only",
+        action="store_true",
+        default=argparse.SUPPRESS if suppress else False,
+        help="Load no write tools",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=argparse.SUPPRESS if suppress else False,
+        help="Validate writes without sending them",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
+    # The global flags live on both the top-level parser and a parent shared by every
+    # subcommand, so `--dry-run chat` and `chat --dry-run` both work. argparse otherwise
+    # accepts them only before the subcommand, which is not where people type them.
+    shared = argparse.ArgumentParser(add_help=False)
+    _add_global_flags(shared, suppress=True)
+
     parser = argparse.ArgumentParser(
         prog="deepagents-gcal",
         description="A deepagents agent with Google Calendar tools.",
     )
-    parser.add_argument("--calendar", help="Calendar id (default: primary)")
-    parser.add_argument("--timezone", help="IANA timezone, e.g. Europe/Rome")
-    parser.add_argument("--read-only", action="store_true", help="Load no write tools")
-    parser.add_argument("--dry-run", action="store_true", help="Validate writes without sending them")
+    _add_global_flags(parser)
 
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("auth", help="Run the OAuth consent flow and cache the token")
-    sub.add_parser("doctor", help="Show resolved configuration and check credentials")
-    sub.add_parser("tools", help="List the tools the agent will receive")
+    sub.add_parser("auth", parents=[shared], help="Run the OAuth consent flow and cache the token")
+    sub.add_parser("doctor", parents=[shared], help="Show resolved configuration and check credentials")
+    sub.add_parser("tools", parents=[shared], help="List the tools the agent will receive")
 
     for name, help_text in (("ask", "Ask one question"), ("chat", "Interactive session")):
-        cmd = sub.add_parser(name, help=help_text)
+        cmd = sub.add_parser(name, parents=[shared], help=help_text)
         if name == "ask":
             cmd.add_argument("prompt", help="What to ask the agent")
         cmd.add_argument("--model", help="Model id, e.g. anthropic:claude-sonnet-5")
@@ -193,7 +226,21 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def load_dotenv_if_available() -> None:
+    """Load a local .env when python-dotenv is installed (the `dotenv` extra).
+
+    Without it `GCAL_*` has to come from the real environment; the README says so, and
+    `doctor` shows what actually resolved.
+    """
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    load_dotenv()
+
+
 def main(argv: list[str] | None = None) -> int:
+    load_dotenv_if_available()
     args = build_parser().parse_args(argv)
     handlers = {
         "auth": _cmd_auth,

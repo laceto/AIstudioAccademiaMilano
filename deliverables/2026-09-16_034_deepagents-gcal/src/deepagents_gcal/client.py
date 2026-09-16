@@ -13,16 +13,36 @@ Design notes for anyone extending this:
 
 from __future__ import annotations
 
+import inspect
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 
 from . import scheduling
 from .config import CalendarSettings
-from .errors import ApiError, EventNotFoundError, ReadOnlyError
+from .errors import ApiError, CalendarNotAllowedError, EventNotFoundError, ReadOnlyError
 from .models import CalendarRef, Event, EventDraft, FreeSlot
 from .timeutils import now_in, parse_datetime, to_rfc3339
 
-SendUpdates = str  # "none" | "all" | "externalOnly"
+SendUpdates = Literal["none", "all", "externalOnly"]
+
+#: Google's raw error bodies carry request URIs and response payloads; those end up in a
+#: model's context and in logs, so only the head of the message is kept.
+MAX_ERROR_CHARS = 300
+
+
+def _accepts_num_retries(execute: Any) -> bool:
+    try:
+        parameters = inspect.signature(execute).parameters
+    except (TypeError, ValueError):  # pragma: no cover - builtins without signatures
+        return False
+    return "num_retries" in parameters or any(
+        p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters.values()
+    )
+
+
+def _clip_error(exc: Exception) -> str:
+    message = " ".join(str(exc).split())
+    return message if len(message) <= MAX_ERROR_CHARS else message[:MAX_ERROR_CHARS] + "…"
 
 
 class GoogleCalendarClient:
@@ -66,12 +86,34 @@ class GoogleCalendarClient:
             )
 
     def _calendar(self, calendar_id: str | None) -> str:
-        return calendar_id or self.settings.calendar_id
+        """Resolve the target calendar, enforcing the allowlist when one is configured.
 
-    @staticmethod
-    def _execute(request: Any, *, context: str) -> Any:
+        Google has no per-calendar OAuth scope, so without this an agent can name any
+        calendar the account can reach — `settings.calendar_id` alone is a default,
+        never a boundary.
+        """
+        resolved = calendar_id or self.settings.calendar_id
+        allowed = self.settings.allowed_calendar_ids
+        if allowed is not None and resolved not in allowed:
+            raise CalendarNotAllowedError(
+                f"Calendar {resolved!r} is not in this client's allowed_calendar_ids "
+                f"({', '.join(allowed)})."
+            )
+        return resolved
+
+    def _execute(self, request: Any, *, context: str) -> Any:
+        """Run a Google request, retrying transient failures and normalising errors.
+
+        `num_retries` is googleapiclient's own exponential backoff, which covers the
+        429 and 5xx responses Calendar hands out routinely.
+        """
+        execute = request.execute
+        # Only pass num_retries to an execute() that accepts it: a caller-supplied service
+        # (or a test double) may not, and retrying a failed call blindly could duplicate a
+        # write.
+        kwargs = {"num_retries": self.settings.max_retries} if _accepts_num_retries(execute) else {}
         try:
-            return request.execute()
+            return execute(**kwargs)
         except Exception as exc:  # noqa: BLE001 - normalised below
             status = getattr(getattr(exc, "resp", None), "status", None)
             if status == 404:
@@ -82,7 +124,7 @@ class GoogleCalendarClient:
                     "Check the granted scopes and calendar sharing settings.",
                     status=status,
                 ) from exc
-            raise ApiError(f"{context}: {exc}", status=status) from exc
+            raise ApiError(f"{context}: {_clip_error(exc)}", status=status) from exc
 
     # ── reads ───────────────────────────────────────────────────────────────
 
@@ -112,27 +154,38 @@ class GoogleCalendarClient:
             else start + timedelta(days=7)
         )
         calendar_id = self._calendar(calendar_id)
+        limit = max_results or self.settings.max_results
         params: dict[str, Any] = {
             "calendarId": calendar_id,
             "timeMin": to_rfc3339(start),
             "timeMax": to_rfc3339(end),
             "singleEvents": True,
             "orderBy": "startTime",
-            "maxResults": max_results or self.settings.max_results,
+            "maxResults": limit,
         }
         if query:
             params["q"] = query
-        payload = self._execute(
-            self.service.events().list(**params), context=f"list_events({calendar_id})"
-        )
-        # Cancelled instances of a recurring series come back as id+status only, with no
-        # start/end blocks. They are not events the caller can act on — drop them rather
-        # than fail the whole listing.
-        return [
-            Event.from_api(item, calendar_id)
-            for item in payload.get("items", [])
-            if item.get("start") and item.get("end")
-        ]
+
+        events: list[Event] = []
+        page_token: str | None = None
+        while True:
+            if page_token:
+                params["pageToken"] = page_token
+            payload = self._execute(
+                self.service.events().list(**params), context=f"list_events({calendar_id})"
+            )
+            for item in payload.get("items", []):
+                # Cancelled instances of a recurring series arrive as id+status only, with
+                # no start/end. They are not events the caller can act on — drop them
+                # rather than fail the whole listing.
+                if item.get("start") and item.get("end"):
+                    events.append(Event.from_api(item, calendar_id))
+            page_token = payload.get("nextPageToken")
+            # Keep following pages only while the caller's cap leaves room: a page can come
+            # back short of `limit` purely because cancelled instances were filtered out.
+            if not page_token or len(events) >= limit:
+                break
+        return events[:limit]
 
     def search_events(
         self,
@@ -159,6 +212,11 @@ class GoogleCalendarClient:
             self.service.events().get(calendarId=calendar_id, eventId=event_id),
             context=f"get_event({event_id})",
         )
+        if not (payload.get("start") and payload.get("end")):
+            # A cancelled instance still resolves by id, but carries no times.
+            raise EventNotFoundError(
+                f"get_event({event_id}): event is cancelled or has no start/end"
+            )
         return Event.from_api(payload, calendar_id)
 
     def busy_intervals(
@@ -169,7 +227,7 @@ class GoogleCalendarClient:
         calendar_ids: list[str] | None = None,
     ) -> list[tuple[datetime, datetime]]:
         """Busy blocks from the freebusy endpoint, across one or more calendars."""
-        ids = calendar_ids or [self.settings.calendar_id]
+        ids = [self._calendar(cid) for cid in (calendar_ids or [self.settings.calendar_id])]
         body = {
             "timeMin": to_rfc3339(time_min),
             "timeMax": to_rfc3339(time_max),
@@ -179,8 +237,20 @@ class GoogleCalendarClient:
         payload = self._execute(
             self.service.freebusy().query(body=body), context="freebusy"
         )
+        calendars = payload.get("calendars") or {}
+        unreadable = {
+            cid: [e.get("reason", "unknown") for e in data.get("errors", [])]
+            for cid, data in calendars.items()
+            if data.get("errors")
+        }
+        if unreadable:
+            # Without this the endpoint reports an unreadable calendar as simply free,
+            # and a mistyped colleague address turns into a confident double-booking.
+            detail = "; ".join(f"{cid}: {', '.join(reasons)}" for cid, reasons in unreadable.items())
+            raise ApiError(f"freebusy: could not read {detail}")
+
         intervals: list[tuple[datetime, datetime]] = []
-        for calendar in (payload.get("calendars") or {}).values():
+        for calendar in calendars.values():
             for block in calendar.get("busy", []):
                 intervals.append(
                     (

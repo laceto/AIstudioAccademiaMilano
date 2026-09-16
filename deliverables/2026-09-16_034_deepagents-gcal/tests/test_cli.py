@@ -16,15 +16,12 @@ class FakeAgent:
     def __init__(self, interrupt_first: bool = True) -> None:
         self.interrupt_first = interrupt_first
         self.resumed: list = []
+        self.requests = [{"name": "create_event", "args": {"summary": "Sync"}}]
 
     def invoke(self, payload, config=None):
         if self.interrupt_first:
             self.interrupt_first = False
-            interrupt = type(
-                "Interrupt",
-                (),
-                {"value": {"action_requests": [{"name": "create_event", "args": {"summary": "Sync"}}]}},
-            )()
+            interrupt = type("Interrupt", (), {"value": {"action_requests": self.requests}})()
             return {"__interrupt__": [interrupt], "messages": []}
         self.resumed.append(payload)
         return {"messages": [type("Msg", (), {"content": "done"})()]}
@@ -49,6 +46,34 @@ def test_ask_accepts_model_and_thread():
     assert (args.prompt, args.model, args.thread) == ("what's next?", "openai:gpt-5.5", "t1")
 
 
+def test_global_flags_work_after_the_subcommand(monkeypatch):
+    """README shows `deepagents-gcal chat --dry-run`; argparse must accept that order."""
+    monkeypatch.delenv("GCAL_DRY_RUN", raising=False)
+    monkeypatch.delenv("GCAL_READ_ONLY", raising=False)
+    for argv in (["chat", "--dry-run"], ["--dry-run", "chat"]):
+        settings = cli._settings_from_args(cli.build_parser().parse_args(argv))
+        assert settings.dry_run is True, argv
+    for argv in (["tools", "--read-only"], ["--read-only", "tools"]):
+        settings = cli._settings_from_args(cli.build_parser().parse_args(argv))
+        assert settings.read_only is True, argv
+
+
+def test_bare_return_does_not_approve_an_irreversible_write(monkeypatch):
+    agent = FakeAgent()
+    answers = iter(["", ""])  # Enter at the approve prompt, then no reason
+    monkeypatch.setattr("builtins.input", lambda _="": next(answers))
+    cli._run_turn(agent, {"messages": []}, {"configurable": {"thread_id": "t"}})
+    assert agent.resumed[0].resume["decisions"][0]["type"] == "reject"
+
+
+def test_each_pending_call_is_shown_before_its_own_prompt(monkeypatch, capsys):
+    agent = FakeAgent()
+    monkeypatch.setattr("builtins.input", lambda _="": "y")
+    cli._run_turn(agent, {"messages": []}, {"configurable": {"thread_id": "t"}})
+    output = capsys.readouterr().out
+    assert "create_event" in output and "Sync" in output
+
+
 def test_run_turn_approves_and_resumes(monkeypatch, capsys):
     agent = FakeAgent()
     monkeypatch.setattr("builtins.input", lambda _="": "y")
@@ -69,9 +94,26 @@ def test_run_turn_rejects_with_a_reason(monkeypatch):
 
 def test_unrecognised_answer_is_treated_as_reject(monkeypatch):
     agent = FakeAgent()
-    monkeypatch.setattr("builtins.input", lambda _="": "maybe")
+    answers = iter(["maybe", ""])
+    monkeypatch.setattr("builtins.input", lambda _="": next(answers))
     cli._run_turn(agent, {"messages": []}, {"configurable": {"thread_id": "t"}})
     assert agent.resumed[0].resume["decisions"][0]["type"] == "reject"
+
+
+def test_one_decision_per_pending_call(monkeypatch):
+    """A batched interrupt must not have one answer applied to a different call."""
+    agent = FakeAgent()
+    agent.requests = [
+        {"name": "create_event", "args": {"summary": "A"}},
+        {"name": "delete_event", "args": {"event_id": "evt_1"}},
+    ]
+    answers = iter(["y", "n", "wrong one"])
+    monkeypatch.setattr("builtins.input", lambda _="": next(answers))
+    cli._run_turn(agent, {"messages": []}, {"configurable": {"thread_id": "t"}})
+    assert agent.resumed[0].resume["decisions"] == [
+        {"type": "approve"},
+        {"type": "reject", "message": "wrong one"},
+    ]
 
 
 def test_tools_command_lists_the_toolset(monkeypatch, capsys, fake_service):

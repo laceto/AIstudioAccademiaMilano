@@ -8,12 +8,23 @@ touching a raw Google API payload.
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from datetime import time as time_cls
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .errors import TimeParseError
 from .timeutils import is_date_only, parse_datetime, to_rfc3339
+
+#: Event descriptions can be arbitrarily long; anything past this is noise in a prompt.
+MAX_DESCRIPTION_CHARS = 1000
+
+
+def _clip(value: str | None, limit: int) -> str | None:
+    """Truncate untrusted free text, marking that it was cut."""
+    if value is None or len(value) <= limit:
+        return value
+    return value[:limit] + f"… [truncated, {len(value)} chars total]"
 
 
 class CalendarRef(BaseModel):
@@ -63,10 +74,14 @@ class EventTime(BaseModel):
     def from_api(cls, payload: dict[str, Any]) -> "EventTime":
         raw = payload.get("dateTime")
         if raw:
-            return cls(
-                date_time=parse_datetime(raw, payload.get("timeZone") or "UTC"),
-                time_zone=payload.get("timeZone"),
-            )
+            declared = payload.get("timeZone")
+            try:
+                parsed = parse_datetime(raw, declared or "UTC")
+            except TimeParseError:
+                # A Google dateTime always carries its own offset; the zone name is only
+                # a fallback. An unusable one must not take the whole listing down.
+                parsed = parse_datetime(raw, "UTC")
+            return cls(date_time=parsed, time_zone=declared)
         return cls(date=payload.get("date"), time_zone=payload.get("timeZone"))
 
     def to_api(self) -> dict[str, Any]:
@@ -117,17 +132,22 @@ class Event(BaseModel):
         )
 
     def to_summary(self) -> dict[str, Any]:
-        """Compact dict for LLM consumption — no nulls, no nested noise."""
+        """Compact dict for LLM consumption — no nulls, no nested noise.
+
+        Event text is written by whoever created the event — including strangers,
+        since Google adds emailed invitations to the primary calendar — so free-text
+        fields are truncated here before they reach a model context.
+        """
         data: dict[str, Any] = {
             "id": self.id,
-            "summary": self.summary,
+            "summary": _clip(self.summary, 300),
             "start": str(self.start),
             "end": str(self.end),
         }
         for key, value in (
-            ("location", self.location),
+            ("location", _clip(self.location, 300)),
             ("attendees", self.attendees or None),
-            ("description", self.description),
+            ("description", _clip(self.description, MAX_DESCRIPTION_CHARS)),
             ("status", self.status if self.status not in (None, "confirmed") else None),
             ("link", self.html_link),
         ):
@@ -183,8 +203,15 @@ class EventDraft(BaseModel):
         """Build the Google Calendar `events.insert` body."""
         start, end, tz = self.resolve(default_tz, reference=reference)
         if self.all_day or (is_date_only(self.start) and self.end and is_date_only(self.end)):
+            # Google treats an all-day `end.date` as exclusive and rejects a body whose
+            # end is not strictly after its start, so a sub-day duration (the natural way
+            # to say "block tomorrow") has to round up to the next date boundary.
+            end_date = end.date()
+            if end.time() != time_cls(0, 0):
+                end_date += timedelta(days=1)
+            end_date = max(end_date, start.date() + timedelta(days=1))
             start_block: dict[str, Any] = {"date": f"{start:%Y-%m-%d}"}
-            end_block: dict[str, Any] = {"date": f"{end:%Y-%m-%d}"}
+            end_block: dict[str, Any] = {"date": f"{end_date:%Y-%m-%d}"}
         else:
             start_block = {"dateTime": to_rfc3339(start), "timeZone": tz}
             end_block = {"dateTime": to_rfc3339(end), "timeZone": tz}
