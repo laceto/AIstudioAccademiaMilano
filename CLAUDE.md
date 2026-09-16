@@ -203,6 +203,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `agents/rag/README.md` | RAG Team spec |
 | `agents/research/README.md` | GitHub Research Department spec |
 | `agents/input_gateway/README.md` | Input Gateway Team spec (Pablo, Sofia, Carlos) |
+| `deliverables/2026-09-16_034_deepagents-gcal/` | Pacchetto `deepagents-gcal`: agente deepagents + tool Google Calendar, installabile e riusabile da altri dev |
 | `templates/pdf/invoice_standard.py` | `InvoiceTemplate` → PDF bytes via fpdf2 |
 | `templates/streamlit/chatbot.py` | `ChatbotTemplate(provider, model)` → Streamlit app |
 | `wiki/llm/` | Wiki LLM stile Karpathy (7 capitoli + codice) |
@@ -358,6 +359,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 031 | 2026-06-10 | Medical Receipt Vault — FastAPI + Streamlit, GPT-4o OCR, SQLite, Excel/PDF 730 export | 0.00 (internal) |
 | 032 | 2026-09-04 | Festa compleanno Niccolò — piano operativo parchetto via Zanoia (merenda, torta, intrattenimento, lista spesa e negozi) | null (pending Luigi — proposta 4.90) |
 | 033 | 2026-09-09 | YouTube Playlist Builder — YouTube Data API v3 + OAuth2, CLI con `--dry-run`, quota budgeting (50 + 50N unità) | null (pending Luigi — proposta 14.90) |
+| 034 | 2026-09-16 | deepagents-gcal — pacchetto Python installabile: agente deepagents + tool Google Calendar, HITL sulle scritture, subagente read-only | 14.90 |
 
 ---
 
