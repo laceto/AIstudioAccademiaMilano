@@ -122,6 +122,47 @@ resolve_webhook_secret() {
   printf '%s' "$value"
 }
 
+# ensure_firestore_ttl [COLLECTION_GROUP] [FIELD]
+#
+# Make Firestore delete a document once the timestamp in FIELD has passed (defaults: jobs,
+# expire_at). Looks at the TTL fields first and does nothing if FIELD is already one. Firestore
+# deletes expired documents in the background, typically within about 24 hours of expiry.
+# Prints "GROUP.FIELD — TTL enabled | TTL already enabled".
+ensure_firestore_ttl() {
+  local group="${1:-jobs}" field="${2:-expire_at}" ttl_fields
+  # Capture first, grep after: `gcloud | grep -q` under pipefail can report a failure (SIGPIPE
+  # when grep quits early) and fall through to a needless update. A failing list counts as "not set".
+  ttl_fields="$(gcloud firestore fields ttls list --collection-group="$group" --database='(default)' \
+    --format='value(name)' 2>/dev/null)" || ttl_fields=""
+  if grep -q "/fields/$field\$" <<<"$ttl_fields"; then  # here-string: no second pipe to break
+    echo "  $group.$field — TTL already enabled"
+  else
+    gcloud firestore fields ttls update "$field" --collection-group="$group" \
+      --database='(default)' --enable-ttl >/dev/null
+    echo "  $group.$field — TTL enabled"
+  fi
+}
+
+# ensure_delete_protection
+#
+# Turn on delete protection for the (default) database, so that neither a stray command nor a
+# console click can delete the jobs. Skips the update when it is already on. To delete the
+# database on purpose, turn it off first (docs/cloud-run-setup.md).
+# Prints "(default) — delete protection enabled | already enabled".
+ensure_delete_protection() {
+  local state
+  # Under `set -e` a failing describe (permissions, API) must not abort the deploy silently.
+  state="$(gcloud firestore databases describe --database='(default)' \
+    --format='value(deleteProtectionState)')" || state=""
+  [ -n "$state" ] || echo "  WARN: could not read the delete protection state of (default); trying to enable it" >&2
+  if [ "$state" = "DELETE_PROTECTION_ENABLED" ]; then
+    echo "  (default) — delete protection already enabled"
+  else
+    gcloud firestore databases update --database='(default)' --delete-protection >/dev/null
+    echo "  (default) — delete protection enabled"
+  fi
+}
+
 # ensure_scheduler_job NAME LOCATION URI SERVICE_ACCOUNT_EMAIL AUDIENCE SCHEDULE
 #
 # Create the Cloud Scheduler HTTP job, or reset an existing one to the same settings. It POSTs to URI

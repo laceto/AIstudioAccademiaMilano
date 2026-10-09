@@ -1,6 +1,6 @@
 # Piano — notifica e approvazione di Luigi per le richieste `needs_review`
 
-Stato: **Fasi 1, 2 e 3 attive; Fase 5 completa nel codice** (3 PR: pipeline senza interfaccia, esecuzione asincrona, consegna al cliente), da attivare con il deploy; Fase 4 (blocco richieste fraudolente) da fare. Storage: **Firestore**.
+Stato: **Fasi 1, 2 e 3 attive; Fase 5 completa nel codice** (3 PR: pipeline senza interfaccia, esecuzione asincrona, consegna al cliente), da attivare con il deploy; Fase 4 (blocco richieste fraudolente) da fare. Storage: **Firestore**, con retention a 90 giorni (TTL su `expire_at`) e protezione dalla cancellazione, da attivare con il deploy.
 Contesto: `docs/cloud-run-setup.md`, `gateway/worker.py` (`_build_reply`), `gateway/api.py` (`/webhook/telegram`).
 
 ## 1. Problema

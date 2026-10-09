@@ -196,8 +196,39 @@ compaia il documento `jobs/<job_id>`, e che `GET <url-gateway>/status/<job_id>` 
 
 Il backend Firestore è testato con un client finto, non contro Firestore vero: la prima prova reale è questo deploy.
 
-- [ ] **Retention dei job.** Ogni documento contiene il testo dell'utente. Aggiungi un criterio TTL su un campo di scadenza
-      (es. `expire_at`, 90 giorni) prima di avere traffico reale.
+**Retention dei job (TTL) e protezione dalla cancellazione.** Ogni documento contiene il testo dell'utente, quindi non
+resta per sempre:
+
+- Ogni nuovo job nasce con `expire_at` = data di creazione + `JOB_RETENTION_DAYS` (90 giorni se non impostato; vedi
+  `gateway/retention.py`). Nel codice è una stringa ISO-8601; `FirestoreJobStore` la salva come *timestamp* UTC, perché
+  il TTL di Firestore legge solo campi di tipo timestamp. La scadenza conta dalla creazione: cambiare lo stato del job
+  (approvato, consegnato...) **non** la sposta.
+- Il deploy (`scripts/deploy_cloudrun.sh`) crea il criterio TTL sul campo `expire_at` del gruppo di collezioni `jobs`
+  e attiva la protezione dalla cancellazione del database `(default)`. Entrambi i passi controllano prima lo stato e
+  non fanno nulla se è già a posto. Con `--dry-run` vengono solo elencati.
+- Firestore cancella i documenti scaduti in background, **di solito entro circa 24 ore** dalla scadenza (non è
+  istantaneo: un job scaduto può restare leggibile per un giorno). Le cancellazioni TTL si pagano come normali
+  cancellazioni di documenti.
+- **Controllare il criterio:** console Firestore, [Time to live](https://console.cloud.google.com/firestore/databases/-default-/ttl?project=aistudio-milano):
+  deve esserci `jobs` / `expire_at` con stato *Serving* (subito dopo la creazione può essere *Creating*). Da riga di
+  comando: `gcloud firestore fields ttls list --collection-group=jobs --database='(default)'`.
+- **Attenzione: un job ancora in sospeso al giorno N viene cancellato al giorno N.** La scadenza conta dalla
+  creazione, non dall'ultima attività: una richiesta rimasta in `needs_review` (o `approved`, `running`...) oltre il
+  periodo di retention sparisce comunque. Se serve più tempo per agire, alza `JOB_RETENTION_DAYS`: il numero (e
+  quello dell'informativa privacy) viene solo da `gateway/retention.py`, non va scritto altrove.
+- **Job creati prima del TTL** non hanno `expire_at` e non scadrebbero mai. Si sistemano una volta, con lo script
+  (prima senza `--apply`: è una prova a vuoto che stampa solo i conteggi per stato, mai il testo dei clienti):
+  `python -m scripts.backfill_job_expiry`, poi `python -m scripts.backfill_job_expiry --apply`
+  (con `JOB_STORE=firestore FIRESTORE_PROJECT=aistudio-milano`). Due regole:
+  - job **conclusi** (`delivered`, `discarded`, `rejected`, `classified`): creazione + retention; quelli già più vecchi
+    del periodo vengono cancellati dal TTL entro circa 24 ore dall'`--apply`;
+  - job **in sospeso** (ogni altro stato, compresi quelli che lo script non conosce): oggi + retention, un periodo
+    intero nuovo, così Luigi fa in tempo ad agire. Dopo quel periodo valgono le stesse regole di tutti gli altri.
+- **Protezione dalla cancellazione:** finché è attiva, il database non si può cancellare (né da comando né dalla
+  console). Per cancellarlo di proposito va prima spenta, in modo volontario:
+  `gcloud firestore databases update --database='(default)' --no-delete-protection`
+  (oppure console Firestore, Impostazioni database, Protezione dalla cancellazione). Un nuovo `deploy_cloudrun.sh` la
+  riaccende. Non cancellare il database per "ripartire da zero" senza prima aver esportato ciò che serve.
 
 ## 2. Come ridistribuire (promemoria)
 

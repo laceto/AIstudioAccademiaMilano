@@ -185,6 +185,14 @@ run gcloud projects add-iam-policy-binding "$PROJECT" \
   --member="serviceAccount:$RUNTIME_SA" \
   --role=roles/datastore.user --condition=None --quiet >/dev/null
 
+say "Firestore: jobs expire (TTL on expire_at) and the database cannot be deleted by accident"
+if $DRY_RUN; then
+  echo "  [dry-run] TTL policy on jobs.expire_at, delete protection on (default)"
+else
+  ensure_firestore_ttl jobs expire_at
+  ensure_delete_protection
+fi
+
 # ── Pipeline worker: queue and identities ────────────────────────────────────
 # Jobs Luigi approves are queued in Cloud Tasks; the queue calls the private pipeline-worker as the
 # pipeline-tasks service account (OIDC). The gateway may create tasks and act as that account.
