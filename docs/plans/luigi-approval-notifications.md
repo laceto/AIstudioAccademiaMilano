@@ -1,6 +1,6 @@
 # Piano — notifica e approvazione di Luigi per le richieste `needs_review`
 
-Stato: **Fase 1 (notifica) implementata il 2026-10-09**; Fasi 2-4 da fare. Storage scelto: **Firestore**.
+Stato: **Fasi 1 (notifica) e 2 (storage) implementate il 2026-10-09**; Fasi 3-5 da fare. Storage: **Firestore**.
 Contesto: `docs/cloud-run-setup.md`, `gateway/worker.py` (`_build_reply`), `gateway/api.py` (`/webhook/telegram`).
 
 ## 1. Problema
@@ -73,7 +73,7 @@ Luigi apre il link email  ─► GET /admin/job/<id>?sig=…  (pagina di conferm
 Moduli nuovi:
 - `gateway/notify.py` — `notify_review(job)`: invia su tutti i canali, ogni canale isolato (un errore non blocca gli altri),
   log di esito per canale, niente testo utente non scappato.
-- `gateway/jobstore.py` — interfaccia `JobStore` (get, put, update_status, list_by_status) con implementazione file
+- `gateway/jobstore.py` — interfaccia `JobStore` (put, get, list_by_status; l'aggiornamento transazionale arriva in Fase 3) con implementazione file
   (test e locale) e Firestore (produzione).
 - `gateway/admin.py` — autorizzazione (`is_admin(chat_id)`), firma dei link email (HMAC-SHA256, scadenza),
   rotte `/admin/job/...`. Qui `GATEWAY_HMAC_SECRET` torna a servire.
@@ -93,7 +93,7 @@ Moduli nuovi:
 Test (scritti prima): lista email vuota o assente; un canale che fallisce non blocca l'altro; Telegram senza ID
 configurati; escape del testo utente; deduplica; troncamento; nessun token o password nei log.
 
-### Fase 2 — Storage persistente
+### Fase 2 — Storage persistente (FATTA nel codice: `gateway/jobstore.py`, `tests/test_gateway_jobstore.py`; da attivare con il redeploy)
 1. `JobStore` con backend Firestore (collezione `jobs`), migrazione di `PipelineAdapter` e `QueueWorker`.
 2. `GET /status/{job_id}` non risponde più 404 dopo un riavvio.
 3. Il service account di Cloud Run riceve `roles/datastore.user`.

@@ -82,6 +82,26 @@ SMTP_PASSWORD=<password per app di Gmail, 16 caratteri>
 Limiti noti: gli avvisi sono best-effort (un canale che fallisce non blocca l'altro né la risposta all'utente), al massimo
 10 al minuto, uno per job. I bottoni Approva/Rifiuta arrivano con le Fasi 2 e 3 del piano.
 
+## 1c. Job su Firestore (nuovo)
+
+I job non sono più file in `/tmp/queue`: `gateway/jobstore.py` li salva in Firestore (`JOB_STORE=firestore`, collezione
+`jobs`), quindi sopravvivono ai riavvii e `GET /status/{job_id}` non risponde più 404 dopo un riavvio. In locale e nei test
+resta il backend a file (nessuna variabile necessaria).
+
+**Per attivarlo** basta ricostruire il gateway e rilanciare lo script (gli stessi passi della sezione 1, punti 2-3):
+`bash scripts/deploy_cloudrun.sh --skip-build` ora anche abilita l'API Firestore, crea il database `(default)` in
+`europe-west8` (modalità Firestore nativa, la località non si cambia più), assegna a Cloud Run il ruolo
+`roles/datastore.user` e imposta `JOB_STORE=firestore` sul gateway.
+
+Dopo il deploy: scrivi al bot una richiesta qualsiasi, poi controlla in
+[Firestore](https://console.cloud.google.com/firestore/databases/-default-/data/panel/jobs?project=aistudio-milano) che
+compaia il documento `jobs/<job_id>`, e che `GET <url-gateway>/status/<job_id>` risponda anche dopo un riavvio.
+
+Il backend Firestore è testato con un client finto, non contro Firestore vero: la prima prova reale è questo deploy.
+
+- [ ] **Retention dei job.** Ogni documento contiene il testo dell'utente. Aggiungi un criterio TTL su un campo di scadenza
+      (es. `expire_at`, 90 giorni) prima di avere traffico reale.
+
 ## 2. Come ridistribuire (promemoria)
 
 Quando hai cambiato il codice, scegli la riga giusta. Tutti i comandi partono dalla root del repo.

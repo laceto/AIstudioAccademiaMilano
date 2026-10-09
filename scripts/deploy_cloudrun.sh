@@ -88,7 +88,8 @@ $DRY_RUN && echo "  (dry run — nothing will be changed)"
 say "Enabling APIs"
 run gcloud services enable \
   run.googleapis.com cloudbuild.googleapis.com \
-  artifactregistry.googleapis.com secretmanager.googleapis.com
+  artifactregistry.googleapis.com secretmanager.googleapis.com \
+  firestore.googleapis.com
 
 say "Artifact Registry repository '$AR_REPO'"
 if gcloud artifacts repositories describe "$AR_REPO" --location="$REGION" >/dev/null 2>&1; then
@@ -141,6 +142,20 @@ for S in "${PRESENT_SECRETS[@]}"; do
 done
 echo "  $RUNTIME_SA"
 
+# ── Firestore (job store) ────────────────────────────────────────────────────
+
+say "Firestore database for gateway jobs"
+if gcloud firestore databases describe --database='(default)' >/dev/null 2>&1; then
+  echo "  already exists"
+else
+  # The location is permanent for the project: it follows REGION (europe-west8 = Milan).
+  run gcloud firestore databases create --database='(default)' \
+    --location="$REGION" --type=firestore-native
+fi
+run gcloud projects add-iam-policy-binding "$PROJECT" \
+  --member="serviceAccount:$RUNTIME_SA" \
+  --role=roles/datastore.user --condition=None --quiet >/dev/null
+
 # ── Build ────────────────────────────────────────────────────────────────────
 
 if $SKIP_BUILD; then
@@ -178,7 +193,9 @@ run gcloud run deploy rag-api \
 # (gateway/notify.py). NOTIFY_EMAILS holds commas, so gcloud needs an alternate
 # list delimiter: "^|^" makes "|" the separator between KEY=VALUE pairs.
 gateway_env_vars() {
-  local out="^|^GATEWAY_SYNC_REPLY=1|GATEWAY_QUEUE_DIR=/tmp/queue" k v
+  local store k v out
+  store="$(env_val JOB_STORE)"
+  out="^|^GATEWAY_SYNC_REPLY=1|GATEWAY_QUEUE_DIR=/tmp/queue|JOB_STORE=${store:-firestore}"
   for k in NOTIFY_EMAILS NOTIFY_TELEGRAM_CHAT_IDS SMTP_USER SMTP_HOST SMTP_PORT NOTIFY_FROM; do
     v="$(env_val "$k")"
     [ -n "$v" ] && out="$out|$k=$v"
