@@ -49,6 +49,7 @@ from gateway.erasure import (
     make_erasure_log,
     record_erasure,
     result_message,
+    parse_chat_target,
     valid_chat_id,
     valid_job_id,
 )
@@ -451,20 +452,31 @@ async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -
 # happens on Conferma, re-checking each job's status at that moment.
 
 
-async def _erase_command(bot, store, chat_id, text: str) -> None:
-    args = text.split()[1:]
-    if len(args) == 1 and args[0].lower() != "chat" and valid_job_id(args[0]):
-        scope, action, target = "job", "erase_job", args[0]
-    elif len(args) == 2 and args[0].lower() == "chat" and valid_chat_id(args[1]):
-        scope, action, target = "chat", "erase_chat", args[1].strip()
-    else:
-        await _say(bot, chat_id, _USAGE)
-        return
+async def _show_erase_card(bot, chat_id, scope: str, jobs: list[dict], target: str) -> None:
+    """The confirmation card. For a chat the button carries the shown count: <chat_id>_<count>."""
+    action = "erase_job" if scope == "job" else "erase_chat"
+    if scope == "chat":
+        target = f"{target}_{len(jobs)}"
     if len(encode_callback(action, target).encode("utf-8")) > 64:
         await _say(bot, chat_id, "Id troppo lungo per il bottone.\n" + _USAGE)
         return
+    await _say(bot, chat_id, confirmation_card(jobs, scope), reply_markup=_markup(erase_keyboard(action, target)))
+
+
+async def _erase_command(bot, store, chat_id, text: str) -> None:
+    args = text.split()[1:]
+    if len(args) == 1 and args[0].lower() != "chat" and valid_job_id(args[0]):
+        scope, target = "job", args[0]
+    elif len(args) == 2 and args[0].lower() == "chat" and valid_chat_id(args[1]):
+        scope, target = "chat", args[1].strip()
+    else:
+        await _say(bot, chat_id, _USAGE)
+        return
 
     if scope == "job":
+        if len(encode_callback("erase_job", target).encode("utf-8")) > 64:
+            await _say(bot, chat_id, "Id troppo lungo per il bottone.\n" + _USAGE)
+            return
         job = store.get(target)
         jobs = [job] if job else []
         if not jobs:
@@ -475,7 +487,7 @@ async def _erase_command(bot, store, chat_id, text: str) -> None:
         if not jobs:
             await _say(bot, chat_id, "Nessun job per questa chat: niente da cancellare.")
             return
-    await _say(bot, chat_id, confirmation_card(jobs, scope), reply_markup=_markup(erase_keyboard(action, target)))
+    await _show_erase_card(bot, chat_id, scope, jobs, target)
 
 
 async def _erase_callback(bot, store, admin_id, chat_id, message: dict, cb_id: str, action: str, target: str) -> None:
@@ -493,12 +505,38 @@ async def _erase_callback(bot, store, admin_id, chat_id, message: dict, cb_id: s
         return
 
     scope = "job" if action == "erase_job" else "chat"
-    if not (valid_job_id(target) if scope == "job" else valid_chat_id(target)):
+    chat_target, expected = (None, None)
+    if scope == "chat":
+        chat_target, expected = parse_chat_target(target)  # "<chat_id>_<count shown on the card>"
+    if not (valid_job_id(target) if scope == "job" else chat_target is not None):
         await bot.answer_callback_query(cb_id, text="Azione non valida.")
         return
-    result = erase_jobs(store, [target], admin_id) if scope == "job" else erase_chat(store, target, admin_id)
+
+    try:
+        if scope == "job":
+            result = erase_jobs(store, [target], admin_id)
+        else:
+            result = erase_chat(store, chat_target, admin_id, expected=expected)
+    except Exception as exc:  # e.g. the store is down while listing the chat's jobs
+        logger.error("[erasure] scope=%s failed before deleting: %s", scope, type(exc).__name__)
+        await bot.answer_callback_query(cb_id, text="Errore: non cancellato.", show_alert=True)
+        await _say(bot, chat_id, f"Cancellazione non riuscita ({type(exc).__name__}): non ho cancellato nulla. Riprova.")
+        return
+
+    if result.code == "changed":
+        await bot.answer_callback_query(cb_id, text="I job sono cambiati: nulla cancellato.", show_alert=True)
+        await finish("Annullato: i job sono cambiati. Nessun dato cancellato.")
+        await _say(bot, chat_id, result_message(result))
+        fresh = jobs_for_chat(store, chat_target)
+        if fresh:
+            await _show_erase_card(bot, chat_id, "chat", fresh, chat_target)
+        return
+
+    # Whatever was deleted is recorded, even when some deletions failed.
     record_ok = record_erasure(make_erasure_log(), admin_id, scope, result)
-    if result.deleted:
+    if result.failed:
+        await bot.answer_callback_query(cb_id, text="Alcuni job non sono stati cancellati: ripeti.", show_alert=True)
+    elif result.deleted:
         await bot.answer_callback_query(cb_id, text="Cancellato.")
         await finish("Cancellazione eseguita.")
     elif result.refused:

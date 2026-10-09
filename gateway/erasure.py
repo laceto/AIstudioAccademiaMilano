@@ -44,6 +44,15 @@ def valid_chat_id(chat_id) -> bool:
     return isinstance(chat_id, str) and bool(_CHAT_ID_RE.match(chat_id.strip()))
 
 
+_CHAT_TARGET_RE = re.compile(r"^(-?\d{1,20})_(\d{1,6})$")
+
+
+def parse_chat_target(target) -> tuple[str | None, int | None]:
+    """"<chat_id>_<count>" from a Conferma button -> (chat_id, count), or (None, None)."""
+    match = _CHAT_TARGET_RE.match(target) if isinstance(target, str) else None
+    return (match.group(1), int(match.group(2))) if match else (None, None)
+
+
 def valid_job_id(job_id) -> bool:
     return isinstance(job_id, str) and bool(_JOB_ID_RE.match(job_id))
 
@@ -64,6 +73,9 @@ class ErasureResult:
     deleted: list[str] = field(default_factory=list)
     refused: list[tuple[str, str]] = field(default_factory=list)  # (job_id, status): busy
     missing: list[str] = field(default_factory=list)  # already gone
+    failed: list[tuple[str, str]] = field(default_factory=list)  # (job_id, exception TYPE): store error
+    expected: int | None = None  # chat scope: the count on the card (code "changed" when it differs)
+    found: int | None = None  # chat scope: the count found now
 
 
 def erase_jobs(store, job_ids: list[str], admin_id) -> ErasureResult:
@@ -72,25 +84,35 @@ def erase_jobs(store, job_ids: list[str], admin_id) -> ErasureResult:
         return ErasureResult(False, "forbidden")
     result = ErasureResult(True, "nothing")
     for job_id in job_ids:
-        job = store.get(job_id)
-        if job is None:
-            result.missing.append(job_id)
-        elif job.get("status") in BUSY_STATUSES:
-            result.refused.append((job_id, job.get("status")))
-        elif store.delete(job_id):
-            result.deleted.append(job_id)
-        else:
-            result.missing.append(job_id)
+        try:
+            job = store.get(job_id)
+            if job is None:
+                result.missing.append(job_id)
+            elif job.get("status") in BUSY_STATUSES:
+                result.refused.append((job_id, job.get("status")))
+            elif store.delete(job_id):
+                result.deleted.append(job_id)
+            else:
+                result.missing.append(job_id)
+        except Exception as exc:  # keep going; what was deleted must still be recorded
+            result.failed.append((job_id, type(exc).__name__))  # the type only: messages may carry data
     if result.deleted:
         result.code = "done"
     return result
 
 
-def erase_chat(store, chat_id, admin_id) -> ErasureResult:
-    """Erase every job of a chat, looked up now (not when the card was shown)."""
+def erase_chat(store, chat_id, admin_id, expected: int | None = None) -> ErasureResult:
+    """Erase every job of a chat, looked up now (not when the card was shown).
+
+    With `expected` (the count the card showed): if the chat has a different number of jobs now,
+    delete NOTHING and return code "changed", so Luigi confirms exactly what he saw.
+    """
     if not is_admin(admin_id):
         return ErasureResult(False, "forbidden")
-    return erase_jobs(store, [j["job_id"] for j in jobs_for_chat(store, chat_id)], admin_id)
+    ids = [j["job_id"] for j in jobs_for_chat(store, chat_id)]
+    if expected is not None and len(ids) != expected:
+        return ErasureResult(True, "changed", expected=expected, found=len(ids))
+    return erase_jobs(store, ids, admin_id)
 
 
 # ── the record ───────────────────────────────────────────────────────────────
@@ -157,6 +179,8 @@ def make_erasure_log(directory: str | None = None):
 
 def record_erasure(log, admin_id, scope: str, result: ErasureResult) -> bool:
     """Write the record and the one application-log line (ids and counts only). False = record failed."""
+    for job_id, kind in result.failed:
+        logger.error("[erasure] job %s not deleted: %s", job_id, kind)
     if not result.deleted:
         return True
     logger.info("[erasure] scope=%s deleted=%d jobs=%s", scope, len(result.deleted), ",".join(result.deleted))
@@ -206,24 +230,45 @@ def manual_checklist(job_ids: list[str]) -> str:
     )
 
 
+MAX_MESSAGE = 4000  # Telegram refuses 4096; keep a margin
+
+
+def _ids(items, cap: int = MAX_CARD_ROWS) -> str:
+    """Comma list of at most `cap` ids (items may be ids or (id, note) pairs), then '... e altri N'."""
+    shown = [i if isinstance(i, str) else f"{i[0]} ({i[1]})" for i in items[:cap]]
+    more = f" ... e altri {len(items) - cap}" if len(items) > cap else ""
+    return ", ".join(shown) + more
+
+
 def result_message(result: ErasureResult, record_ok: bool = True) -> str:
-    """Luigi's report after pressing Conferma."""
+    """Luigi's report after pressing Conferma. Always under Telegram's limit, however many jobs."""
     if not result.ok:
         return "Non autorizzato."
+    if result.code == "changed":
+        return (f"I job di questa chat sono cambiati (erano {result.expected}, ora {result.found}): "
+                "non ho cancellato nulla. Rilancia /cancella.")
     parts = []
-    if result.deleted:
-        parts.append(f"Cancellati {len(result.deleted)} job: {', '.join(result.deleted)}.")
+    if result.failed:
+        parts.append(f"{len(result.deleted)} cancellati, {len(result.failed)} falliti: {_ids(result.failed)}. "
+                     "Ripeti l'operazione (premi di nuovo Conferma o rilancia /cancella).")
+    elif result.deleted:
+        parts.append(f"Cancellati {len(result.deleted)} job: {_ids(result.deleted)}.")
+    if result.failed and result.deleted:
+        parts.append(f"Cancellati: {_ids(result.deleted)}.")
     if result.refused:
-        busy = ", ".join(f"{i} ({s})" for i, s in result.refused)
-        parts.append(f"NON cancellati perche' in corso: {busy}. Aspetta che finiscano o usa /sweep, poi ripeti /cancella.")
-    if result.missing and not result.deleted and not result.refused:
+        parts.append(f"NON cancellati perche' in corso ({len(result.refused)}): {_ids(result.refused)}. "
+                     "Aspetta che finiscano o usa /sweep, poi ripeti /cancella.")
+    if result.missing and not result.deleted and not result.refused and not result.failed:
         parts.append("Niente da cancellare: i job non esistono piu' (gia' cancellati?).")
     elif result.missing:
-        parts.append(f"Gia' spariti: {', '.join(result.missing)}.")
-    if not result.deleted and not result.refused and not result.missing:
+        parts.append(f"Gia' spariti ({len(result.missing)}): {_ids(result.missing)}.")
+    if not (result.deleted or result.refused or result.missing or result.failed):
         parts.append("Niente da cancellare.")
     if result.deleted and not record_ok:
         parts.append("ATTENZIONE: non sono riuscito a scrivere il registro delle cancellazioni (vedi i log). Annota tu la data.")
-    if result.deleted:
-        parts.append(manual_checklist(result.deleted))
-    return "\n".join(parts)
+    body = "\n".join(parts)
+    tail = ("\n" + manual_checklist(result.deleted)) if result.deleted else ""
+    room = MAX_MESSAGE - len(tail)
+    if len(body) > room:
+        body = body[: max(0, room - 3)] + "..."
+    return body + tail

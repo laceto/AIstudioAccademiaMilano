@@ -341,7 +341,13 @@ per cambiare nome/cartella): ora, ID admin, `job`/`chat`, numero e ID dei job (c
 Serve il ruolo `roles/datastore.user` che il servizio ha gia' per `jobs`. **Decisione per Luigi:** il registro non ha TTL, cosi'
 puoi dimostrare di aver cancellato; contiene solo ID casuali e il tuo ID. Se preferisci una scadenza, aggiungi una policy TTL
 su un campo timestamp (oggi `at` e' testo ISO: andrebbe salvato come timestamp). Non l'ho attivata.
-Limite: lo stato e' riletto subito prima di ogni cancellazione, ma lettura e cancellazione non sono una sola operazione atomica.
+Limite: lo stato e' riletto subito prima di ogni cancellazione, ma lettura e cancellazione non sono una sola operazione
+atomica. Nel raro caso in cui un worker prenda un job `approved` tra i due passaggi, la run finisce come "persa" e il
+risultato puo' comunque arrivare nella tua chat Telegram. Cancellare un job `approved` e' invece sicuro: il worker lo salta.
+Per `/cancella chat` il bottone porta il numero di job mostrato nella scheda (`ec:<chat_id>_<n>`): se al momento di Conferma il
+numero e' diverso non cancella nulla e rimostra una scheda aggiornata. Se una cancellazione fallisce a meta', i job gia'
+cancellati vengono comunque registrati in `erasures` e il bot elenca quelli falliti (solo tipo d'errore, mai il messaggio).
+I messaggi del bot hanno un tetto di lunghezza: elenchi lunghi sono abbreviati ("... e altri N"), il registro tiene tutti gli id.
 
 ---
 

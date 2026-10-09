@@ -226,13 +226,13 @@ def test_card_is_capped_for_big_chats():
 
 
 def test_buttons_fit_telegram_limit_also_for_negative_chat_ids(store):
-    for action, target in (("erase_job", "j1"), ("erase_chat", GROUP), ("erase_chat", "-" + "9" * 20),
+    for action, target in (("erase_job", "j1"), ("erase_chat", GROUP + "_9999"), ("erase_chat", "-" + "9" * 20 + "_9999"),
                            ("erase_cancel", "x")):
         for row in admin.erase_keyboard(action, target):
             for button in row:
                 assert len(button["callback_data"].encode()) <= 64
                 assert admin.decode_callback(button["callback_data"]) is not None
-    assert admin.decode_callback(admin.encode_callback("erase_chat", GROUP)) == ("erase_chat", GROUP)
+    assert admin.decode_callback(admin.encode_callback("erase_chat", GROUP + "_9999")) == ("erase_chat", GROUP + "_9999")
 
 
 @pytest.mark.parametrize("text", ["/cancella", "/cancella a b c", "/cancella chat", "/cancella chat abc",
@@ -271,7 +271,7 @@ def test_refuse_admin_command_also_covers_cancella():
 
 def test_conferma_deletes_records_and_gives_the_checklist(store):
     bot = FakeBot()
-    _run(at.handle_callback(bot, store, _cb(admin.encode_callback("erase_chat", str(FRIEND)))))
+    _run(at.handle_callback(bot, store, _cb(admin.encode_callback("erase_chat", f"{FRIEND}_2"))))
     assert _ids(store) == ["g1", "other"]
     (rec,) = _records()
     assert rec["count"] == 2 and rec["scope"] == "chat"
@@ -290,7 +290,7 @@ def test_conferma_for_a_single_job(store):
 
 
 def test_negative_chat_id_roundtrip(store):
-    _run(at.handle_callback(FakeBot(), store, _cb(admin.encode_callback("erase_chat", GROUP))))
+    _run(at.handle_callback(FakeBot(), store, _cb(admin.encode_callback("erase_chat", GROUP + "_1"))))
     assert _ids(store) == ["j1", "j2", "other"]
 
 
@@ -316,7 +316,7 @@ def test_conferma_after_jobs_are_gone(store):
     for j in ("j1", "j2"):
         store.delete(j)
     bot = FakeBot()
-    _run(at.handle_callback(bot, store, _cb(admin.encode_callback("erase_chat", str(FRIEND)))))
+    _run(at.handle_callback(bot, store, _cb(admin.encode_callback("erase_chat", f"{FRIEND}_0"))))
     assert "Niente da cancellare" in bot.texts()[-1] and _records() == []
 
 
@@ -331,7 +331,7 @@ def test_conferma_refuses_a_job_that_became_busy_since_the_card(store):
 
 def test_a_stranger_cannot_confirm_or_cancel(store):
     bot = FakeBot()
-    for data in (admin.encode_callback("erase_chat", str(FRIEND)), admin.encode_callback("erase_job", "j1"),
+    for data in (admin.encode_callback("erase_chat", f"{FRIEND}_2"), admin.encode_callback("erase_job", "j1"),
                  admin.encode_callback("erase_cancel", "x")):
         _run(at.handle_callback(bot, store, _cb(data, from_id=STRANGER)))
     assert len(store.all_jobs()) == 4 and _records() == [] and bot.edited == []
@@ -341,5 +341,124 @@ def test_a_stranger_cannot_confirm_or_cancel(store):
 def test_forged_callback_with_a_malformed_target_does_nothing(store):
     bot = FakeBot()
     _run(at.handle_callback(bot, store, _cb("ec:abc")))
+    _run(at.handle_callback(bot, store, _cb(f"ec:{FRIEND}")))  # no count: not a card we issued
     assert len(store.all_jobs()) == 4 and _records() == []
     assert bot.answered[-1][1] == "Azione non valida."
+
+
+# ── the card's count is what gets deleted ────────────────────────────────────
+
+
+def test_chat_card_carries_the_count_in_the_button(store):
+    bot = FakeBot()
+    _run(at.handle_admin_message(bot, store, _msg(f"/cancella chat {FRIEND}")))
+    buttons = bot.sent[0][2]["reply_markup"].inline_keyboard[0]
+    assert buttons[0].callback_data == f"ec:{FRIEND}_2"
+
+
+def test_job_added_after_the_card_deletes_nothing_and_reshows_a_card(store):
+    store.put(_job("j3", created="2026-10-11T10:00:00+00:00"))
+    bot = FakeBot()
+    _run(at.handle_callback(bot, store, _cb(f"ec:{FRIEND}_2")))
+    assert _ids(store) == ["g1", "j1", "j2", "j3", "other"] and _records() == []
+    assert "sono cambiati (erano 2, ora 3)" in bot.texts()[0]
+    assert "3 job" in bot.texts()[1] and bot.sent[1][2]["reply_markup"].inline_keyboard[0][0].callback_data == f"ec:{FRIEND}_3"
+
+
+def test_job_removed_after_the_card_deletes_nothing(store):
+    store.delete("j2")
+    bot = FakeBot()
+    _run(at.handle_callback(bot, store, _cb(f"ec:{FRIEND}_2")))
+    assert _ids(store) == ["g1", "j1", "other"] and _records() == []
+    assert "erano 2, ora 1" in bot.texts()[0]
+
+
+# ── partial failure keeps the record ─────────────────────────────────────────
+
+
+class FlakyStore:
+    """Wraps a store; the Nth delete raises (message holds PII-looking text that must not leak)."""
+
+    def __init__(self, inner, fail_on):
+        self.inner, self.fail_on, self.calls = inner, set(fail_on), 0
+
+    def delete(self, job_id):
+        self.calls += 1
+        if self.calls in self.fail_on:
+            raise RuntimeError("503 for " + SECRET_TEXT)
+        return self.inner.delete(job_id)
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+
+def test_failure_on_the_second_delete_still_records_the_first(store):
+    flaky = FlakyStore(store, {2})
+    bot = FakeBot()
+    _run(at.handle_callback(bot, flaky, _cb(f"ec:{FRIEND}_2")))
+    assert _ids(store) == ["g1", "j2", "other"]  # j1 gone, j2 failed
+    (rec,) = _records()
+    assert rec["count"] == 1 and rec["job_ids"] == ["j1"]
+    report = bot.texts()[-1]
+    assert "1 cancellati, 1 falliti" in report and "j2" in report and "RuntimeError" in report
+    assert "ripeti" in report.lower()
+    assert "IBAN" not in report and "503" not in report  # exception type only, never the message
+    assert bot.edited == []  # buttons stay so Luigi can retry
+    assert bot.answered[-1][2] is True
+
+
+def test_retry_after_a_failure_finishes_the_job_and_finalises_the_card(store):
+    flaky = FlakyStore(store, {2})
+    _run(at.handle_callback(FakeBot(), flaky, _cb(f"ec:{FRIEND}_2")))
+    bot = FakeBot()
+    _run(at.handle_callback(bot, store, _cb(f"ec:{FRIEND}_1")))  # the chat now has 1 job
+    assert _ids(store) == ["g1", "other"] and len(_records()) == 2
+    assert bot.edited and "Cancellazione eseguita" in bot.edited[0][2]
+
+
+def test_a_store_that_fails_while_listing_is_reported_not_raised(store):
+    class Down:
+        def all_jobs(self):
+            raise RuntimeError("down")
+
+    bot = FakeBot()
+    _run(at.handle_callback(bot, Down(), _cb(f"ec:{FRIEND}_2")))
+    assert "non riuscita" in bot.texts()[-1].lower() and _records() == []
+
+
+# ── Telegram's 4096-character limit ──────────────────────────────────────────
+
+
+def _big_store(tmp_path, n, chat=555):
+    s = FileJobStore(str(tmp_path / "big"))
+    for i in range(n):
+        s.put(_job("job" + "x" * 50 + str(i), chat=chat))
+    return s
+
+
+def test_result_message_for_300_deleted_jobs_stays_under_the_limit(tmp_path):
+    big = _big_store(tmp_path, 300)
+    bot = FakeBot()
+    _run(at.handle_callback(bot, big, _cb("ec:555_300")))
+    assert big.all_jobs() == []
+    (rec,) = _records()
+    assert rec["count"] == 300  # the record keeps every id
+    report = bot.texts()[-1]
+    assert len(report) < 4096 and "Cancellati 300 job" in report and "e altri" in report
+    assert "Da fare a mano" in report and "30 giorni" in report
+
+
+def test_result_message_for_300_failures_stays_under_the_limit(tmp_path):
+    big = _big_store(tmp_path, 300)
+    bot = FakeBot()
+    _run(at.handle_callback(bot, FlakyStore(big, set(range(1, 301))), _cb("ec:555_300")))
+    report = bot.texts()[-1]
+    assert len(report) < 4096 and "300 falliti" in report and "e altri" in report
+    assert len(big.all_jobs()) == 300 and _records() == []
+
+
+def test_message_stays_short_when_everything_is_listed_at_once():
+    ids = ["i" * 64 + str(n) for n in range(300)]
+    result = erasure.ErasureResult(True, "done", deleted=ids, refused=[(i, "running") for i in ids],
+                                   missing=ids, failed=[(i, "RuntimeError") for i in ids])
+    assert len(erasure.result_message(result)) < 4096
