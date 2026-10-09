@@ -23,6 +23,7 @@ Last updated: 2026-10-09
 | 035 | 2026-10-09 | Cloud Run deploy — gateway + rag-api on `aistudio-milano` (europe-west8), Telegram webhook live | Cloud Run, Cloud Build, Artifact Registry, Secret Manager | €0.00 (internal) | `deliverables/2026-10-09_035_cloud-run-deploy/` |
 
 | 036 | 2026-10-09 | Approval from Telegram + asynchronous pipeline worker — owner alerts (Telegram/e-mail), Firestore job store, approve/price/reject buttons, LangGraph pipeline on a private Cloud Run worker via Cloud Tasks, review before delivery | Cloud Run, Cloud Tasks, Firestore, LangGraph, python-telegram-bot, Secret Manager | €0.00 (internal) | `deliverables/2026-10-09_036_approval-pipeline-worker/` |
+| 037 | 2026-10-09 | Data retention, privacy notice and stuck-job recovery — 90-day Firestore TTL with delete protection, `/start` + `/privacy` notice, sweep of jobs stuck in `running` (Cloud Scheduler) | Firestore, Cloud Scheduler, Cloud Run, python-telegram-bot | €0.00 (internal) | `deliverables/2026-10-09_037_retention-privacy-recovery/` |
 ## Revenue Summary
 
 | Status | Amount |
