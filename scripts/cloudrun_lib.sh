@@ -35,14 +35,63 @@ upsert_secret() {
 #   Git Bash on Windows rewrites an argument such as KEY=/tmp/queue into
 #   KEY=C:/Users/.../Temp/queue before gcloud sees it.
 gateway_env_vars() {
-  local store k v out
+  local store k v extra out
   store="$(env_val JOB_STORE)"
   out="^|^GATEWAY_SYNC_REPLY=1|JOB_STORE=${store:-firestore}"
   for k in NOTIFY_EMAILS NOTIFY_TELEGRAM_CHAT_IDS SMTP_USER SMTP_HOST SMTP_PORT NOTIFY_FROM; do
     v="$(env_val "$k")"
     [ -n "$v" ] && out="$out|$k=$v"
   done
+  for extra in "$@"; do  # KEY=VALUE pairs computed by the caller (e.g. the worker URL)
+    out="$out|$extra"
+  done
   echo "$out"
+}
+
+# worker_env_vars
+#
+# Value for `gcloud run deploy pipeline-worker --set-env-vars`: settings only. The keys it needs
+# (OPENAI_API_KEY, TELEGRAM_BOT_TOKEN, ...) travel as Secret Manager references, never here.
+worker_env_vars() {
+  local provider k v out
+  provider="$(env_val PIPELINE_PROVIDER)"
+  out="^|^JOB_STORE=firestore|PIPELINE_PROVIDER=${provider:-openai}"
+  for k in NOTIFY_TELEGRAM_CHAT_IDS PIPELINE_RUN_TIMEOUT; do
+    v="$(env_val "$k")"
+    [ -n "$v" ] && out="$out|$k=$v"
+  done
+  echo "$out"
+}
+
+# ensure_service_account NAME PROJECT DISPLAY_NAME
+#
+# Create the service account if it does not exist. Prints "NAME — created | exists".
+ensure_service_account() {
+  local name="$1" project="$2" display="$3"
+  if gcloud iam service-accounts describe "$name@$project.iam.gserviceaccount.com" >/dev/null 2>&1; then
+    echo "  $name — exists"
+  else
+    gcloud iam service-accounts create "$name" --display-name="$display" >/dev/null
+    echo "  $name — created"
+  fi
+}
+
+# ensure_tasks_queue NAME LOCATION
+#
+# Create the Cloud Tasks queue, or reset an existing one to the same settings. A pipeline run
+# costs LLM money, so a failed task must never be retried on its own (max-attempts=1) and at most
+# a couple may run at once; someone loosening that in the console is undone by the next deploy.
+# Prints "NAME — created | updated".
+ensure_tasks_queue() {
+  local name="$1" location="$2"
+  local flags=(--max-attempts=1 --max-concurrent-dispatches=2 --max-dispatches-per-second=1)
+  if gcloud tasks queues describe "$name" --location="$location" >/dev/null 2>&1; then
+    gcloud tasks queues update "$name" --location="$location" "${flags[@]}" >/dev/null
+    echo "  $name — updated"
+  else
+    gcloud tasks queues create "$name" --location="$location" "${flags[@]}" >/dev/null
+    echo "  $name — created"
+  fi
 }
 
 # _random_secret

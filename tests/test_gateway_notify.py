@@ -6,6 +6,7 @@ no duplicates, no flooding, and no secrets in the logs.
 """
 
 import asyncio
+import json
 import logging
 
 import pytest
@@ -343,3 +344,118 @@ def test_notification_failure_never_breaks_the_user_reply(monkeypatch, tmp_path)
     w = _worker(monkeypatch, tmp_path, "unknown_product", True)
     status, reply = asyncio.run(w.process_job(_queued_job(w)))
     assert status == "needs_review" and "Luigi" in reply
+
+
+# ── notify_result: the pipeline's output goes to Luigi first ─────────────────
+
+
+class _DocClient:
+    """Records multipart sendDocument / json sendMessage calls."""
+
+    calls = []
+
+    def __init__(self, **kw):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *a):
+        return False
+
+    async def post(self, url, json=None, data=None, files=None):
+        _DocClient.calls.append({"url": url, "json": json, "data": data, "files": files})
+
+        class R:
+            status_code = 200
+
+        return R()
+
+
+@pytest.fixture
+def docs(monkeypatch):
+    _DocClient.calls = []
+    monkeypatch.setattr(notify.httpx, "AsyncClient", _DocClient)
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:tok")
+    monkeypatch.setenv("NOTIFY_TELEGRAM_CHAT_IDS", "5670736210")
+    return _DocClient
+
+
+def _result(**over):
+    base = {
+        "ok": True, "error": None, "filename": "age_api.py", "content": "print('eta')\n" * 50,
+        "product_type": "unknown_product", "price": 5.5, "invoice_id": "INV-1", "qa_passed": True,
+        "risk_score": 1.0, "high_risk": False, "skills": ["python"], "steps": ["[Marco] Invoice INV-1"],
+    }
+    base.update(over)
+    return base
+
+
+def _run_job():
+    return {"job_id": "0baa44db93", "text": "Api service to get current age", "channel": "telegram",
+            "metadata": {"chat_id": "190776580"}, "price": 5.5}
+
+
+def test_result_is_sent_as_a_document_with_review_buttons(docs):
+    out = asyncio.run(notify.notify_result(_run_job(), _result()))
+    assert out == {"telegram": "sent"}
+    call = docs.calls[0]
+    assert call["url"].endswith("/sendDocument")
+    name, payload = call["files"]["document"][:2]
+    assert name == "age_api.py" and payload.startswith(b"print('eta')")
+    assert call["data"]["chat_id"] == "5670736210"
+    markup = json.loads(call["data"]["reply_markup"])
+    from gateway import admin
+
+    assert [admin.decode_callback(b["callback_data"])[0] for row in markup["inline_keyboard"] for b in row] == ["send", "discard"]
+
+
+def test_caption_summarises_the_run(docs):
+    asyncio.run(notify.notify_result(_run_job(), _result(price=0.0)))
+    caption = docs.calls[0]["data"]["caption"]
+    for needle in ("0baa44db93", "age_api.py", "gratis", "QA", "1.0/5", "Api service to get current age"):
+        assert needle in caption, needle
+    assert len(caption) <= 1024  # Telegram's caption limit
+
+
+def test_high_risk_is_flagged_loudly(docs):
+    asyncio.run(notify.notify_result(_run_job(), _result(high_risk=True, risk_score=4.5)))
+    assert "RISCHIO ALTO" in docs.calls[0]["data"]["caption"]
+
+
+def test_a_long_request_does_not_overflow_the_caption(docs):
+    job = _run_job()
+    job["text"] = "x" * 5000
+    asyncio.run(notify.notify_result(job, _result()))
+    assert len(docs.calls[0]["data"]["caption"]) <= 1024
+
+
+def test_the_filename_cannot_escape(docs):
+    asyncio.run(notify.notify_result(_run_job(), _result(filename="../../etc/passwd")))
+    assert docs.calls[0]["files"]["document"][0] == "passwd"
+
+
+def test_a_failed_run_is_a_text_message_with_a_retry_button(docs):
+    out = asyncio.run(notify.notify_result(_run_job(), _result(ok=False, error="QA non superata", filename=None, content=None)))
+    assert out == {"telegram": "sent"}
+    call = docs.calls[0]
+    assert call["url"].endswith("/sendMessage") and "QA non superata" in call["json"]["text"]
+    assert "0baa44db93" in call["json"]["text"]
+    from gateway import admin
+
+    kb = call["json"]["reply_markup"]["inline_keyboard"]
+    assert [admin.decode_callback(b["callback_data"])[0] for row in kb for b in row] == ["retry"]
+
+
+def test_notify_result_without_admins_does_nothing(docs, monkeypatch):
+    monkeypatch.delenv("NOTIFY_TELEGRAM_CHAT_IDS")
+    assert asyncio.run(notify.notify_result(_run_job(), _result())) == {}
+    assert docs.calls == []
+
+
+def test_notify_result_failure_is_reported_not_raised(docs, monkeypatch):
+    async def boom(*a, **k):
+        raise RuntimeError("POST https://api.telegram.org/bot123:SECRETTOKEN/sendDocument failed")
+
+    monkeypatch.setattr(notify, "_send_document", boom)
+    assert asyncio.run(notify.notify_result(_run_job(), _result())) == {"telegram": "failed"}

@@ -151,7 +151,8 @@ def test_non_telegram_jobs_are_decided_without_messaging_anyone(tmp_path):
     s.put(job)
     bot = FakeBot()
     _run(at.handle_callback(bot, s, _cb("ap:abc123")))
-    assert s.get("abc123")["status"] == "approved" and not bot.sent
+    # nobody to tell on a non-Telegram channel; Luigi still hears about the pipeline
+    assert s.get("abc123")["status"] == "approved" and not bot.to(FRIEND)
 
 
 # ── set a price: button, force-reply, answer ─────────────────────────────────

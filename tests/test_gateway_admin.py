@@ -88,7 +88,7 @@ def test_parse_price_rejects(raw):
 # ── callback data and keyboard ───────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("action", ["approve", "reject", "free", "price"])
+@pytest.mark.parametrize("action", ["approve", "reject", "free", "price", "send", "discard", "retry"])
 def test_callback_data_roundtrip(action):
     data = admin.encode_callback(action, "abc123")
     assert len(data.encode()) <= 64  # Telegram's limit
@@ -206,3 +206,19 @@ def test_pending_listing_is_oldest_first_and_bounded(store):
                    "created_at": f"2026-10-09T11:{i:02d}:00+00:00", "classification": {}})
     jobs = admin.pending_jobs(store, limit=10)
     assert len(jobs) == 10 and jobs[0]["job_id"] == "abc123"
+
+
+# ── result review and retry buttons (pipeline output) ────────────────────────
+
+
+def test_result_keyboard_offers_send_and_discard():
+    kb = admin.result_keyboard("abc123")
+    assert [admin.decode_callback(b["callback_data"]) for row in kb for b in row] == [
+        ("send", "abc123"), ("discard", "abc123"),
+    ]
+    assert all(len(b["callback_data"].encode()) <= 64 for row in kb for b in row)
+
+
+def test_retry_keyboard_offers_a_single_retry():
+    kb = admin.retry_keyboard("abc123")
+    assert [admin.decode_callback(b["callback_data"]) for row in kb for b in row] == [("retry", "abc123")]

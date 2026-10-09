@@ -1,0 +1,13 @@
+# Build the pipeline worker image (gateway/Dockerfile.worker) from the repo root.
+#
+# The repo holds several Dockerfiles and a default source build picks the wrong one, so the
+# Dockerfile is named explicitly.
+#
+#   gcloud builds submit --config deploy/cloudbuild.worker.yaml \
+#     --substitutions _IMAGE=europe-west8-docker.pkg.dev/$PROJECT/aistudio/pipeline-worker
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "gateway/Dockerfile.worker", "-t", "${_IMAGE}", "."]
+images: ["${_IMAGE}"]
+options:
+  logging: CLOUD_LOGGING_ONLY

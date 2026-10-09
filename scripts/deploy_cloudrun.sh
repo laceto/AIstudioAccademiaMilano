@@ -13,6 +13,10 @@
 #   ./scripts/deploy_cloudrun.sh --dry-run     # print every command, change nothing
 #   ./scripts/deploy_cloudrun.sh
 #   ./scripts/deploy_cloudrun.sh --skip-build  # redeploy without rebuilding images
+#   ./scripts/deploy_cloudrun.sh --build=gateway,worker   # rebuild only these (rag-api takes ~10 min)
+#
+# Services: gateway (public webhook), rag-api (public webhook) and pipeline-worker (private:
+# only Cloud Tasks may call it) which runs the studio pipeline for jobs Luigi approved.
 #
 # Prerequisites:
 #   - gcloud installed and `gcloud auth login` done
@@ -28,14 +32,28 @@ ENV_FILE="$REPO_ROOT/.env"
 
 DRY_RUN=false
 SKIP_BUILD=false
+BUILD_LIST=""   # empty = rebuild every image; --build=a,b rebuilds only those
 for arg in "$@"; do
   case "$arg" in
     --dry-run)    DRY_RUN=true ;;
     --skip-build) SKIP_BUILD=true ;;
-    -h|--help)    sed -n '2,20p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    --build=*)    BUILD_LIST="${arg#--build=}" ;;
+    -h|--help)    sed -n '2,24p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "Unknown option: $arg" >&2; exit 2 ;;
   esac
 done
+if [ -n "$BUILD_LIST" ]; then
+  for name in ${BUILD_LIST//,/ }; do
+    case "$name" in gateway|worker|rag-api) ;; *) echo "Unknown image in --build: $name (gateway, worker, rag-api)" >&2; exit 2 ;; esac
+  done
+fi
+
+# want_build NAME: should this image be rebuilt on this run?
+want_build() {
+  $SKIP_BUILD && return 1
+  [ -z "$BUILD_LIST" ] && return 0
+  [[ ",$BUILD_LIST," == *",$1,"* ]]
+}
 
 say()  { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 warn() { printf '\033[33mWARN: %s\033[0m\n' "$*" >&2; }
@@ -93,7 +111,7 @@ say "Enabling APIs"
 run gcloud services enable \
   run.googleapis.com cloudbuild.googleapis.com \
   artifactregistry.googleapis.com secretmanager.googleapis.com \
-  firestore.googleapis.com
+  firestore.googleapis.com cloudtasks.googleapis.com
 
 say "Artifact Registry repository '$AR_REPO'"
 if gcloud artifacts repositories describe "$AR_REPO" --location="$REGION" >/dev/null 2>&1; then
@@ -167,20 +185,53 @@ run gcloud projects add-iam-policy-binding "$PROJECT" \
   --member="serviceAccount:$RUNTIME_SA" \
   --role=roles/datastore.user --condition=None --quiet >/dev/null
 
+# ── Pipeline worker: queue and identities ────────────────────────────────────
+# Jobs Luigi approves are queued in Cloud Tasks; the queue calls the private pipeline-worker as the
+# pipeline-tasks service account (OIDC). The gateway may create tasks and act as that account.
+
+QUEUE_NAME="pipeline-runs"
+TASKS_SA_NAME="pipeline-tasks"
+TASKS_SA="$TASKS_SA_NAME@$PROJECT.iam.gserviceaccount.com"
+
+say "Pipeline queue and service account"
+if $DRY_RUN; then
+  echo "  [dry-run] service account $TASKS_SA_NAME, queue $QUEUE_NAME ($REGION, max-attempts=1)"
+else
+  ensure_service_account "$TASKS_SA_NAME" "$PROJECT" "Cloud Tasks caller for the pipeline worker"
+  ensure_tasks_queue "$QUEUE_NAME" "$REGION"
+fi
+run gcloud projects add-iam-policy-binding "$PROJECT" \
+  --member="serviceAccount:$RUNTIME_SA" \
+  --role=roles/cloudtasks.enqueuer --condition=None --quiet >/dev/null
+run gcloud iam service-accounts add-iam-policy-binding "$TASKS_SA" \
+  --member="serviceAccount:$RUNTIME_SA" \
+  --role=roles/iam.serviceAccountUser --quiet >/dev/null
+
 # ── Build ────────────────────────────────────────────────────────────────────
 
 if $SKIP_BUILD; then
   say "Skipping build (--skip-build)"
 else
-  say "Building gateway image"
-  run gcloud builds submit "$REPO_ROOT" \
-    --config "$REPO_ROOT/deploy/cloudbuild.gateway.yaml" \
-    --substitutions "_IMAGE=$IMAGE_BASE/gateway"
+  if want_build gateway; then
+    say "Building gateway image"
+    run gcloud builds submit "$REPO_ROOT" \
+      --config "$REPO_ROOT/deploy/cloudbuild.gateway.yaml" \
+      --substitutions "_IMAGE=$IMAGE_BASE/gateway"
+  fi
 
-  say "Building RAG API image (slow — faiss + langchain)"
-  run gcloud builds submit "$REPO_ROOT" \
-    --config "$REPO_ROOT/deploy/cloudbuild.ragapi.yaml" \
-    --substitutions "_IMAGE=$IMAGE_BASE/rag-api"
+  if want_build worker; then
+    say "Building pipeline worker image (langgraph + langchain)"
+    run gcloud builds submit "$REPO_ROOT" \
+      --config "$REPO_ROOT/deploy/cloudbuild.worker.yaml" \
+      --substitutions "_IMAGE=$IMAGE_BASE/pipeline-worker"
+  fi
+
+  if want_build rag-api; then
+    say "Building RAG API image (slow — faiss + langchain)"
+    run gcloud builds submit "$REPO_ROOT" \
+      --config "$REPO_ROOT/deploy/cloudbuild.ragapi.yaml" \
+      --substitutions "_IMAGE=$IMAGE_BASE/rag-api"
+  fi
 fi
 
 # ── Deploy ───────────────────────────────────────────────────────────────────
@@ -200,11 +251,30 @@ run gcloud run deploy rag-api \
   --set-secrets "$(secret_flags TELEGRAM_RAG_BOT_TOKEN OPENAI_API_KEY)" \
   --quiet
 
+# The pipeline worker: NOT public. Only the pipeline-tasks service account may invoke it, so nobody
+# can start a (paid) pipeline run by calling its URL. One request at a time, a long timeout.
+say "Deploying pipeline-worker (private)"
+run gcloud run deploy pipeline-worker \
+  --image "$IMAGE_BASE/pipeline-worker" --region "$REGION" \
+  --no-allow-unauthenticated --memory 1Gi --cpu 1 --timeout 900 --concurrency 1 --max-instances 2 \
+  --set-env-vars "$(worker_env_vars)" \
+  --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN OPENAI_API_KEY ANTHROPIC_API_KEY)" \
+  --quiet
+
+if $DRY_RUN; then
+  WORKER_URL="https://pipeline-worker-dry-run.invalid"
+else
+  WORKER_URL="$(gcloud run services describe pipeline-worker --region "$REGION" --format='value(status.url)')"
+  [ -n "$WORKER_URL" ] || die "Could not read the pipeline-worker URL."
+fi
+run gcloud run services add-iam-policy-binding pipeline-worker --region "$REGION" \
+  --member="serviceAccount:$TASKS_SA" --role=roles/run.invoker --quiet >/dev/null
+
 say "Deploying gateway"
 run gcloud run deploy gateway \
   --image "$IMAGE_BASE/gateway" --region "$REGION" \
   --allow-unauthenticated --memory 512Mi --timeout 120 \
-  --set-env-vars "$(gateway_env_vars)" \
+  --set-env-vars "$(gateway_env_vars "PIPELINE_QUEUE=$QUEUE_NAME" "PIPELINE_WORKER_URL=$WORKER_URL" "TASKS_LOCATION=$REGION" "TASKS_INVOKER_SA=$TASKS_SA" "PIPELINE_PROJECT=$PROJECT")" \
   --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN ANTHROPIC_API_KEY OPENAI_API_KEY SMTP_PASSWORD TELEGRAM_WEBHOOK_SECRET)" \
   --quiet
 
@@ -254,15 +324,17 @@ cat <<EOF
 
 Done.
 
-  gateway   $GW_URL
-  rag-api   $RAG_URL
+  gateway          $GW_URL
+  rag-api          $RAG_URL
+  pipeline-worker  $WORKER_URL   (private)
 
-Test: message the pipeline bot "Ho bisogno di una landing page per il mio ristorante".
-You should get ONE reply naming the product and EUR 9.90. If you get a Job ID and
-then silence, GATEWAY_SYNC_REPLY did not reach the container:
+Test the whole path: send the bot a request outside the catalogue, then on the card press
+"Gratis" (or "Imposta prezzo"). You should get "Pipeline avviata per il job ...", and a minute
+or two later the finished file with the buttons "Invia al cliente" / "Scarta".
 
-  gcloud run services describe gateway --region $REGION --format='value(spec.template.spec.containers[0].env)'
+If the pipeline does not start, the gateway tells you why and /run <job_id> retries it.
 
 Logs:
   gcloud run services logs read gateway --region $REGION --limit 50
+  gcloud run services logs read pipeline-worker --region $REGION --limit 50
 EOF

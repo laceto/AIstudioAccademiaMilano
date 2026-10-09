@@ -1,6 +1,6 @@
 # Piano — notifica e approvazione di Luigi per le richieste `needs_review`
 
-Stato: **Fasi 1 (notifica), 2 (storage) e 3 (approvazione da Telegram) implementate il 2026-10-09**; Fasi 4-5 da fare. Storage: **Firestore**.
+Stato: **Fasi 1, 2 e 3 attive; Fase 5 in corso** (PR 1/3 headless pipeline mergiata, PR 2/3 esecuzione asincrona nel codice; PR 3/3 consegna al cliente da fare); Fase 4 da fare. Storage: **Firestore**.
 Contesto: `docs/cloud-run-setup.md`, `gateway/worker.py` (`_build_reply`), `gateway/api.py` (`/webhook/telegram`).
 
 ## 1. Problema
@@ -113,7 +113,20 @@ l'utente riceve esattamente un messaggio di esito.
 ### Fase 4 — Richieste fraudolente (già in lista da fare)
 Categoria `refused` nel classificatore: risposta di rifiuto all'utente, notifica a Luigi come "bloccata" (non da approvare).
 
-### Fase 5 — Collegamento gateway → pipeline (emerso il 2026-10-09)
+### Fase 5 — Collegamento gateway → pipeline (decisioni del 2026-10-09)
+
+**Decisioni di Luigi:** parte solo ciò che approva lui (nessun sistema di pagamento, quindi niente run automatiche per
+sconosciuti); esecuzione con Cloud Tasks + un servizio worker privato; il risultato arriva prima a lui, con i bottoni
+Invia al cliente / Scarta.
+
+**Realizzato (PR 1/3):** `gateway/studio_runner.py` esegue la pipeline LangGraph senza Francesca (niente git push, email
+Gmail, scritture nel repo); Marco usa il prezzo approvato; correzioni alla pipeline (prompt fattura/landing con graffe non
+protette, approvazione di un rischio alto che ripartiva da Gianni).
+**Realizzato (PR 2/3):** `gateway/pipeline_queue.py` (Cloud Tasks), `gateway/pipeline_worker.py` (servizio privato, `/run`),
+`notify_result` (file + bottoni a Luigi), `/run` e Riprova, Dockerfile.worker, coda `max-attempts=1`, script di deploy.
+**Da fare (PR 3/3):** i bottoni Invia al cliente / Scarta (invio del file a chi l'ha chiesto), documentazione finale.
+
+Testo originale della proposta (per memoria):
 
 Oggi il gateway classifica e notifica, ma **nessun job avvia la pipeline a 6 agenti**: anche un job `classified`
 ("il tuo deliverable è in lavorazione") resta fermo, e un job approvato da Luigi non produce nulla. Lo si è visto con la richiesta
