@@ -77,7 +77,7 @@ def start_message() -> str:
         "Per domande sulla knowledge base: /ask <domanda>\n"
         "Scrivi la tua richiesta e penso io al resto.\n\n"
         "Privacy: per rispondere conserviamo i messaggi che scrivi e il tuo ID Telegram; "
-        "ogni richiesta fuori catalogo viene letta dal titolare. Come li trattiamo, per quanto "
+        "ogni richiesta viene letta dal titolare. Come li trattiamo, per quanto "
         "tempo e quali sono i tuoi diritti: /privacy"
     )
 
@@ -139,8 +139,8 @@ def privacy_text() -> str:
         "• OpenAI e Telegram conservano i dati secondo condizioni proprie; per la sua parte "
         "Telegram è titolare autonomo.\n\n"
         "Decisioni automatiche\n"
-        "I prodotti a catalogo ricevono il prezzo in automatico da un listino fisso, senza "
-        "revisione umana. Le richieste fuori catalogo le decide il titolare. A parte il "
+        "Il prezzo a catalogo è proposto da un listino fisso; ogni richiesta la approva o la "
+        "rifiuta il titolare di persona prima che parta la lavorazione. A parte il "
         "rifiuto qui sotto, nessuna decisione con effetti giuridici nei tuoi confronti è "
         "presa solo dal software.\n"
         "Le richieste chiaramente illegali (per esempio documenti o ricette falsi, phishing, "

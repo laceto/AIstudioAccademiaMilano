@@ -269,14 +269,14 @@ def test_rights_section_explains_logs_and_third_parties():
 def test_automated_decisions_are_described_exactly():
     text = privacy.privacy_text()
     assert "listino fisso" in text
-    assert "senza revisione umana" in text
-    assert "decide il titolare" in text
+    assert "senza revisione umana" not in text
+    assert "rifiuta il titolare di persona" in text
     assert "nessuna decisione con effetti giuridici" in text.lower()
 
 
-def test_start_message_says_out_of_catalogue_requests_are_read():
+def test_start_message_says_every_request_is_read():
     text = privacy.start_message()
-    assert "ogni richiesta fuori catalogo viene letta dal titolare" in text
+    assert "ogni richiesta viene letta dal titolare" in text
     assert "quando serve rivedere" not in text
 
 
