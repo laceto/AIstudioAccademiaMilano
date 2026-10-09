@@ -37,7 +37,7 @@ class JobStore(Protocol):
     def put(self, job: dict) -> None: ...
     def get(self, job_id: str) -> dict | None: ...
     def list_by_status(self, status: str) -> list[dict]: ...
-    def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None: ...
+    def transition(self, job_id: str, from_status: str, updates: dict, unless_set: str | None = None) -> dict | None: ...
     def all_jobs(self) -> list[dict]: ...
     def delete(self, job_id: str) -> bool: ...
 
@@ -108,7 +108,7 @@ class FileJobStore:
                 return False
         return True
 
-    def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None:
+    def transition(self, job_id: str, from_status: str, updates: dict, unless_set: str | None = None) -> dict | None:
         """Apply `updates` only if the job is still in `from_status`. Returns the new job, or None.
 
         This is what makes an approval happen once: of two concurrent decisions, one wins.
@@ -117,6 +117,8 @@ class FileJobStore:
         with _file_lock:
             job = self.get(job_id)
             if job is None or job.get("status") != from_status:
+                return None
+            if unless_set and job.get(unless_set):  # e.g. a request that was already made
                 return None
             job = {**job, **updates, "job_id": job_id}
             self.put(job)
@@ -199,7 +201,7 @@ class FirestoreJobStore:
         ref.delete()
         return True
 
-    def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None:
+    def transition(self, job_id: str, from_status: str, updates: dict, unless_set: str | None = None) -> dict | None:
         """Same contract as FileJobStore.transition, atomic across instances via a transaction."""
         if not _JOB_ID_RE.match(job_id or ""):
             return None
@@ -212,6 +214,8 @@ class FirestoreJobStore:
                 return None
             job = _from_storage(snap.to_dict())
             if job.get("status") != from_status:
+                return None
+            if unless_set and job.get(unless_set):
                 return None
             job = {**job, **updates, "job_id": job_id}
             txn.set(ref, _to_storage(job))

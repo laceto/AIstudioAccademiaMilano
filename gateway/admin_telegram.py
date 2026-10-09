@@ -33,6 +33,10 @@ from gateway.admin import (
     job_line,
     parse_price,
     pending_jobs,
+    recent_refused,
+    refused_keyboard,
+    refused_line,
+    reexamine,
     proposed_price,
     restart_job,
     result_keyboard,
@@ -54,7 +58,7 @@ from gateway.erasure import (
     valid_job_id,
 )
 from gateway.notify import _safe_filename as safe_filename
-from gateway.notify import notify_result
+from gateway.notify import notify_result, notify_review
 from gateway.pipeline_queue import enqueue_run
 from gateway.recovery import age_seconds, is_stale, sweep_and_notify
 
@@ -62,13 +66,14 @@ logger = logging.getLogger(__name__)
 
 PRICE_PROMPT = "Imposta il prezzo per la richiesta (es. 12,50 oppure gratis). Rispondi a questo messaggio.\nJob ID: {job_id}"
 _PROMPT_JOB_RE = re.compile(r"Job ID: ([A-Za-z0-9_-]{1,64})")
-_COMMANDS = {"/pending", "/approve", "/reject", "/prezzo", "/run", "/file", "/sweep", "/cancella"}
+_COMMANDS = {"/pending", "/approve", "/reject", "/prezzo", "/run", "/file", "/sweep", "/cancella", "/riesamina"}
 _MAX_PENDING_CARDS = 5
 _USAGE = (
     "Uso:\n/pending\n/approve <job_id> [prezzo|gratis]\n/prezzo <job_id> <prezzo>\n/reject <job_id> [motivo]\n"
     "/run <job_id>  (riavvia la pipeline per un job approvato o fallito)\n"
     "/file <job_id>  (rimandami il file di un risultato in attesa di revisione)\n"
     "/sweep  (segna come fallite le run ferme in 'running' da troppo tempo)\n"
+    "/riesamina <job_id>  (rimette in revisione una richiesta rifiutata automaticamente)\n"
     "/cancella <job_id>  oppure  /cancella chat <chat_id>  (cancella i dati di un cliente, dopo conferma)"
 )
 
@@ -269,6 +274,10 @@ async def handle_callback(bot, store, callback: dict) -> None:
         )
         return
 
+    if action == "reexamine":
+        await _reexamine(bot, store, from_id, chat_id, job_id, cb_id=cb_id, message=message)
+        return
+
     if action == "retry":
         decision = restart_job(store, job_id, from_id)
         await bot.answer_callback_query(cb_id, text=_outcome(decision))
@@ -357,6 +366,33 @@ def _running_line(job: dict) -> str:
     return line
 
 
+_REEXAMINE_TEXT = {
+    "reexamined": "Rimessa in revisione: ti arriva la scheda per approvarla o rifiutarla.",
+    "not_refused": "Questa richiesta non e' tra quelle rifiutate (o e' gia' stata riesaminata).",
+    "not_found": "Richiesta non trovata.",
+    "forbidden": "Non autorizzato.",
+}
+
+
+async def _reexamine(bot, store, admin_id, chat_id, job_id: str, cb_id=None, message: dict | None = None) -> None:
+    """Riesamina: refused -> needs_review once, then the normal review card goes to Luigi."""
+    decision = reexamine(store, job_id, admin_id)
+    text = _REEXAMINE_TEXT.get(decision.code, "Azione non valida.")
+    if cb_id is not None:
+        await bot.answer_callback_query(cb_id, text=text)
+    if decision.ok:
+        logger.info("[approval] job %s reexamined by %s", job_id, str(admin_id))
+        if message:
+            await _remove_buttons(bot, chat_id, message)
+        await _say(bot, chat_id, f"{text} (job {job_id})")
+        try:  # a failed notification must not undo the change; /pending still lists the job
+            await notify_review(decision.job)
+        except Exception as exc:
+            logger.warning("[approval] review card for job %s not sent: %s", job_id, type(exc).__name__)
+    elif cb_id is None:
+        await _say(bot, chat_id, f"{text} (job {job_id})")
+
+
 async def _approve_and_report(bot, store, admin_id, chat_id, job_id: str, price) -> None:
     decision, told = await _apply(bot, store, admin_id, "approve", job_id, price=price)
     await _say(bot, chat_id, f"{_outcome(decision)} (job {job_id})")
@@ -372,7 +408,8 @@ async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -
         results = pending_jobs(store, limit=_MAX_PENDING_CARDS, status="awaiting_review")
         failures = pending_jobs(store, limit=_MAX_PENDING_CARDS, status="failed")
         running = pending_jobs(store, limit=_MAX_PENDING_CARDS, status="running")
-        if not (jobs or results or failures or running):
+        refused, more_refused = recent_refused(store, limit=_MAX_PENDING_CARDS)
+        if not (jobs or results or failures or running or refused):
             await _say(bot, chat_id, "Nessuna richiesta in attesa.")
             return
         for job in jobs:
@@ -384,6 +421,10 @@ async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -
                        reply_markup=_markup(retry_keyboard(job["job_id"])))
         for job in running:
             await _say(bot, chat_id, _running_line(job))
+        for job in refused:
+            await _say(bot, chat_id, refused_line(job), reply_markup=_markup(refused_keyboard(job["job_id"])))
+        if more_refused:
+            await _say(bot, chat_id, f"... e altre {more_refused} richieste rifiutate negli ultimi giorni.")
         return
 
     if command == "/sweep":
@@ -403,6 +444,10 @@ async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -
         await _say(bot, chat_id, _USAGE)
         return
     job_id = parts[1]
+
+    if command == "/riesamina":
+        await _reexamine(bot, store, admin_id, chat_id, job_id)
+        return
 
     if command == "/file":
         job = store.get(job_id)

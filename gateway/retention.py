@@ -38,3 +38,23 @@ def expiry_for(created_at: str | None) -> str:
     if created.tzinfo is None:
         created = created.replace(tzinfo=timezone.utc)
     return (created.astimezone(timezone.utc) + timedelta(days=retention_days())).isoformat()
+
+
+# ── refused requests are kept for less time ──────────────────────────────────
+# A refused request may hold illegal or third-party data, so it is not kept the full retention.
+# Riesamina (refused -> needs_review) gives it the normal retention back.
+
+DEFAULT_REFUSED_RETENTION_DAYS = 30
+
+
+def refused_retention_days() -> int:
+    """JOB_REFUSED_RETENTION_DAYS, default 30; anything that is not a whole number from 1 to 3650 is ignored."""
+    raw = os.environ.get("JOB_REFUSED_RETENTION_DAYS", "").strip()
+    if raw.isdigit() and 1 <= int(raw) <= _MAX_DAYS:
+        return int(raw)
+    return DEFAULT_REFUSED_RETENTION_DAYS
+
+
+def expiry_in(days: int) -> str:
+    """ISO-8601 UTC time `days` days from now."""
+    return (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()

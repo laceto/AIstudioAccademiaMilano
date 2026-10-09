@@ -550,6 +550,13 @@ async def telegram_webhook(request: Request):
         await _reply(bot, chat_id, privacy_text())
         return {"ok": True}
 
+    # RIESAMINA: the customer asks a human to review a refusal. Never a job.
+    from gateway.review_request import handle_review_request, is_review_request
+
+    if is_review_request(text):
+        await _reply(bot, chat_id, await handle_review_request(_adapter.store, chat_id))
+        return {"ok": True}
+
     # /ask <question> or ?<question> → RAG knowledge-base query
     rag_query = None
     if text.startswith("/ask "):

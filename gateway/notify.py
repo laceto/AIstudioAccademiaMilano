@@ -55,6 +55,8 @@ _recent: deque[float] = deque()
 def _reset_state() -> None:
     """Clear the per-instance guards (tests)."""
     _notified.clear()
+    _notified_refusals.clear()
+    _recent_refusals.clear()
     _recent.clear()
 
 
@@ -169,7 +171,9 @@ async def notify_review(job: dict) -> dict:
     {"telegram": "sent"|"failed", "email": "sent"|"failed"} for configured channels.
     """
     chat_ids = parse_list(os.environ.get("NOTIFY_TELEGRAM_CHAT_IDS"))
-    emails = parse_list(os.environ.get("NOTIFY_EMAILS"))
+    # A request Luigi pulled back from a refusal goes to Telegram only: e-mail would copy possibly
+    # illegal or third-party data into Gmail.
+    emails = [] if job.get("reexamined") else parse_list(os.environ.get("NOTIFY_EMAILS"))
     if not chat_ids and not emails:
         return {}
 
@@ -284,4 +288,105 @@ async def notify_result(job: dict, result: dict) -> dict:
         logger.warning("[notify] result for job %s not delivered: %s", job_id, type(exc).__name__)
         return {"telegram": "failed"}
     logger.info("[notify] result for job %s sent to Luigi", job_id)
+    return {"telegram": "sent"}
+
+
+# ── refused requests: told to Luigi, never queued for approval ───────────────
+
+MAX_REFUSED_TEXT = 200
+_notified_refusals: set[str] = set()
+# Refusals have their OWN rate window: a flood of refused requests must never suppress a real
+# review notice (the shared _recent window above is for notify_review only).
+_recent_refusals: deque[float] = deque()
+
+
+def build_refusal_message(job: dict, count: int | None) -> str:
+    """Plain text for Luigi: what was refused and why (category), how often this chat did it."""
+    from gateway.admin import refused_category  # lazy: admin imports this module
+
+    meta = job.get("metadata") or {}
+    job_id = job.get("job_id", "?")
+    times = "?" if count is None else str(count)
+    text = (job.get("text") or "").replace("\r", "")[:MAX_REFUSED_TEXT]
+    return "\n".join(
+        [
+            f"Richiesta rifiutata automaticamente - job {job_id}",
+            f"Categoria (automatica, non verificata): {refused_category(job)}",
+            f"Cliente: chat {meta.get('chat_id', '?')} - richieste rifiutate da questa chat: {times}",
+            "",
+            "Testo:",
+            text,
+            "",
+            f"Se e' un errore premi Riesamina (o /riesamina {job_id}): torna in revisione e potrai approvarla.",
+        ]
+    )
+
+
+async def notify_refusal(job: dict, store=None) -> dict:
+    """Tell Luigi about an automatically refused request. Telegram only, no approve/price buttons.
+
+    One button, Riesamina. No e-mail: a refusal is not a request to act on. Returns {} when no admin
+    id is configured, {"skipped": reason} when guarded, otherwise {"telegram": "sent"|"failed"}.
+    Never raises; errors are logged by type only.
+    """
+    chat_ids = parse_list(os.environ.get("NOTIFY_TELEGRAM_CHAT_IDS"))
+    if not chat_ids:
+        return {}
+    from gateway.admin import refused_count, refused_keyboard  # lazy: admin imports this module
+
+    job_id = str(job.get("job_id", ""))
+    if job_id in _notified_refusals:
+        return {"skipped": "duplicate"}
+    now = time.monotonic()
+    while _recent_refusals and now - _recent_refusals[0] > WINDOW_SEC:
+        _recent_refusals.popleft()
+    if len(_recent_refusals) >= MAX_PER_WINDOW:
+        logger.info("[notify] refusal %s skipped (rate_limited); /pending still lists it", job_id)
+        return {"skipped": "rate_limited"}
+    _notified_refusals.add(job_id)
+    _recent_refusals.append(now)
+
+    count = refused_count(store, (job.get("metadata") or {}).get("chat_id", "")) if store is not None else None
+    try:
+        await _send_telegram(chat_ids, build_refusal_message(job, count), buttons=refused_keyboard(job_id))
+    except Exception as exc:
+        logger.warning("[notify] refusal for job %s not delivered: %s", job_id, type(exc).__name__)
+        return {"telegram": "failed"}
+    logger.info("[notify] refusal for job %s sent to Luigi", job_id)
+    return {"telegram": "sent"}
+
+
+def build_review_request_message(job: dict, count: int | None) -> str:
+    """Luigi's message when the customer answers RIESAMINA: same style as the refusal notice."""
+    lines = build_refusal_message(job, count).split("\n")
+    lines[0] = f"Il cliente chiede il riesame - job {job.get('job_id', '?')}"
+    return "\n".join(lines)
+
+
+async def notify_review_request(job: dict, store=None) -> dict:
+    """Tell Luigi the customer asked for a human review of a refusal (Telegram, Riesamina button).
+
+    Does not move the job: only Luigi's button or /riesamina does. Shares the refusal rate window.
+    Never raises; errors are logged by type only.
+    """
+    chat_ids = parse_list(os.environ.get("NOTIFY_TELEGRAM_CHAT_IDS"))
+    if not chat_ids:
+        return {}
+    from gateway.admin import refused_count, refused_keyboard  # lazy: admin imports this module
+
+    job_id = str(job.get("job_id", ""))
+    now = time.monotonic()
+    while _recent_refusals and now - _recent_refusals[0] > WINDOW_SEC:
+        _recent_refusals.popleft()
+    if len(_recent_refusals) >= MAX_PER_WINDOW:
+        logger.info("[notify] review request %s skipped (rate_limited); /pending still lists it", job_id)
+        return {"skipped": "rate_limited"}
+    _recent_refusals.append(now)
+
+    count = refused_count(store, (job.get("metadata") or {}).get("chat_id", "")) if store is not None else None
+    try:
+        await _send_telegram(chat_ids, build_review_request_message(job, count), buttons=refused_keyboard(job_id))
+    except Exception as exc:
+        logger.warning("[notify] review request for job %s not delivered: %s", job_id, type(exc).__name__)
+        return {"telegram": "failed"}
     return {"telegram": "sent"}
