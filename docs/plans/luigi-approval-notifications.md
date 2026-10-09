@@ -113,6 +113,22 @@ l'utente riceve esattamente un messaggio di esito.
 ### Fase 4 — Richieste fraudolente (già in lista da fare)
 Categoria `refused` nel classificatore: risposta di rifiuto all'utente, notifica a Luigi come "bloccata" (non da approvare).
 
+### Fase 5 — Collegamento gateway → pipeline (emerso il 2026-10-09)
+
+Oggi il gateway classifica e notifica, ma **nessun job avvia la pipeline a 6 agenti**: anche un job `classified`
+("il tuo deliverable è in lavorazione") resta fermo, e un job approvato da Luigi non produce nulla. Lo si è visto con la richiesta
+`fd05c4448f` ("suggerimento per cena"), gestita a mano: Luigi ha deciso gratis (amico che prova il bot), la proposta
+è stata scritta e inviata dal bot (`message_id 40`) senza passare da nessuna pipeline.
+
+1. Dopo `classified` o `approved`, il job viene accodato per la pipeline (`scripts/run_pipeline_cli.py` o un `PipelineRunner`
+   che usa `deliverables/2026-05-25_016_aistudio-langgraph`), con stato `in_progress` / `delivered` in Firestore.
+2. Il risultato (testo o file) torna all'utente sullo stesso canale; errore e timeout portano il job in `failed` con avviso a Luigi.
+3. Prezzo e prodotto arrivano dal job approvato (anche "gratis" con motivo), non dal listino.
+4. Prima di partire: skill `/agentic-router` e `langgraph-*` (regola STEP 2 di `CLAUDE.md`), perché è codice LangGraph.
+5. Cloud Run: la pipeline può superare il timeout della richiesta; serve un'esecuzione asincrona (Cloud Run Jobs o Cloud Tasks).
+
+Dipende dalle Fasi 2 e 3 (job persistenti e stato di approvazione).
+
 ## 8. Sicurezza e privacy
 
 - Nessuna password o token nei log: `httpx` è già silenziato; l'errore SMTP non deve riportare le credenziali.
@@ -131,6 +147,7 @@ Categoria `refused` nel classificatore: risposta di rifiuto all'utente, notifica
 | 2 | Firestore | mezza giornata | — |
 | 3 | Approvazione | 1 giornata | Fasi 1 e 2 |
 | 4 | Blocco fraudolente | 2-3 ore | — |
+| 5 | Collegamento gateway → pipeline | 1-2 giorni | Fasi 2 e 3 |
 
 ## 10. Chiusura (CLAUDE.md)
 

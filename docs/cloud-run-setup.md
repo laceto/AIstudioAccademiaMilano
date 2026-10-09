@@ -46,6 +46,8 @@ Poi, senza fretta:
 - [ ] **Bloccare le richieste fraudolente.** Una richiesta illecita (es. "ricetta medica falsa", job `7dff0dd502`) oggi finisce in
       `needs_review` come un prodotto fuori catalogo, senza rifiuto esplicito. Serve una categoria `refused` nel
       classificatore (`gateway/worker.py`) con risposta di rifiuto, log dedicato e test.
+- [ ] **Collegare il gateway alla pipeline.** I job `classified`/approvati non avviano nessun lavoro (il bot dice "in lavorazione"
+      ma non succede nulla). Fase 5 di `docs/plans/luigi-approval-notifications.md`.
 - [ ] **Privacy.** I log ora contengono il testo degli utenti. Aggiungi un'informativa al messaggio `/start` e decidi la
       retention del bucket di log (default 30 giorni: Cloud Logging → Log Storage).
 - [ ] **Budget alert** in Google Cloud → Fatturazione → Budget e avvisi (in `europe-west8` non c'è free tier).
