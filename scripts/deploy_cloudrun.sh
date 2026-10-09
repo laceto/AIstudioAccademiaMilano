@@ -285,7 +285,10 @@ say "Stuck-job sweep (Cloud Scheduler, every 10 minutes)"
 if $DRY_RUN; then
   echo "  [dry-run] scheduler job sweep-stuck-jobs ($SCHEDULER_LOCATION) -> POST $WORKER_URL/sweep as $TASKS_SA"
 else
-  ensure_scheduler_job sweep-stuck-jobs "$SCHEDULER_LOCATION" "$WORKER_URL/sweep" "$TASKS_SA" "$WORKER_URL" "*/10 * * * *"
+  # Not fatal: a bad location (like Cloud Tasks in europe-west8) must not stop the gateway deploy.
+  if ! ensure_scheduler_job sweep-stuck-jobs "$SCHEDULER_LOCATION" "$WORKER_URL/sweep" "$TASKS_SA" "$WORKER_URL" "*/10 * * * *"; then
+    warn "The Cloud Scheduler job sweep-stuck-jobs was NOT created (location used: $SCHEDULER_LOCATION). Stuck jobs will not be swept automatically; /sweep on Telegram still works. Retry: SCHEDULER_LOCATION=<supported region> bash scripts/deploy_cloudrun.sh --skip-build"
+  fi
 fi
 
 say "Deploying gateway"

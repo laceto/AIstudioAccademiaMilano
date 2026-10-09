@@ -137,10 +137,10 @@ ensure_scheduler_job() {
     --description="Fail pipeline jobs stuck in running (POST /sweep)"
   )
   if gcloud scheduler jobs describe "$name" --location="$location" >/dev/null 2>&1; then
-    gcloud scheduler jobs update http "$name" "${flags[@]}" >/dev/null
+    gcloud scheduler jobs update http "$name" "${flags[@]}" >/dev/null || return 1
     echo "  $name — updated"
   else
-    gcloud scheduler jobs create http "$name" "${flags[@]}" >/dev/null
+    gcloud scheduler jobs create http "$name" "${flags[@]}" >/dev/null || return 1
     echo "  $name — created"
   fi
 }

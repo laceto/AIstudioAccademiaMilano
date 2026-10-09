@@ -87,6 +87,23 @@ def test_running_it_twice_ends_in_updated(tmp_path):
 # ── wiring in deploy_cloudrun.sh (it cannot run here: check the script text) ──
 
 
+FAILING = FAKE.replace("create|update)  : >", "create|update)  return 1; : >")
+
+
+@needs_bash
+def test_a_failed_create_is_reported_not_swallowed(tmp_path):
+    script = f'LIB="{LIB}"\n{FAILING}\nensure_scheduler_job {ARGS}\necho "rc=$?"'
+    res = subprocess.run([BASH, "-c", script, "bash", tmp_path.as_posix()], capture_output=True, text=True, env={**os.environ})
+    assert "rc=1" in res.stdout and "created" not in res.stdout
+
+
+def test_the_deploy_continues_and_warns_when_the_scheduler_step_fails():
+    step = DEPLOY.index("if ! ensure_scheduler_job")
+    block = DEPLOY[step: step + 800]
+    assert "NOT created" in block and "$SCHEDULER_LOCATION" in block
+    assert "SCHEDULER_LOCATION=" in block and "--skip-build" in block
+
+
 def test_the_deploy_enables_the_scheduler_api():
     assert "cloudscheduler.googleapis.com" in DEPLOY
 

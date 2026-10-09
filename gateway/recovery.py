@@ -89,6 +89,15 @@ def sweep_stale(store, now: datetime | None = None, stale_after: float | None = 
     for job in store.list_by_status("running"):
         if not is_stale(job, now, limit):
             continue
+        # The listing can be old: another sweep may have failed this job and Luigi restarted it
+        # (a fresh run, same job id). Look again right before the transition and skip the job if its
+        # run changed or it is no longer stale. This NARROWS the window but is not atomic: the
+        # JobStore contract only compares the status, so a restart landing between this get() and
+        # the transition() could still be failed. Closing it needs a started_at guard in the store.
+        latest = store.get(job["job_id"])
+        if latest is None or latest.get("started_at") != job.get("started_at") or not is_stale(latest, now, limit):
+            continue
+        job = latest
         minutes = _minutes(age_seconds(job, now), limit)
         stamp = now.isoformat()
         won = store.transition(

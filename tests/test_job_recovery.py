@@ -433,6 +433,24 @@ def test_pending_lists_running_jobs_with_their_age_and_flags_the_stale_one(store
     assert "30 min" in stuck and "FERMO" in stuck and "/sweep" in stuck
 
 
+def test_a_stale_listing_cannot_fail_a_fresh_run(store):
+    """Two overlapping sweeps and a Riprova in between (the auditor's reproduction)."""
+    now = datetime.now(timezone.utc)
+    store.put(_job(started=None, created_at="2020-01-01T00:00:00+00:00") | {"started_at": (now - timedelta(hours=1)).isoformat()})
+
+    class Slow(FileJobStore):
+        def list_by_status(self, st):
+            jobs = super().list_by_status(st)  # sweeper A sees the stale run A
+            recovery.sweep_stale(store)  # sweeper B fails it
+            self.transition("abc123", "failed", {"status": "approved"})  # Luigi: Riprova
+            self.transition("abc123", "approved",
+                            {"status": "running", "started_at": datetime.now(timezone.utc).isoformat()})  # run B
+            return jobs
+
+    assert recovery.sweep_stale(Slow(str(store.queue_dir))) == []
+    assert store.get("abc123")["status"] == "running"
+
+
 def test_pending_with_only_running_jobs_is_not_empty(store, tg):
     bot, _ = tg
     store.put(_live("fresh", 60))
