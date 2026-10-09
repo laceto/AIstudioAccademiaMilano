@@ -85,9 +85,10 @@ gcloud artifacts repositories create aistudio \
   --repository-format=docker --location=europe-west8
 ```
 
-> **Region matters.** The always-free allowance applies to select US regions —
-> The default is `europe-west8` (Milan). The free allowance applies to select US regions (`us-central1`), so `europe-west*`
-> may fall outside the free tier; confirm against Google's current list before switching.
+> **Region.** The default is `europe-west8` (Milan). It is a Tier 1 Cloud Run region, and Google's Always Free table
+> lists no region restriction for Cloud Run, Firestore, Secret Manager, Cloud Build or Artifact Registry (checked
+> 2026-10-09, see `docs/cloud-run-setup.md` section 8). An earlier version of this note said the free allowance was
+> limited to US regions; that was not supported by the current docs. Only the free *outbound transfer* is tied to North America.
 
 ---
 

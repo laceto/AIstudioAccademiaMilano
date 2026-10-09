@@ -21,7 +21,7 @@
 #
 set -euo pipefail
 
-REGION="${REGION:-europe-west8}"    # Milan; set REGION=us-central1 to stay in the free tier
+REGION="${REGION:-europe-west8}"    # Milan (Cloud Run Tier 1). Firestore's location follows this and is permanent
 AR_REPO="${AR_REPO:-aistudio}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$REPO_ROOT/.env"
