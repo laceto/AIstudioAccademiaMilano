@@ -28,12 +28,16 @@ from datetime import datetime, timezone
 from fastapi import FastAPI
 from pydantic import BaseModel, field_validator
 
+from gateway.convlog import silence_http_loggers
 from gateway.jobstore import make_store
 from gateway.notify import notify_result
 from gateway.studio_runner import RunResult, run_job, scrub
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+# httpx logs request URLs at INFO, and the Telegram Bot API puts the bot token in the URL path:
+# without this every message to Luigi writes the token into Cloud Logging.
+silence_http_loggers()
 
 app = FastAPI(title="AI Studio pipeline worker")
 
