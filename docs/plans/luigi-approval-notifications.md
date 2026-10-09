@@ -1,6 +1,6 @@
 # Piano — notifica e approvazione di Luigi per le richieste `needs_review`
 
-Stato: **Fasi 1, 2 e 3 attive; Fase 5 in corso** (PR 1/3 headless pipeline mergiata, PR 2/3 esecuzione asincrona nel codice; PR 3/3 consegna al cliente da fare); Fase 4 da fare. Storage: **Firestore**.
+Stato: **Fasi 1, 2 e 3 attive; Fase 5 completa nel codice** (3 PR: pipeline senza interfaccia, esecuzione asincrona, consegna al cliente), da attivare con il deploy; Fase 4 (blocco richieste fraudolente) da fare. Storage: **Firestore**.
 Contesto: `docs/cloud-run-setup.md`, `gateway/worker.py` (`_build_reply`), `gateway/api.py` (`/webhook/telegram`).
 
 ## 1. Problema
@@ -124,7 +124,8 @@ Gmail, scritture nel repo); Marco usa il prezzo approvato; correzioni alla pipel
 protette, approvazione di un rischio alto che ripartiva da Gianni).
 **Realizzato (PR 2/3):** `gateway/pipeline_queue.py` (Cloud Tasks), `gateway/pipeline_worker.py` (servizio privato, `/run`),
 `notify_result` (file + bottoni a Luigi), `/run` e Riprova, Dockerfile.worker, coda `max-attempts=1`, script di deploy.
-**Da fare (PR 3/3):** i bottoni Invia al cliente / Scarta (invio del file a chi l'ha chiesto), documentazione finale.
+**Realizzato (PR 3/3):** i bottoni Invia al cliente / Scarta con invio una tantum del file a chi l'ha chiesto (claim `delivering` prima di inviare, ripristino se Telegram rifiuta), `/file` e `/pending` esteso a risultati e run fallite.
+**Non fatto, per scelta:** audit log in `process/audit/`, push su GitHub ed email di Francesca dal cloud; invio automatico a clienti non Telegram; pagamento (ISS-011).
 
 Testo originale della proposta (per memoria):
 

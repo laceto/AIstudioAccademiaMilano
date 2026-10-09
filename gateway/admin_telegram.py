@@ -20,29 +20,39 @@ import re
 
 from gateway.admin import (
     Decision,
+    abort_delivery,
+    begin_delivery,
+    customer_caption,
     decide,
     decode_callback,
+    discard_result,
+    finish_delivery,
     is_admin,
     job_line,
     parse_price,
     pending_jobs,
     proposed_price,
     restart_job,
+    result_keyboard,
+    retry_keyboard,
     review_keyboard,
     user_message,
 )
 from gateway.convlog import log_message
+from gateway.notify import _safe_filename as safe_filename
+from gateway.notify import notify_result
 from gateway.pipeline_queue import enqueue_run
 
 logger = logging.getLogger(__name__)
 
 PRICE_PROMPT = "Imposta il prezzo per la richiesta (es. 12,50 oppure gratis). Rispondi a questo messaggio.\nJob ID: {job_id}"
 _PROMPT_JOB_RE = re.compile(r"Job ID: ([A-Za-z0-9_-]{1,64})")
-_COMMANDS = {"/pending", "/approve", "/reject", "/prezzo", "/run"}
+_COMMANDS = {"/pending", "/approve", "/reject", "/prezzo", "/run", "/file"}
 _MAX_PENDING_CARDS = 5
 _USAGE = (
     "Uso:\n/pending\n/approve <job_id> [prezzo|gratis]\n/prezzo <job_id> <prezzo>\n/reject <job_id> [motivo]\n"
-    "/run <job_id>  (riavvia la pipeline per un job approvato o fallito)"
+    "/run <job_id>  (riavvia la pipeline per un job approvato o fallito)\n"
+    "/file <job_id>  (rimandami il file di un risultato in attesa di revisione)"
 )
 
 
@@ -87,6 +97,15 @@ def _outcome(decision: Decision) -> str:
         return "Prezzo non valido o non disponibile: usa Imposta prezzo."
     if code == "forbidden":
         return "Non autorizzato."
+    if code == "delivering":
+        return "Invio in corso"
+    if code == "discarded":
+        return "Scartato. Il cliente non e' stato avvisato."
+    if code == "already_handled":
+        return "Già gestito: " + {"delivered": "inviato al cliente", "discarded": "scartato", "delivering": "invio in corso"}.get(
+            job.get("status"), str(job.get("status")))
+    if code == "not_reviewable":
+        return f"Non c'è un risultato da rivedere (stato: {job.get('status', 'sconosciuto')})."
     if code == "restarted":
         return "Riavviata"
     if code == "not_restartable":
@@ -137,6 +156,63 @@ async def _start_pipeline(bot, chat_id, job_id: str) -> None:
     await _say(bot, chat_id, text)
 
 
+async def _remove_buttons(bot, chat_id, message: dict) -> None:
+    """Strip the inline keyboard from a review card (a document message: only its markup is editable)."""
+    try:
+        await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.get("message_id"), reply_markup=None)
+    except Exception as exc:
+        logger.warning("[delivery] could not remove the buttons: %s", type(exc).__name__)
+
+
+async def _send_to_customer(bot, store, admin_id, chat_id, message: dict, cb_id: str, job_id: str) -> None:
+    """Invia al cliente: claim the result, send the file, record it. A failure puts the result back."""
+    decision = begin_delivery(store, job_id, admin_id)
+    if not decision.ok:
+        await bot.answer_callback_query(cb_id, text=_outcome(decision))
+        return
+
+    job = decision.job
+    result = job.get("result") or {}
+    target = (job.get("metadata") or {}).get("chat_id")
+    content = (result.get("content") or "").strip()
+
+    problem = None
+    if job.get("channel") != "telegram" or not target:
+        problem = "Il cliente non e' su Telegram: non posso inviargli il file da qui. Giralo tu a mano."
+    elif not content:
+        problem = "Il risultato e' vuoto: niente da inviare."
+    if problem:
+        abort_delivery(store, job_id, "not_deliverable")
+        await bot.answer_callback_query(cb_id, text="Non inviato.")
+        await _say(bot, chat_id, f"Job {job_id} non inviato. {problem}")
+        return
+
+    try:
+        await bot.send_document(
+            chat_id=_chat(target),
+            document=result["content"].encode("utf-8"),
+            filename=safe_filename(result.get("filename")),
+            caption=customer_caption(job),
+        )
+    except Exception as exc:  # e.g. the customer blocked the bot
+        abort_delivery(store, job_id, type(exc).__name__)
+        logger.warning("[delivery] job %s not delivered: %s", job_id, type(exc).__name__)
+        await bot.answer_callback_query(cb_id, text="Invio non riuscito.")
+        await _say(
+            bot, chat_id,
+            f"Non sono riuscito a inviare il file al cliente per il job {job_id} ({type(exc).__name__}). "
+            "Il risultato e' di nuovo in attesa: puoi riprovare con il bottone.",
+        )
+        return
+
+    log_message("out", _chat(target), f"[file] {safe_filename(result.get('filename'))}")
+    finish_delivery(store, job_id, admin_id)
+    logger.info("[delivery] job %s delivered by %s", job_id, str(admin_id))
+    await bot.answer_callback_query(cb_id, text="Inviato al cliente.")
+    await _remove_buttons(bot, chat_id, message)
+    await _say(bot, chat_id, f"File inviato al cliente (job {job_id}).")
+
+
 # ── button presses ───────────────────────────────────────────────────────────
 
 
@@ -179,8 +255,16 @@ async def handle_callback(bot, store, callback: dict) -> None:
             await _start_pipeline(bot, chat_id, job_id)
         return
 
-    if action in ("send", "discard"):  # the review buttons on a finished result
-        await bot.answer_callback_query(cb_id, text="Non ancora disponibile.")
+    if action == "send":
+        await _send_to_customer(bot, store, from_id, chat_id, message, cb_id, job_id)
+        return
+
+    if action == "discard":
+        decision = discard_result(store, job_id, from_id)
+        await bot.answer_callback_query(cb_id, text=_outcome(decision))
+        if decision.ok:
+            await _remove_buttons(bot, chat_id, message)
+            await _say(bot, chat_id, f"Scartato (job {job_id}). Il cliente non e' stato avvisato.")
         return
 
     if action == "reject":
@@ -254,11 +338,18 @@ async def _approve_and_report(bot, store, admin_id, chat_id, job_id: str, price)
 async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -> None:
     if command == "/pending":
         jobs = pending_jobs(store, limit=_MAX_PENDING_CARDS)
-        if not jobs:
+        results = pending_jobs(store, limit=_MAX_PENDING_CARDS, status="awaiting_review")
+        failures = pending_jobs(store, limit=_MAX_PENDING_CARDS, status="failed")
+        if not (jobs or results or failures):
             await _say(bot, chat_id, "Nessuna richiesta in attesa.")
             return
         for job in jobs:
             await _say(bot, chat_id, job_line(job), reply_markup=_markup(review_keyboard(job["job_id"], proposed_price(job))))
+        for job in results:
+            await _say(bot, chat_id, f"Risultato da rivedere: {job_line(job)}", reply_markup=_markup(result_keyboard(job["job_id"])))
+        for job in failures:
+            await _say(bot, chat_id, f"Run fallita: {job_line(job)}\nMotivo: {job.get('error') or 'sconosciuto'}",
+                       reply_markup=_markup(retry_keyboard(job["job_id"])))
         return
 
     parts = text.split(maxsplit=2)
@@ -266,6 +357,14 @@ async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -
         await _say(bot, chat_id, _USAGE)
         return
     job_id = parts[1]
+
+    if command == "/file":
+        job = store.get(job_id)
+        if job is None or job.get("status") != "awaiting_review" or not job.get("result"):
+            await _say(bot, chat_id, f"Nessun risultato in attesa di revisione per il job {job_id}.")
+            return
+        await notify_result(job, job["result"])
+        return
 
     if command == "/run":
         decision = restart_job(store, job_id, admin_id)
