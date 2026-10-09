@@ -187,6 +187,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `scripts/check_telegram.py` | Doctor canali Telegram: `getMe` + `getWebhookInfo` per bot, rileva conflitti webhook/polling |
 | `scripts/run_local_stack.py` | Avvia lo stack Telegram in locale (RAG API + 2 bot polling + worker) |
 | `process/runbook_local_telegram_stack.md` | Runbook: far girare i canali Telegram su laptop, senza URL pubblico |
+| `docs/cloud-run-setup.md` | Stato del setup Cloud Run (progetto `aistudio-milano`, regione `europe-west8`), cosa è fatto e cosa resta da fare |
 | `process/runbook_cloudrun.md` | Runbook: deploy dei canali Telegram su Cloud Run (webhook, scale-to-zero, free tier) |
 | `deploy/cloudbuild.*.yaml` | Cloud Build: nomina esplicitamente il Dockerfile giusto per ciascun servizio |
 | `scripts/deploy_cloudrun.sh` | Deploy end-to-end su Cloud Run: API, secret da `.env`, build, deploy, webhook, verifica (`--dry-run` per anteprima) |

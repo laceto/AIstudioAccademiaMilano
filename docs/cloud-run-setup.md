@@ -1,6 +1,6 @@
 # Cloud Run — setup del gateway
 
-Stato al 2026-10-09. Progetto GCP: `aistudio-milano`. Regione scelta: `europe-west8` (Milano).
+Stato al 2026-10-09 (aggiornato): infrastruttura pronta, **servizi non ancora distribuiti**. Progetto GCP: `aistudio-milano`. Regione scelta: `europe-west8` (Milano).
 Servizi: `gateway` e `rag-api`, distribuiti da `scripts/deploy_cloudrun.sh`.
 
 ## 1. Cosa abbiamo scoperto nel repo
@@ -10,7 +10,7 @@ Servizi: `gateway` e `rag-api`, distribuiti da `scripts/deploy_cloudrun.sh`.
   `…_026_trading-agent-dashboard/`, `…_011_bakery-v2/site/`, `spaces/trading-agent-team/`.
 - `gateway/Dockerfile` è già pronto per Cloud Run: ascolta su `$PORT` (default 8080) e scrive la coda in `/tmp/queue`.
 - Il Dockerfile copia `config/` e `process/audit/` dalla root: il contesto di build deve essere la root del repo.
-- `config/accounts_registry.yaml` elenca Cloud Run con `project_id: null` (da compilare con `aistudio-milano`).
+- `config/accounts_registry.yaml` ora ha `project_id: aistudio-milano` e `region: europe-west8`.
 - Esistono `scripts/deploy_cloudrun.sh`, `process/runbook_cloudrun.md` e `deploy/cloudbuild.*.yaml`.
 - Nessun workflow GitHub Actions di deploy esiste ancora. L'audit `process/audit/2026-05-24_010_cloud-run-deploy.md`
   descrive un deploy fatto per un altro repo (`laceto/rss_feed`).
@@ -81,7 +81,7 @@ al comando per eseguirlo in questa sessione. Lo script è idempotente.
 
 ### 4.4 Dopo il deploy
 
-- Compila `project_id: aistudio-milano` in `config/accounts_registry.yaml`.
+- `config/accounts_registry.yaml` è già aggiornato (stato `provisioned`): cambialo in `active` a deploy riuscito.
 - Audit log in `process/audit/` e riga in "Delivered Requests" di `CLAUDE.md`.
 - Imposta un budget alert in Google Cloud, Fatturazione.
 
@@ -92,6 +92,11 @@ al comando per eseguirlo in questa sessione. Lo script è idempotente.
 - Cloud Run dà CPU solo durante le richieste. Per bot in polling o worker in background serve `--no-cpu-throttling`
   (oppure passare ai webhook).
 - Le app Streamlit vogliono `--session-affinity`, `--min-instances 1` e `--server.port=$PORT`.
+
+## 5b. Cronologia
+
+- 2026-10-09: fatturazione collegata, API abilitate, dry-run dello script OK, regione portata a `europe-west8` (PR #178, #179, #180).
+- In attesa: deploy vero (`! bash scripts/deploy_cloudrun.sh`), bloccato dal sistema di permessi quando lanciato da Claude.
 
 ## 6. Prossimi passi possibili
 
