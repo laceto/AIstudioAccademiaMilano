@@ -56,4 +56,4 @@ Identità del titolare (nome o società, indirizzo, P.IVA/codice fiscale) e `PRI
 
 ## Prove
 
-`pytest tests/test_gateway_*.py tests/test_deploy_cloudrun_lib.py` più i test di retention, recovery e privacy. Suite completa: 818 passati su main, 13 fallimenti preesistenti.
+`pytest tests/test_retention.py tests/test_gateway_jobstore.py tests/test_backfill_job_expiry.py tests/test_job_recovery.py tests/test_deploy_scheduler.py tests/test_deploy_cloudrun_lib.py tests/test_gateway_privacy.py tests/test_token_logging.py`. Suite completa: 818 passati su main, 13 fallimenti preesistenti.
