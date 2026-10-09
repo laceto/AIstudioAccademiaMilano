@@ -538,20 +538,16 @@ async def telegram_webhook(request: Request):
         return {"ok": True}
 
     if text.startswith("/start"):
-        await _reply(
-            bot,
-            chat_id,
-            (
-                "Benvenuto in " + b("studio.name") + "!\n\n"
-                "Dimmi cosa ti serve e lo costruiamo per te.\n\n"
-                "Esempi:\n"
-                "• Ho bisogno di un sito per il mio ristorante\n"
-                "• Crea una fattura PDF da 500€\n"
-                "• Voglio un chatbot per il mio sito\n\n"
-                "Per domande sulla knowledge base: /ask <domanda>\n"
-                "Scrivi la tua richiesta e penso io al resto."
-            ),
-        )
+        from gateway.privacy import start_message
+
+        await _reply(bot, chat_id, start_message())
+        return {"ok": True}
+
+    # Privacy notice: information only, never a job. "/privacy@BotName" is how groups address it.
+    if text.split()[0].split("@")[0].lower() == "/privacy":
+        from gateway.privacy import privacy_text
+
+        await _reply(bot, chat_id, privacy_text())
         return {"ok": True}
 
     # /ask <question> or ?<question> → RAG knowledge-base query

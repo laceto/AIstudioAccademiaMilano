@@ -247,6 +247,33 @@ il webhook WhatsApp usa `TWILIO_AUTH_TOKEN`. Non creare il secret finché la fir
 
 ---
 
+## 4b. Informativa privacy del bot (nuovo)
+
+`gateway/privacy.py` contiene il testo. `/start` risponde con il benvenuto di sempre più un paragrafo breve che rimanda
+a `/privacy`; `/privacy` manda l'informativa completa (art. 13 GDPR, in italiano semplice) e **non crea mai un job**.
+Non chiede consenso: è solo informazione. I numeri non sono scritti nel testo: i giorni di conservazione dei job vengono da
+`retention_days()` (`JOB_RETENTION_DAYS`, default 90), i caratteri registrati da `convlog.MAX_CHARS`.
+
+Ai clienti si dice: quali dati si conservano (testo, ID Telegram/chat, classificazione, risultato delle richieste
+approvate), perché, che Luigi rivede ogni richiesta fuori catalogo (Telegram + e-mail via Gmail), i fornitori (Google Cloud:
+Cloud Run e Firestore a `europe-west8`, Cloud Logging, Cloud Tasks a `europe-west6`; OpenAI; Telegram; Gmail), la
+conservazione (job: `retention_days()` giorni; righe di log: 30 giorni di default), i diritti e il reclamo al Garante.
+
+**Contatto.** Imposta `PRIVACY_CONTACT` in `.env` (un indirizzo e-mail o un `@handle`); `deploy_cloudrun.sh` lo passa al
+gateway come le `NOTIFY_*`. Se manca, l'informativa dice onestamente che non c'è un indirizzo dedicato e di scrivere nella chat.
+
+**Da confermare tu (Luigi), non è consulenza legale:**
+1. identità del titolare (nome o ragione sociale, P.IVA/CF, indirizzo): il testo nomina solo il marchio e Milano;
+2. l'indirizzo in `PRIVACY_CONTACT`;
+3. la base giuridica (art. 6, par. 1, lett. b);
+4. i trasferimenti fuori UE (OpenAI, Telegram, Google): il testo ne parla in generale;
+5. se citare Anthropic: `gateway/worker.py` lo usa se `ANTHROPIC_API_KEY` è impostata, il testo cita solo OpenAI;
+6. `LOG_RETENTION_DAYS` (30) in `gateway/privacy.py` è il default di Cloud Logging: se cambi la retention del bucket, cambia la costante.
+
+Cancellare i dati di un cliente oggi è manuale: il documento in Firestore (`jobs`) e, se serve, le righe `chat=<id>` nei log.
+
+---
+
 ## 5. Storia di questo setup
 
 - Il repo aveva già Dockerfile, `scripts/deploy_cloudrun.sh`, `process/runbook_cloudrun.md` e `deploy/cloudbuild.*.yaml`.
