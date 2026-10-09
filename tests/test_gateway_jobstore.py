@@ -243,9 +243,9 @@ def test_process_job_persists_through_the_store(monkeypatch, tmp_path):
     job = worker.adapter.get_status(job_id)
     status, _ = asyncio.run(worker.process_job(job))
 
-    assert status == "classified"
+    assert status == "needs_review"
     saved = db_store.get(job_id)
-    assert saved["status"] == "classified" and saved["classification"]["product_type"] == "static_landing_page"
+    assert saved["status"] == "needs_review" and saved["classification"]["product_type"] == "static_landing_page"
     assert not list(tmp_path.glob("*.json"))  # nothing leaked to local disk
 
 

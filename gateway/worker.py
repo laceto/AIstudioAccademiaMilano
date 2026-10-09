@@ -175,11 +175,13 @@ class QueueWorker:
                 f"Job ID: `{job['job_id']}`"
             )
 
-        return "classified", (
+        # a catalogue product still waits for the owner: nothing runs (and costs) before he approves
+        return "needs_review", (
             f"Richiesta ricevuta: {summary}\n\n"
             f"Prodotto: {product.replace('_', ' ').title()}\n"
             f"Prezzo: EUR {price:.2f}\n\n"
-            f"Il tuo deliverable è in lavorazione.\nJob ID: `{job['job_id']}`"
+            "Il titolare la conferma a breve e ti scriviamo qui appena parte la lavorazione.\n"
+            f"Job ID: `{job['job_id']}`"
         )
 
     async def _notify_telegram(self, chat_id: str | int, text: str) -> None:

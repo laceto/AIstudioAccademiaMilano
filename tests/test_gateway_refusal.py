@@ -130,10 +130,10 @@ def test_unclear_refuse_value_is_not_a_refusal(tmp_path, calls):
     assert status == "needs_review"
 
 
-def test_confident_known_product_is_not_refused(tmp_path, calls):
+def test_confident_known_product_is_not_refused_but_waits_for_the_owner(tmp_path, calls):
     w = _worker(tmp_path, _answer(product_type="chatbot_app", needs_review=False, refuse=False))
     status, _ = asyncio.run(w.process_job(_submit(w, "voglio un chatbot")))
-    assert status == "classified"
+    assert status == "needs_review"
 
 
 # ── the backstop layer ───────────────────────────────────────────────────────
@@ -330,6 +330,15 @@ def test_reexamine_unknown_and_other_status(store):
     assert admin.reexamine(store, "nope", LUIGI).code == "not_found"
     store.put({**_refused_job(job_id="n1"), "status": "needs_review"})
     assert admin.reexamine(store, "n1", LUIGI).code == "not_refused"
+
+
+def test_a_legacy_classified_job_can_be_put_in_review(store):
+    # catalogue jobs created before they went to review ended "classified" and nobody was told
+    store.put({**_refused_job(job_id="c1"), "status": "classified"})
+    d = admin.reexamine(store, "c1", LUIGI)
+    assert d.ok and d.code == "reexamined"
+    assert store.get("c1")["status"] == "needs_review"
+    assert admin.decide(store, "c1", LUIGI, "approve", price=1.9).ok
 
 
 def test_after_reexamine_luigi_can_still_approve(store):

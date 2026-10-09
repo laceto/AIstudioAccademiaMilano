@@ -64,7 +64,7 @@ class TestProcessJob:
 
         status, reply = asyncio.run(_worker(tmp_path).process_job(job))
 
-        assert status == "classified"
+        assert status == "needs_review"
         assert "9.90" in reply
         assert "Static Landing Page" in reply
 
@@ -95,7 +95,7 @@ class TestProcessJob:
         asyncio.run(_worker(tmp_path).process_job(job))
 
         saved = json.loads((tmp_path / f"{submitted['job_id']}.json").read_text(encoding="utf-8"))
-        assert saved["status"] == "classified"
+        assert saved["status"] == "needs_review"
         assert saved["result"]
         assert saved["classification"]["product_type"] == "static_landing_page"
 

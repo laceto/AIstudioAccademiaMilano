@@ -323,7 +323,7 @@ def test_process_job_notifies_for_needs_review(monkeypatch, tmp_path):
     assert status == "needs_review" and seen == [job["job_id"]]
 
 
-def test_process_job_does_not_notify_for_classified(monkeypatch, tmp_path):
+def test_process_job_notifies_for_catalogue_products_too(monkeypatch, tmp_path):
     seen = []
 
     async def spy(job):
@@ -332,8 +332,9 @@ def test_process_job_does_not_notify_for_classified(monkeypatch, tmp_path):
 
     monkeypatch.setattr("gateway.worker.notify_review", spy)
     w = _worker(monkeypatch, tmp_path, "static_landing_page", False)
-    asyncio.run(w.process_job(_queued_job(w)))
-    assert seen == []
+    job = _queued_job(w)
+    status, _ = asyncio.run(w.process_job(job))
+    assert status == "needs_review" and seen == [job["job_id"]]
 
 
 def test_notification_failure_never_breaks_the_user_reply(monkeypatch, tmp_path):
