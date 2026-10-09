@@ -21,7 +21,7 @@
 #
 set -euo pipefail
 
-REGION="${REGION:-us-central1}"     # free tier applies to select US regions
+REGION="${REGION:-europe-west8}"    # Milan; set REGION=us-central1 to stay in the free tier
 AR_REPO="${AR_REPO:-aistudio}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$REPO_ROOT/.env"

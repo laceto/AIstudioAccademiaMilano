@@ -82,11 +82,11 @@ gcloud services enable run.googleapis.com cloudbuild.googleapis.com \
                        artifactregistry.googleapis.com secretmanager.googleapis.com
 
 gcloud artifacts repositories create aistudio \
-  --repository-format=docker --location=us-central1
+  --repository-format=docker --location=europe-west8
 ```
 
 > **Region matters.** The always-free allowance applies to select US regions —
-> `us-central1` is the safe default. Deploying to `europe-west*` is closer to Milan but
+> The default is `europe-west8` (Milan). The free allowance applies to select US regions (`us-central1`), so `europe-west*`
 > may fall outside the free tier; confirm against Google's current list before switching.
 
 ---
@@ -123,7 +123,7 @@ The repo has two Dockerfiles, so the build config names the right one explicitly
 the same trap that would otherwise bring the gateway back up running the RAG API.
 
 ```bash
-REGION=us-central1
+REGION=europe-west8
 PROJECT=$(gcloud config get-value project)
 REPO=$REGION-docker.pkg.dev/$PROJECT/aistudio
 
