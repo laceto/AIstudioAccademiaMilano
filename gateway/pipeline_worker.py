@@ -14,7 +14,8 @@ Rules, because every run costs LLM money:
 
 Env: JOB_STORE=firestore, PIPELINE_PROVIDER (default openai), PIPELINE_RUN_TIMEOUT seconds
 (default 600; the Cloud Run request timeout is 900), TELEGRAM_BOT_TOKEN and
-NOTIFY_TELEGRAM_CHAT_IDS for the message to Luigi, OPENAI_API_KEY for the LLM.
+NOTIFY_TELEGRAM_CHAT_IDS for the message to Luigi, OPENAI_API_KEY for the LLM,
+PIPELINE_STALE_SECONDS (default 1200) after which POST /sweep fails a job stuck in `running`.
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ from pydantic import BaseModel, field_validator
 from gateway.convlog import silence_http_loggers
 from gateway.jobstore import make_store
 from gateway.notify import notify_result
+from gateway.recovery import finish_run, sweep_and_notify
 from gateway.studio_runner import RunResult, run_job, scrub
 
 logger = logging.getLogger(__name__)
@@ -68,6 +70,15 @@ async def health():
     return {"status": "ok"}
 
 
+@app.post("/sweep")
+async def sweep():
+    """Fail the jobs stuck in `running` and tell Luigi (see gateway/recovery.py). Idempotent: Cloud
+    Scheduler calls it every 10 minutes as the same service account as /run."""
+    store = make_store(os.environ.get("GATEWAY_QUEUE_DIR", "gateway/queue"))
+    swept = await sweep_and_notify(store, notify_result)
+    return {"swept": [job["job_id"] for job in swept]}
+
+
 @app.post("/run")
 async def run(body: RunBody):
     store = make_store(os.environ.get("GATEWAY_QUEUE_DIR", "gateway/queue"))
@@ -92,11 +103,17 @@ async def run(body: RunBody):
 
     status = "awaiting_review" if result.ok else "failed"
     data = result.to_dict()
-    finished = store.transition(
-        body.job_id, "running",
+    outcome = finish_run(
+        store, job,
         {"status": status, "finished_at": _now(), "result": data, "error": result.error},
     )
-    if finished is None:
+    if outcome in ("already_failed", "superseded"):
+        # the sweeper already told Luigi this run failed, or a newer run owns the job: stay quiet
+        logger.warning("[worker] job %s ended (%s) after being swept or restarted: nothing recorded", body.job_id, outcome)
+        return {"status": outcome}
+    if outcome == "late":
+        logger.warning("[worker] job %s finished after the sweeper failed it: result kept", body.job_id)
+    elif outcome == "lost":
         logger.error("[worker] job %s was no longer 'running' when the run ended", body.job_id)
     logger.info("[worker] job %s -> %s", body.job_id, status)
 
