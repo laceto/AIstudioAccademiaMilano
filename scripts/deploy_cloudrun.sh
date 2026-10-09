@@ -189,16 +189,20 @@ run gcloud projects add-iam-policy-binding "$PROJECT" \
 # Jobs Luigi approves are queued in Cloud Tasks; the queue calls the private pipeline-worker as the
 # pipeline-tasks service account (OIDC). The gateway may create tasks and act as that account.
 
+# Cloud Tasks is not offered in every Cloud Run region: Milan (europe-west8) is refused with
+# "not a valid location". The queue only carries a job id, so it can live elsewhere in Europe;
+# Zurich is the nearest supported region (`gcloud tasks locations list`).
+TASKS_LOCATION="${TASKS_LOCATION:-europe-west6}"
 QUEUE_NAME="pipeline-runs"
 TASKS_SA_NAME="pipeline-tasks"
 TASKS_SA="$TASKS_SA_NAME@$PROJECT.iam.gserviceaccount.com"
 
 say "Pipeline queue and service account"
 if $DRY_RUN; then
-  echo "  [dry-run] service account $TASKS_SA_NAME, queue $QUEUE_NAME ($REGION, max-attempts=1)"
+  echo "  [dry-run] service account $TASKS_SA_NAME, queue $QUEUE_NAME ($TASKS_LOCATION, max-attempts=1)"
 else
   ensure_service_account "$TASKS_SA_NAME" "$PROJECT" "Cloud Tasks caller for the pipeline worker"
-  ensure_tasks_queue "$QUEUE_NAME" "$REGION"
+  ensure_tasks_queue "$QUEUE_NAME" "$TASKS_LOCATION"
 fi
 run gcloud projects add-iam-policy-binding "$PROJECT" \
   --member="serviceAccount:$RUNTIME_SA" \
@@ -274,7 +278,7 @@ say "Deploying gateway"
 run gcloud run deploy gateway \
   --image "$IMAGE_BASE/gateway" --region "$REGION" \
   --allow-unauthenticated --memory 512Mi --timeout 120 \
-  --set-env-vars "$(gateway_env_vars "PIPELINE_QUEUE=$QUEUE_NAME" "PIPELINE_WORKER_URL=$WORKER_URL" "TASKS_LOCATION=$REGION" "TASKS_INVOKER_SA=$TASKS_SA" "PIPELINE_PROJECT=$PROJECT")" \
+  --set-env-vars "$(gateway_env_vars "PIPELINE_QUEUE=$QUEUE_NAME" "PIPELINE_WORKER_URL=$WORKER_URL" "TASKS_LOCATION=$TASKS_LOCATION" "TASKS_INVOKER_SA=$TASKS_SA" "PIPELINE_PROJECT=$PROJECT")" \
   --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN ANTHROPIC_API_KEY OPENAI_API_KEY SMTP_PASSWORD TELEGRAM_WEBHOOK_SECRET)" \
   --quiet
 
