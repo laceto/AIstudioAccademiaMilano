@@ -159,8 +159,13 @@ def test_env_vars_keep_commas_and_at_signs_in_emails(tmp_path):
 
 def test_env_vars_omit_unset_optional_values(tmp_path):
     out = _env(tmp_path)
-    for name in ("NOTIFY_EMAILS", "NOTIFY_TELEGRAM_CHAT_IDS", "SMTP_USER", "SMTP_HOST"):
+    for name in ("NOTIFY_EMAILS", "NOTIFY_TELEGRAM_CHAT_IDS", "SMTP_USER", "SMTP_HOST", "PRIVACY_CONTACT"):
         assert name not in out
+
+
+def test_env_vars_pass_the_privacy_contact(tmp_path):
+    out = _env(tmp_path, PRIVACY_CONTACT="privacy@example.it")
+    assert "|PRIVACY_CONTACT=privacy@example.it" in out
 
 
 # ── resolve_webhook_secret ───────────────────────────────────────────────────

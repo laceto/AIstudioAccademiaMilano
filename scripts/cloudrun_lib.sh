@@ -38,7 +38,7 @@ gateway_env_vars() {
   local store k v extra out
   store="$(env_val JOB_STORE)"
   out="^|^GATEWAY_SYNC_REPLY=1|JOB_STORE=${store:-firestore}"
-  for k in NOTIFY_EMAILS NOTIFY_TELEGRAM_CHAT_IDS SMTP_USER SMTP_HOST SMTP_PORT NOTIFY_FROM PIPELINE_STALE_SECONDS; do
+  for k in NOTIFY_EMAILS NOTIFY_TELEGRAM_CHAT_IDS SMTP_USER SMTP_HOST SMTP_PORT NOTIFY_FROM PRIVACY_CONTACT PIPELINE_STALE_SECONDS; do
     v="$(env_val "$k")"
     [ -n "$v" ] && out="$out|$k=$v"
   done

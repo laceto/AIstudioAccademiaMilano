@@ -110,6 +110,8 @@ configurati; escape del testo utente; deduplica; troncamento; nessun token o pas
 Test: utente non admin rifiutato; doppio clic; firma scaduta o manomessa; GET che non muta lo stato (SafeLinks);
 l'utente riceve esattamente un messaggio di esito.
 
+- [x] Informativa privacy: `/start` rimanda a `/privacy` (`gateway/privacy.py`); restano da confermare titolare, contatto e base giuridica (`docs/cloud-run-setup.md`, sezione 4b).
+
 ### Fase 4 — Richieste fraudolente (già in lista da fare)
 Categoria `refused` nel classificatore: risposta di rifiuto all'utente, notifica a Luigi come "bloccata" (non da approvare).
 
