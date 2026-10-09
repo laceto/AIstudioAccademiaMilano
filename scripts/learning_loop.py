@@ -2,8 +2,12 @@
 Learning Loop — AI Studio Accademia Milano
 
 Runs after every completed request. Reads the latest audit log,
-extract new skills / MCP / hook patterns, updates global_settings.json
-and .claude/settings.json, then commits if risk_score < 3.
+extract new skills / MCP / hook patterns, updates config/global_settings.json,
+then commits if the audit log's risk_score < 3 (that score belongs to the delivery,
+not to any hook).
+
+Hook records written to global_settings.json are NOT wired into .claude/settings.json:
+they are bookkeeping, and a skill is only promoted if its scripts/preload_<skill>.py exists.
 
 Auto-promotion: skills that reach the skill_preload threshold (default 3)
 are materialized as SKILL.md files in ~/.claude/skills/.
@@ -185,34 +189,52 @@ def update_agent_stats(settings: dict, audit: dict) -> int:
     return changes
 
 
-def check_pattern_hooks(settings: dict, audit: dict) -> int:
-    """Promote recurring skill patterns to hooks using tiered thresholds."""
+def check_pattern_hooks(settings: dict, audit: dict, scripts_dir: Path | None = None) -> int:
+    """Promote recurring skill patterns to hooks using tiered thresholds.
+
+    A skill that has been used `threshold` times is promoted only if the script the hook would run,
+    scripts/preload_<skill>.py, actually exists. Nothing creates those scripts: Claude Code skills such as
+    `breakdown` or `agentic-router` never had one, and a record pointing at a missing file can never work.
+    The check is `>=` (not `==`) so a script written after the threshold was passed is still picked up,
+    once: an existing hook id is never duplicated.
+
+    The record only lives in config/global_settings.json; nothing wires it into .claude/settings.json.
+    """
     changes = 0
     counters = settings.setdefault("pattern_counters", {})
+    scripts_dir = Path(scripts_dir) if scripts_dir else Path(__file__).resolve().parent
 
     for skill in audit.get("skills_used") or []:
         counters[skill] = counters.get(skill, 0) + 1
         threshold = get_threshold_for_skill(skill)
-        if counters[skill] == threshold:
-            hook_id = f"auto_preload_{skill}"
-            existing_ids = [h["id"] for h in settings.get("hooks", [])]
-            if hook_id not in existing_ids:
-                new_hook = {
-                    "id": hook_id,
-                    "event": "PreToolUse",
-                    "matcher": skill,
-                    "description": (
-                        f"Auto-promoted: pre-load {skill} context after {threshold} uses"
-                    ),
-                    "command": f'"{sys.executable}" scripts/preload_{skill}.py 2>&1',
-                    "added": datetime.now().strftime("%Y-%m-%d"),
-                    "promoted_from_pattern": True,
-                    "times_fired": 0,
-                    "risk_score": threshold,
-                }
-                settings.setdefault("hooks", []).append(new_hook)
-                print(f"[learning_loop] New hook promoted: {hook_id}")
-                changes += 1
+        if counters[skill] < threshold:
+            continue
+        hook_id = f"auto_preload_{skill}"
+        if hook_id in [h["id"] for h in settings.get("hooks", [])]:
+            continue
+        script = scripts_dir / f"preload_{skill}.py"
+        if not script.exists():
+            if counters[skill] == threshold:  # say it once, not at every session
+                print(
+                    f"[learning_loop] {skill} reached {threshold} uses but {script.name} does not exist "
+                    f"- no hook promoted"
+                )
+            continue
+        new_hook = {
+            "id": hook_id,
+            "event": "PreToolUse",
+            "matcher": skill,
+            "description": f"Auto-promoted: pre-load {skill} context after {threshold} uses",
+            # portable, like the hooks in .claude/settings.json: no absolute interpreter path
+            "command": f'cd "$CLAUDE_PROJECT_DIR" && python scripts/preload_{skill}.py 2>&1',
+            "added": datetime.now().strftime("%Y-%m-%d"),
+            "promoted_from_pattern": True,
+            "times_fired": 0,
+            "promotion_threshold": threshold,  # how many uses promoted it: not a risk assessment
+        }
+        settings.setdefault("hooks", []).append(new_hook)
+        print(f"[learning_loop] New hook promoted: {hook_id}")
+        changes += 1
     return changes
 
 
