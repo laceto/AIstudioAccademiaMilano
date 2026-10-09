@@ -203,6 +203,10 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `scripts/backfill_job_expiry.py` | Assegna `expire_at` ai job esistenti (prova a secco; `--apply` per scrivere) |
 | `process/runbook_privacy_requests.md` | Come Luigi risponde a una richiesta di accesso o cancellazione |
 | `deliverables/2026-10-09_037_retention-privacy-recovery/` | Guida a retention, informativa e recupero dei job bloccati |
+| `gateway/erasure.py` | Cancellazione su richiesta (`/cancella`): scheda di conferma, cancellazione esatta, registro `erasures` senza dati personali |
+| `gateway/safety.py` | Rifiuto delle richieste chiaramente illegali: filtro a frasi che gira prima del modello; elenco da estendere con prudenza |
+| `gateway/review_request.py` | `RIESAMINA` dal cliente: avvisa Luigi senza creare un job |
+| `deliverables/2026-10-09_038_erasure-and-refusals/` | Guida a `/cancella`, ai rifiuti automatici e a RIESAMINA |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
@@ -377,6 +381,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 035 | 2026-10-09 | Cloud Run deploy — gateway + rag-api su `aistudio-milano` (europe-west8), webhook Telegram live, fix `check_telegram.py` su Windows | 0.00 (internal) |
 | 036 | 2026-10-09 | Approvazione da Telegram + worker asincrono della pipeline — avvisi a Luigi (Telegram/email), job su Firestore, Approva/Gratis/Imposta prezzo/Rifiuta (solo il suo ID, una volta sola), esecuzione LangGraph su worker privato via Cloud Tasks, revisione e invio al cliente | 0.00 (internal) |
 | 037 | 2026-10-09 | Retention dei dati, informativa privacy e recupero dei job bloccati — `expire_at` a 90 giorni con TTL Firestore e protezione dalla cancellazione, backfill, sweep dei job `running` (Cloud Scheduler ogni 10 min), `/start` e `/privacy` | 0.00 (internal) |
+| 038 | 2026-10-09 | Cancellazione su richiesta e rifiuto delle richieste fraudolente — `/cancella` con scheda di conferma e registro delle cancellazioni; rifiuto automatico (filtro a frasi + modello), RIESAMINA per il cliente e Riesamina per Luigi, conservazione 30 giorni per i rifiuti; `/privacy` in più messaggi; learning loop: hook solo se lo script esiste | 0.00 (internal) |
 
 ---
 
