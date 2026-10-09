@@ -125,6 +125,7 @@ protette, approvazione di un rischio alto che ripartiva da Gianni).
 **Realizzato (PR 2/3):** `gateway/pipeline_queue.py` (Cloud Tasks), `gateway/pipeline_worker.py` (servizio privato, `/run`),
 `notify_result` (file + bottoni a Luigi), `/run` e Riprova, Dockerfile.worker, coda `max-attempts=1`, script di deploy.
 **Realizzato (PR 3/3):** i bottoni Invia al cliente / Scarta con invio una tantum del file a chi l'ha chiesto (claim `delivering` prima di inviare, ripristino se Telegram rifiuta), `/file` e `/pending` esteso a risultati e run fallite.
+**Realizzato (job fermi):** `gateway/recovery.py` — un job `running` oltre `PIPELINE_STALE_SECONDS` diventa `failed` (mai rilanciato), avviso unico con Riprova, `POST /sweep` sul worker + Cloud Scheduler ogni 10 minuti, `/sweep` e `/pending` su Telegram, risultato in ritardo recuperato. Dettagli in `docs/cloud-run-setup.md`.
 **Non fatto, per scelta:** audit log in `process/audit/`, push su GitHub ed email di Francesca dal cloud; invio automatico a clienti non Telegram; pagamento (ISS-011).
 
 Testo originale della proposta (per memoria):

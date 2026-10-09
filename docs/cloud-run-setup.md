@@ -130,6 +130,29 @@ resta manuale.
 
 **Prezzo.** La pipeline fattura al prezzo che hai approvato (anche gratis), non al listino.
 
+### Cosa succede a un job fermo in `running`
+
+Se il worker crasha, viene ucciso o Cloud Run taglia la richiesta a 900 s, il job resterebbe `running` per sempre.
+Un job è **fermo** quando è `running` da più di `PIPELINE_STALE_SECONDS` (default 1200 = 900 s più margine; conta da
+`started_at`, altrimenti da `created_at`). Lo "sweep" lo porta a `failed` con "Interrotta: il worker non ha finito, job
+fermo da N minuti" (transizione atomica `running -> failed`: un job che finisce nello stesso istante non viene toccato),
+registra `swept_at` e ti manda **una sola volta** il messaggio di errore con il bottone Riprova. **Non rilancia mai nulla**
+(costa e la prima run potrebbe essere ancora viva): ripartire è una tua scelta (Riprova o `/run <job_id>`).
+
+Chi lancia lo sweep:
+- **Cloud Scheduler**, ogni 10 minuti: job `sweep-stuck-jobs` che fa `POST <url worker>/sweep` con token OIDC come
+  `pipeline-tasks@<progetto>.iam.gserviceaccount.com` (audience = URL del worker; stessa identità e stesso `run.invoker`
+  di Cloud Tasks). Lo crea o aggiorna `deploy_cloudrun.sh` (abilita `cloudscheduler.googleapis.com`). Gratuito per i primi
+  3 job per account di fatturazione. Anche Scheduler potrebbe non supportare Milano: la sede è `SCHEDULER_LOCATION`
+  (default `europe-west6`); verifica con `gcloud scheduler locations list`. Sposta solo il trigger, non i dati.
+- **`/sweep` su Telegram** (solo tu; per gli altri "Comando non disponibile"): lo stesso controllo, subito.
+- **`/pending`** elenca anche i job `running` con l'età e segna **FERMO?** quelli oltre la soglia.
+
+**Risultato in ritardo.** Se la run originale finisce dopo lo sweep, il suo risultato (già pagato) non va perso: il worker
+lo salva (`failed -> awaiting_review`, `late_result: true`) e ti manda il file con Invia / Scarta, ma solo se il job è
+ancora `failed` per mano dello sweep e `started_at` è quello della sua run. Se nel frattempo hai premuto Riprova il
+risultato vecchio viene scartato, così non sovrascrive la run nuova. Una run che fallisce dopo lo sweep non ti riscrive.
+
 ## 1d. Approvare le richieste da Telegram (nuovo)
 
 Quando arriva una richiesta fuori catalogo ricevi il messaggio con quattro bottoni: **Approva EUR x** (solo se esiste un
@@ -251,6 +274,8 @@ gcloud run services logs read gateway --region europe-west8 --project aistudio-m
 | `RAG_API_URL` | gateway | Impostata dallo script all'URL di `rag-api` |
 | `NOTIFY_EMAILS`, `NOTIFY_TELEGRAM_CHAT_IDS` | `notify.py` | Destinatari degli avvisi `needs_review` (liste con virgole) |
 | `SMTP_USER`, `SMTP_PASSWORD` | `notify.py` | Gmail con password per app; `SMTP_PASSWORD` è un secret. Opzionali `SMTP_HOST`, `SMTP_PORT`, `NOTIFY_FROM` |
+| `PIPELINE_STALE_SECONDS` | worker, gateway | Dopo quanti secondi in `running` un job è fermo (default 1200). Vedi "Cosa succede a un job fermo" |
+| `SCHEDULER_LOCATION` | `deploy_cloudrun.sh` | Sede del job Cloud Scheduler `sweep-stuck-jobs` (default `europe-west6`) |
 | `OPENAI_MODEL`, `ALGO_TRADING_URL`, `TRADING_API_URL` | varie | Opzionali |
 
 I secret (`TELEGRAM_*`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) stanno in Secret Manager, copiati da `.env` dallo script.
