@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from gateway.notify import parse_list
+from gateway.retention import expiry_in, retention_days
 
 MAX_PRICE = 10_000.0
 
@@ -369,7 +370,8 @@ def recent_refused(store, days: int = REFUSED_RECENT_DAYS, limit: int = 5) -> tu
 def refused_line(job: dict) -> str:
     """One line for /pending."""
     text = (job.get("text") or "").replace("\n", " ")[:80]
-    return f"Rifiutata ({refused_category(job)}): {job.get('job_id', '?')} - {text}"
+    asked = " [il cliente chiede il riesame]" if job.get("review_requested_at") else ""
+    return f"Rifiutata ({refused_category(job)}){asked}: {job.get('job_id', '?')} - {text}"
 
 
 def reexamine(store, job_id: str, admin_id) -> Decision:
@@ -385,8 +387,11 @@ def reexamine(store, job_id: str, admin_id) -> Decision:
         job_id, "refused",
         {
             "status": "needs_review",
+            "reexamined": True,  # notify_review then skips the e-mail channel for this job
             "reexamined_by": str(admin_id).strip(),
             "reexamined_at": datetime.now(timezone.utc).isoformat(),
+            # back to the normal retention (a refused job is kept for less)
+            "expire_at": expiry_in(retention_days()),
         },
     )
     if won is not None:

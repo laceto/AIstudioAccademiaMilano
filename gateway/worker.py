@@ -27,6 +27,7 @@ from config.brand import b, fmt
 from gateway.convlog import log_message
 from gateway import safety
 from gateway.notify import notify_refusal, notify_review
+from gateway.retention import expiry_in, refused_retention_days
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ Classify the request and return ONLY a valid JSON object — no prose, no markdo
   "summary": "<one sentence: what the user needs>",
   "needs_review": <true if confidence < 0.8 or product_type is unknown_product, else false>,
   "refuse": <true ONLY if the request is clearly fraudulent or illegal, otherwise false>,
-  "refuse_reason": "<empty string when refuse is false; otherwise one of: fake_document|fraud|malware|harassment|other>"
+  "refuse_reason": "<empty string when refuse is false; otherwise one of: possible_fake_document|possible_fraud|possible_malware|possible_harassment|possible_phishing|other>"
 }
 
 Rules for "refuse". Be CONSERVATIVE: when in doubt, refuse is false.
@@ -237,6 +238,10 @@ class QueueWorker:
             classification=cls,
             processed_at=datetime.now(timezone.utc).isoformat(),
         )
+        if status == "refused":
+            # A refused request may hold illegal or third-party data: keep it for less time.
+            cls["refuse_reason"] = safety.refusal_category(cls)
+            job["expire_at"] = expiry_in(refused_retention_days())
         store.put(job)
 
         logger.info("[worker] job %s -> %s (product=%s)", job["job_id"], status, cls.get("product_type"))

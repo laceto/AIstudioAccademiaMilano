@@ -104,7 +104,7 @@ def test_model_refuse_true_refuses(tmp_path, calls):
     assert reply == safety.REFUSAL_REPLY
     stored = w.adapter.store.get(job["job_id"])
     assert stored["status"] == "refused"
-    assert stored["classification"]["refuse_reason"] == "fraud"
+    assert stored["classification"]["refuse_reason"] == "possible_fraud"
     assert calls.refusal == [job["job_id"]] and calls.review == []
 
 
@@ -145,7 +145,7 @@ def test_real_example_is_refused_even_when_the_model_says_no(tmp_path, calls):
     status, reply = asyncio.run(w.process_job(job))
     assert status == "refused" and reply == safety.REFUSAL_REPLY
     stored = w.adapter.store.get(job["job_id"])
-    assert stored["classification"]["refuse_reason"] == "fake_document"
+    assert stored["classification"]["refuse_reason"] == "possible_fake_document"
     assert calls.review == [] and calls.refusal == [job["job_id"]]
 
 
@@ -187,9 +187,9 @@ def test_refused_job_is_not_queued_for_the_pipeline(tmp_path, calls):
 def test_customer_reply_is_short_neutral_and_gives_no_category():
     reply = safety.REFUSAL_REPLY
     assert reply.startswith("Non posso aiutarti con questa richiesta.")
-    assert "scrivimi di nuovo" in reply and "errore" in reply
+    assert "RIESAMINA" in reply and "errore" in reply
     assert len(reply) < 200
-    for word in ("fake_document", "fraud", "malware", "frode", "illegal", "Luigi"):
+    for word in ("fake_document", "possible_", "malware", "frode", "illegal", "Luigi"):
         assert word.lower() not in reply.lower()
 
 
@@ -219,7 +219,7 @@ def sent(monkeypatch):
     return out
 
 
-def _refused_job(job_id="r1", chat=CUSTOMER, text=REAL_EXAMPLE, created="2026-10-09T10:00:00+00:00", reason="fake_document"):
+def _refused_job(job_id="r1", chat=CUSTOMER, text=REAL_EXAMPLE, created="2026-10-09T10:00:00+00:00", reason="possible_fake_document"):
     return {
         "job_id": job_id, "status": "refused", "channel": "telegram", "text": text,
         "metadata": {"chat_id": chat, "user_id": chat}, "created_at": created, "processed_at": created,
@@ -234,7 +234,7 @@ def test_luigi_message_content_and_single_button(tmp_path, sent):
     assert out == {"telegram": "sent"}
     assert len(sent) == 1 and sent[0].chat_ids == [str(LUIGI)]
     text = sent[0].text
-    assert "r1" in text and "fake_document" in text and "ricetta medica falsa" in text
+    assert "r1" in text and "possible_fake_document" in text and "Categoria (automatica, non verificata)" in text and "ricetta medica falsa" in text
     assert "1" in text.split("rifiutat")[-1]  # the counter
     flat = [b for row in sent[0].buttons for b in row]
     assert len(flat) == 1 and "Riesamina" in flat[0]["text"]

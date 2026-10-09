@@ -35,6 +35,11 @@ TODO(Luigi): this is not legal advice. Only the owner can confirm, before the no
      ANTHROPIC_API_KEY is set. The notice names OpenAI only, because that is what is deployed.
   6. LOG_RETENTION_DAYS below is Google's default for the _Default bucket; if the bucket retention
      is changed in the console, change the constant.
+  7. Automatic refusal of illegal requests (gateway/safety.py, gateway/worker.py): confirm with a
+     professional (a) the legitimate-interest balancing for sending the owner the category and the
+     per-chat counter of refused requests (art. 6(1)(f)), (b) the art. 22 assessment of an
+     automatic refusal and whether the RIESAMINA route is enough, (c) whether suspected crime is
+     ever to be reported to the authorities (today nothing is reported).
 """
 
 from __future__ import annotations
@@ -43,7 +48,7 @@ import os
 
 from config.brand import b
 from gateway.convlog import MAX_CHARS
-from gateway.retention import retention_days
+from gateway.retention import refused_retention_days, retention_days
 
 # Default retention of the Cloud Logging _Default bucket. Not readable from the code: if the
 # bucket is reconfigured, update this number.
@@ -115,6 +120,8 @@ def privacy_text() -> str:
         f"• Le richieste (testo, classificazione, risultato) sono conservate circa {days} giorni "
         "dalla creazione e poi cancellate automaticamente; la cancellazione automatica può "
         "arrivare fino a un giorno dopo la scadenza.\n"
+        f"• Le richieste rifiutate in automatico sono conservate {refused_retention_days()} giorni "
+        "(se il titolare le riesamina, valgono i tempi normali).\n"
         f"• Ogni messaggio, tuo e del bot, finisce anche in Cloud Logging (fino a {MAX_CHARS} "
         f"caratteri per messaggio), dove di norma resta {LOG_RETENTION_DAYS} giorni.\n"
         "• Il file che il bot invia al titolare per la revisione resta nella chat Telegram del "
@@ -137,9 +144,12 @@ def privacy_text() -> str:
         "rifiuto qui sotto, nessuna decisione con effetti giuridici nei tuoi confronti è "
         "presa solo dal software.\n"
         "Le richieste chiaramente illegali (per esempio documenti o ricette falsi, phishing, "
-        "virus informatici) sono rifiutate automaticamente, da un controllo del software e "
-        "dall'intelligenza artificiale: ti arriva un breve messaggio di rifiuto e il titolare "
-        "riceve un avviso con il testo della richiesta. Se pensi che il rifiuto sia un errore, "
-        "scrivilo qui in chat: il titolare può riesaminare la richiesta di persona e decidere.\n\n"
+        "virus informatici) sono rifiutate in automatico da un controllo del software e "
+        "dell'intelligenza artificiale. Il titolare riceve un avviso con l'inizio del testo, "
+        "la categoria assegnata dal sistema (classificazione automatica, non verificata) e il "
+        "numero di richieste rifiutate della tua chat, per prevenire abusi (interesse "
+        "legittimo, art. 6, par. 1, lett. f GDPR); puoi opporti. Puoi chiedere l'intervento "
+        "umano, esprimere la tua opinione e contestare il rifiuto rispondendo RIESAMINA in "
+        "chat: il titolare decide di persona.\n\n"
         "Questa è solo un'informazione: non devi accettare nulla per usare il bot."
     )

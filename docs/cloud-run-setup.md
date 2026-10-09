@@ -186,24 +186,46 @@ Una richiesta come "una ricetta medica falsa", una pagina di phishing o un ranso
 approvazione: viene **rifiutata** (stato `refused`, terminale). Due controlli indipendenti, basta uno dei due:
 
 1. **Il classificatore** (`gateway/worker.py`): il JSON di Stacy ha `refuse` e `refuse_reason`
-   (`fake_document`, `fraud`, `malware`, `harassment`, `other`). Il prompt e' prudente: le richieste ordinarie, quelle
+   (`possible_fake_document`, `possible_fraud`, `possible_malware`, `possible_harassment`, `possible_phishing`, `other`:
+   sono ipotesi automatiche, mai verificate). Il prompt e' prudente: le richieste ordinarie, quelle
    solo fuori catalogo e quelle didattiche o difensive ("come riconoscere una ricetta falsa") non si rifiutano.
 2. **Il filtro fisso** (`gateway/safety.py`): poche frasi inequivocabili, italiano e inglese. Scatta anche se il modello
    sbaglia o non risponde, e in quel caso non viene chiamato nessun modello.
 
-**Il cliente** riceve solo: "Non posso aiutarti con questa richiesta." e l'invito a riscrivere se pensa a un errore.
-Niente categoria, niente spiegazioni. **Tu** ricevi su Telegram (mai per e-mail, mai bottoni di approvazione) job ID,
-categoria, i primi 200 caratteri e quante richieste rifiutate ha fatto quella chat. Nessun blocco automatico dell'utente.
+**Il cliente** riceve solo: "Non posso aiutarti con questa richiesta. Se pensi sia un errore, rispondi RIESAMINA e il
+titolare la rivede di persona." Niente categoria, niente spiegazioni. **Tu** ricevi su Telegram (mai per e-mail, mai
+bottoni di approvazione) job ID, "Categoria (automatica, non verificata)", i primi 200 caratteri e quante richieste
+rifiutate ha fatto quella chat. Nessun blocco automatico dell'utente.
+
+**Il cliente risponde RIESAMINA** (esattamente quella parola, maiuscole e punteggiatura a parte): non diventa una
+richiesta. Il gateway segna con `review_requested_at` il suo ultimo job rifiutato degli ultimi 30 giorni (una volta sola,
+in modo atomico), gli risponde "Ricevuto: il titolare rivedra' la tua richiesta." e ti scrive "Il cliente chiede il
+riesame" con il bottone Riesamina. **Nulla torna in revisione da solo**: decidi tu.
 
 **Se e' un falso positivo:** premi **Riesamina** sul messaggio, oppure `/riesamina <job_id>`. Il job passa da `refused` a
-`needs_review` (una volta sola, solo tu) e ti arriva la solita scheda con Approva/Prezzo/Rifiuta. `/pending` mostra anche
-le richieste rifiutate degli ultimi 3 giorni (massimo 5, una riga ciascuna, con il bottone Riesamina).
+`needs_review` (una volta sola, solo tu) e ti arriva la solita scheda con Approva/Prezzo/Rifiuta, **solo su Telegram**
+(niente e-mail per le richieste riesaminate, per non copiare in Gmail dati possibilmente illegali o di terzi).
+`/pending` mostra anche le richieste rifiutate degli ultimi 3 giorni (massimo 5, una riga ciascuna, con il bottone
+Riesamina e l'indicazione se il cliente ha chiesto il riesame).
+
+**Conservazione piu' corta:** un job rifiutato scade dopo `JOB_REFUSED_RETENTION_DAYS` giorni (30 se non impostato; il
+numero nell'informativa privacy viene da `gateway/retention.py`). Se lo riesamini torna alla retention normale
+(`JOB_RETENTION_DAYS`).
+
+**Contatore e cancellazione:** il contatore "richieste rifiutate da questa chat" e' calcolato solo dai job `refused`
+ancora memorizzati, non esiste una lista nera a parte. Quindi `/cancella` su un job rifiutato (o su tutta la chat) abbassa
+il contatore e toglie la prova: e' voluto, e coerente con il diritto alla cancellazione.
 
 **Estendere il filtro:** in `gateway/safety.py` aggiungi un sostantivo (`_DOC_NOUNS`), un verbo (`_MAKE_VERBS`), un tipo
-di malware (`_MALWARE`) o una nuova regola in `RULES`. Prima aggiungi la frase da rifiutare a `MUST_REFUSE` e una frase
-innocua simile a `MUST_NOT_REFUSE` in `tests/test_gateway_safety.py`. Tienilo stretto: un falso positivo costa una risposta
-a un cliente vero. Limite: e' un elenco di frasi, parafrasi, refusi, altre lingue o richieste spezzate su piu' messaggi
-passano; li devono prendere il modello e la tua revisione.
+di malware (`_MALWARE`) o una nuova regola in `RULES`; per i contesti innocui (didattico, test, simulazione, teatro,
+dieta...) `_BENIGN_WORDS`. Prima aggiungi la frase da rifiutare a `MUST_REFUSE` e una frase innocua simile a
+`MUST_NOT_REFUSE` in `tests/test_gateway_safety.py`. Il filtro rifiuta solo l'inequivocabile: i casi ambigui spettano al
+modello e a te. La parola "benigna" deve stare nella stessa frase/proposizione (spezzate su `. ! ? ; : ,` e su
+ma/pero/and/but/poi/then) della frase sospetta.
+**Limiti noti:** e' un elenco di frasi. Passano parafrasi, refusi, leetspeak ("r1cetta f4lsa"), altre lingue, richieste
+spezzate su piu' messaggi o con una parola "benigna" nella stessa proposizione. Keylogger e pagine di phishing restano
+rifiutati di proposito (uso doppio, stalkerware) salvo che la stessa proposizione dica training/test/simulazione.
+Lettere cirilliche/greche simili alle latine e caratteri invisibili sono normalizzati.
 
 ## 1c. Job su Firestore (nuovo)
 
