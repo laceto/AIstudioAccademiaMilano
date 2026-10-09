@@ -166,6 +166,7 @@ prezzo a catalogo), **Gratis**, **Imposta prezzo**, **Rifiuta**. Comandi equival
 | `/approve <job_id> [prezzo\|gratis]` | approva; senza prezzo usa quello a catalogo |
 | `/prezzo <job_id> <prezzo>` | approva a un prezzo che scegli (es. `12,50`) |
 | `/reject <job_id> [motivo]` | rifiuta; il motivo resta interno |
+| `/cancella <job_id>` o `/cancella chat <chat_id>` | cancellazione su richiesta del cliente: mostra una scheda (numero di job, stati, date, mai il testo) con Conferma / Annulla; solo Conferma cancella. Vedi sezione 4b |
 
 La persona che ha fatto la richiesta riceve l'esito. Una decisione si applica una volta sola.
 
@@ -326,8 +327,27 @@ gateway come le `NOTIFY_*`. Se manca, l'informativa dice onestamente che non c'�
 5. se citare Anthropic: `gateway/worker.py` lo usa se `ANTHROPIC_API_KEY` è impostata, il testo cita solo OpenAI;
 6. `LOG_RETENTION_DAYS` (30) in `gateway/privacy.py` è il default di Cloud Logging: se cambi la retention del bucket, cambia la costante.
 
-Cancellare i dati di un cliente oggi è manuale, passo per passo in `process/runbook_privacy_requests.md`: i documenti in
-Firestore (`jobs`), le copie nella tua chat Telegram e nella tua casella e-mail; le righe `chat=<id>` nei log scadono da sole.
+**Cancellazione su richiesta (`/cancella`, nuovo).** Il percorso principale e' `/cancella chat <chat_id>` o
+`/cancella <job_id>` su Telegram (solo tu; gli altri ricevono "Comando non disponibile"), passo per passo in
+`process/runbook_privacy_requests.md`. Il comando non cancella: mostra la scheda e cancella solo su Conferma.
+Non cancella mai job in `running` o `delivering` (lo stato e' riletto al momento della cancellazione): aspetta o usa `/sweep`.
+Dopo la cancellazione ti elenca cio' che devi fare a mano: copie e-mail, messaggi/file nella tua chat, righe `[conv]` nei log
+(scadono da sole dopo 30 giorni). I passi in console Firestore restano come ripiego.
+Codice: `gateway/erasure.py`, `JobStore.delete()`, test in `tests/test_gateway_erasure.py`.
+
+**Registro delle cancellazioni (`erasures`).** Ogni cancellazione che ha rimosso qualcosa scrive un documento nella collezione
+Firestore `erasures` (file `gateway/erasures/` in locale; stesso backend di `JOB_STORE`; `ERASURES_COLLECTION` e `ERASURE_DIR`
+per cambiare nome/cartella): ora, ID admin, `job`/`chat`, numero e ID dei job (casuali). Niente ID di chat, testo o risultato.
+Serve il ruolo `roles/datastore.user` che il servizio ha gia' per `jobs`. **Decisione per Luigi:** il registro non ha TTL, cosi'
+puoi dimostrare di aver cancellato; contiene solo ID casuali e il tuo ID. Se preferisci una scadenza, aggiungi una policy TTL
+su un campo timestamp (oggi `at` e' testo ISO: andrebbe salvato come timestamp). Non l'ho attivata.
+Limite: lo stato e' riletto subito prima di ogni cancellazione, ma lettura e cancellazione non sono una sola operazione
+atomica. Nel raro caso in cui un worker prenda un job `approved` tra i due passaggi, la run finisce come "persa" e il
+risultato puo' comunque arrivare nella tua chat Telegram. Cancellare un job `approved` e' invece sicuro: il worker lo salta.
+Per `/cancella chat` il bottone porta il numero di job mostrato nella scheda (`ec:<chat_id>_<n>`): se al momento di Conferma il
+numero e' diverso non cancella nulla e rimostra una scheda aggiornata. Se una cancellazione fallisce a meta', i job gia'
+cancellati vengono comunque registrati in `erasures` e il bot elenca quelli falliti (solo tipo d'errore, mai il messaggio).
+I messaggi del bot hanno un tetto di lunghezza: elenchi lunghi sono abbreviati ("... e altri N"), il registro tiene tutti gli id.
 
 ---
 

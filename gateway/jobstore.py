@@ -39,6 +39,7 @@ class JobStore(Protocol):
     def list_by_status(self, status: str) -> list[dict]: ...
     def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None: ...
     def all_jobs(self) -> list[dict]: ...
+    def delete(self, job_id: str) -> bool: ...
 
 
 def _oldest_first(jobs: list[dict]) -> list[dict]:
@@ -94,6 +95,18 @@ class FileJobStore:
             except (json.JSONDecodeError, OSError):
                 continue
         return _oldest_first(jobs)
+
+    def delete(self, job_id: str) -> bool:
+        """Remove a job for good. True if it existed, False if it was already gone (idempotent)."""
+        path = self._path(job_id)
+        if path is None:
+            return False
+        with _file_lock:
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                return False
+        return True
 
     def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None:
         """Apply `updates` only if the job is still in `from_status`. Returns the new job, or None.
@@ -175,6 +188,16 @@ class FirestoreJobStore:
     def all_jobs(self) -> list[dict]:
         """Every job, whatever its status (maintenance scripts; reads the whole collection)."""
         return _oldest_first([_from_storage(snap.to_dict()) for snap in self._collection().stream()])
+
+    def delete(self, job_id: str) -> bool:
+        """Remove a job for good. True if it existed, False if it was already gone (idempotent)."""
+        if not _JOB_ID_RE.match(job_id or ""):
+            return False
+        ref = self._collection().document(job_id)
+        if not ref.get().exists:  # Firestore's delete() succeeds on a missing document: ask first
+            return False
+        ref.delete()
+        return True
 
     def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None:
         """Same contract as FileJobStore.transition, atomic across instances via a transaction."""

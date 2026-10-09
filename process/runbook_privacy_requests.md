@@ -19,8 +19,31 @@ richiesta stessa, nella notifica che ricevi (riga "Utente (chat)") o in Cloud Lo
 
 ## 3. Cancellazione
 
+### 3a. Percorso principale: `/cancella` su Telegram (solo tu)
+
+1. Scrivi al bot `/cancella chat <chat_id>` (tutti i job di quel cliente; gli ID dei gruppi sono negativi) oppure
+   `/cancella <job_id>` (un solo job).
+2. Il bot **non cancella**: ti mostra una scheda con quanti job, stato e data di creazione (mai il testo del cliente) e due
+   bottoni, Conferma e Annulla. Solo Conferma cancella. Premerlo due volte non fa danni e te lo dice.
+3. I job in `running` o `delivering` non si cancellano (un worker potrebbe usarli): aspetta che finiscano o lancia `/sweep`,
+   poi ripeti `/cancella`. Lo stato viene riletto al momento della cancellazione.
+   Per una chat, Conferma cancella esattamente i job della scheda: se nel frattempo il numero e' cambiato non cancella
+   nulla e ti mostra una scheda nuova. Se qualche cancellazione fallisce, il bot dice quanti job sono stati cancellati e
+   quali no (registra comunque quelli cancellati): ripeti.
+   **Limite noto:** controllo dello stato e cancellazione non sono un'unica operazione atomica. Nel raro caso in cui un
+   worker prenda un job `approved` proprio tra i due passaggi, la run finisce come "persa" e il risultato potrebbe comunque
+   arrivare nella tua chat Telegram. Cancellare un job `approved` e' invece sicuro: il worker lo salta.
+4. Dopo la cancellazione il bot ti manda l'elenco di ciò che resta da fare a mano: i punti 2, 3 e 4 qui sotto
+   (e-mail, messaggi nella tua chat, righe di log che scadono da sole dopo 30 giorni).
+5. Resta un registro durevole nella collezione Firestore `erasures`: data e ora, il tuo ID, `job` o `chat`, quanti job e i
+   loro ID casuali. Non contiene l'ID di chat, il testo o il risultato. Non ha TTL (decisione tua, vedi
+   `docs/cloud-run-setup.md`). Nei log dell'applicazione c'e' una riga `[erasure]` con ID e conteggi.
+
+### 3b. Alternativa se il bot non risponde: console Firestore
+
 1. Nella console Firestore elimina ogni documento trovato in `jobs`. La protezione dalla cancellazione del database non
    blocca l'eliminazione dei documenti.
+   Annota tu a mano la cancellazione (il registro `erasures` lo scrive solo `/cancella`).
 2. Elimina dalla tua chat Telegram con il bot i messaggi di revisione che riguardano il cliente (testo e file inviati a te).
 3. Elimina dalla tua casella e-mail le copie `[AI Studio] Richiesta da rivedere - job <id>` di quel cliente
    (nel cestino e poi svuota il cestino).
