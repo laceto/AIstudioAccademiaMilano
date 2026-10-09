@@ -72,7 +72,10 @@ This file is committed. `.env` is never committed (gitignored).
 
 **Vars:** `GOOGLE_CREDENTIALS_JSON`, `GOOGLE_TOKEN_JSON`  
 **Priority:** P1 — needed for D002, D003 (email delivery), D007 (Google Calendar)  
-**Note:** these point to local file paths, not the key values themselves.
+**Note:** these point to local file paths, not the key values themselves.  
+**Shared location:** `credentials.json` and `google_token.json` live in `C:\Users\l_ace\.credentials\google\`
+(outside any git repo, never duplicated per-project) so multiple local projects — this studio, `webwatch`, etc. —
+can point at the same OAuth identity via `.env`.
 
 ### How to get credentials.json
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
@@ -80,8 +83,9 @@ This file is committed. `.env` is never committed (gitignored).
 3. **APIs & Services** → **Library** → enable **Gmail API** and **Google Calendar API**
 4. **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
 5. Application type: **Desktop app** → Create
-6. Download JSON → save as `credentials.json` in repo root (gitignored)
-7. First run will open browser for OAuth consent → generates `google_token.json` locally
+6. Download JSON → save as `credentials.json` in `C:\Users\l_ace\.credentials\google\`
+7. Point `GOOGLE_CREDENTIALS_JSON` / `GOOGLE_TOKEN_JSON` in each project's `.env` at that folder
+8. First run will open browser for OAuth consent → generates `google_token.json` there
 
 **Cost:** free tier covers normal usage.
 
