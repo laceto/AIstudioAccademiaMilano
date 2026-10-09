@@ -6,6 +6,7 @@ text follows.
 """
 
 import re
+from pathlib import Path
 
 import pytest
 
@@ -232,3 +233,59 @@ def test_webhook_privacy_still_needs_the_webhook_secret(monkeypatch, tmp_path):
 def test_normal_request_still_becomes_a_job(monkeypatch, tmp_path):
     _post(monkeypatch, tmp_path, "Vorrei una landing page")
     assert len(list(tmp_path.iterdir())) == 1
+
+
+# ── compliance review round ──────────────────────────────────────────────────
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def test_retention_wording_is_about_and_automatic(monkeypatch):
+    monkeypatch.setenv("JOB_RETENTION_DAYS", "45")
+    text = privacy.privacy_text()
+    assert "circa 45 giorni" in text
+    assert "automaticamente" in text
+    assert "fino a un giorno" in text
+    assert "backup" not in text.lower()
+
+
+def test_owner_copies_stay_until_he_deletes_them():
+    text = privacy.privacy_text()
+    assert "chat Telegram del titolare" in text
+    assert "casella e-mail del titolare" in text
+
+
+def test_rights_section_explains_logs_and_third_parties():
+    text = privacy.privacy_text()
+    assert "non possono essere cancellate una per una" in text
+    assert f"scadono da sole dopo {privacy.LOG_RETENTION_DAYS} giorni" in text
+    assert "condizioni proprie" in text
+    assert "titolare autonomo" in text
+
+
+def test_automated_decisions_are_described_exactly():
+    text = privacy.privacy_text()
+    assert "listino fisso" in text
+    assert "senza revisione umana" in text
+    assert "decide il titolare" in text
+    assert "nessuna decisione con effetti giuridici" in text.lower()
+
+
+def test_start_message_says_out_of_catalogue_requests_are_read():
+    text = privacy.start_message()
+    assert "ogni richiesta fuori catalogo viene letta dal titolare" in text
+    assert "quando serve rivedere" not in text
+
+
+def test_runbook_exists_and_is_linked():
+    body = (ROOT / "process" / "runbook_privacy_requests.md").read_text(encoding="utf-8")
+    for needle in ("metadata.chat_id", "jobs", "un mese", "30 giorni", "Cloud Logging"):
+        assert needle in body
+    assert "gcloud" not in body
+    docs = (ROOT / "docs" / "cloud-run-setup.md").read_text(encoding="utf-8")
+    assert "process/runbook_privacy_requests.md" in docs
+
+
+def test_todo_list_mentions_transfer_safeguards():
+    src = (ROOT / "gateway" / "privacy.py").read_text(encoding="utf-8")
+    assert "safeguards wording to be confirmed with a professional" in src

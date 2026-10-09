@@ -30,6 +30,7 @@ TODO(Luigi): this is not legal advice. Only the owner can confirm, before the no
   4. Transfers outside the EU: OpenAI, Telegram and Google may process data outside the EEA. The
      text says so in general terms; the safeguards (adequacy decision, standard clauses) need a
      legal check and the wording may need to name them.
+     Open item: safeguards wording to be confirmed with a professional.
   5. Whether Anthropic should be named: gateway/worker.py classifies with Anthropic when
      ANTHROPIC_API_KEY is set. The notice names OpenAI only, because that is what is deployed.
   6. LOG_RETENTION_DAYS below is Google's default for the _Default bucket; if the bucket retention
@@ -70,8 +71,8 @@ def start_message() -> str:
         "• Voglio un chatbot per il mio sito\n\n"
         "Per domande sulla knowledge base: /ask <domanda>\n"
         "Scrivi la tua richiesta e penso io al resto.\n\n"
-        "Privacy: per rispondere conserviamo i messaggi che scrivi e il tuo ID Telegram, e il "
-        "titolare li legge quando serve rivedere una richiesta. Come li trattiamo, per quanto "
+        "Privacy: per rispondere conserviamo i messaggi che scrivi e il tuo ID Telegram; "
+        "ogni richiesta fuori catalogo viene letta dal titolare. Come li trattiamo, per quanto "
         "tempo e quali sono i tuoi diritti: /privacy"
     )
 
@@ -96,7 +97,7 @@ def privacy_text() -> str:
         "(art. 6, par. 1, lett. b GDPR: esecuzione di ciò che ci chiedi).\n\n"
         "Chi li vede\n"
         "• La classificazione è automatica (intelligenza artificiale), ma ogni richiesta fuori "
-        "catalogo la rivede il titolare di persona, che decide se e a che prezzo procedere.\n"
+        "catalogo la rivede il titolare di persona.\n"
         "• Per questa revisione il titolare riceve il testo della richiesta e l'ID della chat "
         "su Telegram e per e-mail, ai suoi indirizzi (tramite Gmail).\n"
         "• Il risultato generato passa dal titolare prima di arrivare a te.\n\n"
@@ -111,18 +112,28 @@ def privacy_text() -> str:
         "Alcuni di questi fornitori possono trattare dati anche fuori dallo Spazio economico "
         "europeo.\n\n"
         "Per quanto tempo\n"
-        f"• Le richieste (testo, classificazione, risultato) sono conservate per {days} giorni "
-        "dalla creazione e poi cancellate.\n"
+        f"• Le richieste (testo, classificazione, risultato) sono conservate circa {days} giorni "
+        "dalla creazione e poi cancellate automaticamente; la cancellazione automatica può "
+        "arrivare fino a un giorno dopo la scadenza.\n"
         f"• Ogni messaggio, tuo e del bot, finisce anche in Cloud Logging (fino a {MAX_CHARS} "
         f"caratteri per messaggio), dove di norma resta {LOG_RETENTION_DAYS} giorni.\n"
-        "• Le e-mail e i messaggi Telegram inviati al titolare restano nelle sue caselle "
-        "finché non li elimina.\n\n"
+        "• Il file che il bot invia al titolare per la revisione resta nella chat Telegram del "
+        "titolare finché lui non lo cancella; le copie per e-mail restano nella casella "
+        "e-mail del titolare finché lui non le cancella.\n\n"
         "I tuoi diritti\n"
         "Puoi chiedere accesso ai tuoi dati, rettifica, cancellazione, limitazione del "
         "trattamento e opporti al trattamento. Se pensi che i tuoi dati siano trattati male "
         "puoi presentare reclamo al Garante per la protezione dei dati personali "
         "(garanteprivacy.it).\n"
         f"{_contact_line()}\n"
-        "Per cancellare una richiesta indica il suo Job ID, se lo hai, oppure descrivila.\n\n"
+        "Per cancellare una richiesta indica il suo Job ID, se lo hai, oppure descrivila.\n"
+        "• Le righe di conversazione in Cloud Logging non possono essere cancellate una per "
+        f"una: scadono da sole dopo {LOG_RETENTION_DAYS} giorni.\n"
+        "• OpenAI e Telegram conservano i dati secondo condizioni proprie; per la sua parte "
+        "Telegram è titolare autonomo.\n\n"
+        "Decisioni automatiche\n"
+        "I prodotti a catalogo ricevono il prezzo in automatico da un listino fisso, senza "
+        "revisione umana. Le richieste fuori catalogo le decide il titolare. Nessuna "
+        "decisione con effetti giuridici nei tuoi confronti è presa solo dal software.\n\n"
         "Questa è solo un'informazione: non devi accettare nulla per usare il bot."
     )

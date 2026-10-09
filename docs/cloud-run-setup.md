@@ -270,7 +270,8 @@ gateway come le `NOTIFY_*`. Se manca, l'informativa dice onestamente che non c'�
 5. se citare Anthropic: `gateway/worker.py` lo usa se `ANTHROPIC_API_KEY` è impostata, il testo cita solo OpenAI;
 6. `LOG_RETENTION_DAYS` (30) in `gateway/privacy.py` è il default di Cloud Logging: se cambi la retention del bucket, cambia la costante.
 
-Cancellare i dati di un cliente oggi è manuale: il documento in Firestore (`jobs`) e, se serve, le righe `chat=<id>` nei log.
+Cancellare i dati di un cliente oggi è manuale, passo per passo in `process/runbook_privacy_requests.md`: i documenti in
+Firestore (`jobs`), le copie nella tua chat Telegram e nella tua casella e-mail; le righe `chat=<id>` nei log scadono da sole.
 
 ---
 
