@@ -28,14 +28,17 @@ per WINDOW_SEC so a flood of requests cannot flood Luigi.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
+import re
 import smtplib
 import ssl
 import time
 from collections import deque
 from datetime import datetime, timezone
 from email.message import EmailMessage
+from pathlib import Path
 
 import httpx
 
@@ -199,3 +202,86 @@ async def notify_review(job: dict) -> dict:
             logger.info("[notify] %s sent for job %s", name, job_id)
             outcome[name] = "sent"
     return outcome
+
+
+# ── the pipeline's result goes to Luigi first ────────────────────────────────
+
+MAX_CAPTION = 1000  # Telegram allows 1024 characters in a document caption
+_FILENAME_RE = re.compile(r"[^A-Za-z0-9._-]")
+
+
+def _safe_filename(name: str | None) -> str:
+    base = _FILENAME_RE.sub("_", Path(name or "").name)
+    return base.strip(".") and base or "deliverable.txt"
+
+
+def _price_text(price) -> str:
+    return "n/d" if price is None else ("gratis" if price == 0 else f"EUR {price:.2f}")
+
+
+def _caption(job: dict, result: dict) -> str:
+    kb = len((result.get("content") or "").encode("utf-8")) / 1024
+    risk = "RISCHIO ALTO" if result.get("high_risk") else "rischio ok"
+    lines = [
+        f"Risultato pronto - job {job.get('job_id', '?')}",
+        f"Richiesta: {(job.get('text') or '')[:200]}",
+        f"Prodotto: {result.get('product_type')} | Prezzo: {_price_text(result.get('price'))}",
+        f"QA: {'superata' if result.get('qa_passed') else 'NON superata'} | Rischio: {result.get('risk_score', 0.0):.1f}/5 ({risk})",
+        f"File: {_safe_filename(result.get('filename'))} ({kb:.1f} KB)",
+        f"Cliente: chat {(job.get('metadata') or {}).get('chat_id') or '-'}",
+    ]
+    return "\n".join(lines)[:MAX_CAPTION]
+
+
+def _failure_text(job: dict, result: dict) -> str:
+    return (
+        f"La pipeline non e' riuscita - job {job.get('job_id', '?')}\n"
+        f"Richiesta: {(job.get('text') or '')[:200]}\n"
+        f"Motivo: {result.get('error') or 'sconosciuto'}"
+    )
+
+
+async def _send_document(chat_ids: list[str], caption: str, filename: str, content: bytes, buttons) -> None:
+    """Send a file (multipart) with an inline keyboard to each chat id."""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    if not token:
+        raise RuntimeError("TELEGRAM_BOT_TOKEN not configured")
+    failed = 0
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for chat_id in chat_ids:
+            resp = await client.post(
+                f"https://api.telegram.org/bot{token}/sendDocument",
+                data={"chat_id": chat_id, "caption": caption, "reply_markup": json.dumps({"inline_keyboard": buttons})},
+                files={"document": (filename, content, "text/plain")},
+            )
+            if resp.status_code != 200:
+                failed += 1
+    if failed:
+        raise RuntimeError(f"telegram: {failed}/{len(chat_ids)} document sends failed")
+
+
+async def notify_result(job: dict, result: dict) -> dict:
+    """Send Luigi the pipeline's output (a file with Invia/Scarta buttons) or its failure (with Riprova).
+
+    Telegram only: the file is the thing to review. Returns {} when no admin id is configured,
+    otherwise {"telegram": "sent" | "failed"}. Never raises; errors are logged by type only.
+    """
+    chat_ids = parse_list(os.environ.get("NOTIFY_TELEGRAM_CHAT_IDS"))
+    if not chat_ids:
+        return {}
+    from gateway.admin import result_keyboard, retry_keyboard  # lazy: admin imports this module
+
+    job_id = job.get("job_id", "?")
+    try:
+        if result.get("ok"):
+            await _send_document(
+                chat_ids, _caption(job, result), _safe_filename(result.get("filename")),
+                (result.get("content") or "").encode("utf-8"), result_keyboard(job_id),
+            )
+        else:
+            await _send_telegram(chat_ids, _failure_text(job, result), buttons=retry_keyboard(job_id))
+    except Exception as exc:
+        logger.warning("[notify] result for job %s not delivered: %s", job_id, type(exc).__name__)
+        return {"telegram": "failed"}
+    logger.info("[notify] result for job %s sent to Luigi", job_id)
+    return {"telegram": "sent"}

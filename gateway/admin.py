@@ -21,9 +21,9 @@ from gateway.notify import parse_list
 
 MAX_PRICE = 10_000.0
 
-_ACTIONS = {"approve": "ap", "reject": "rj", "free": "fr", "price": "pr"}
+_ACTIONS = {"approve": "ap", "reject": "rj", "free": "fr", "price": "pr", "send": "sd", "discard": "dc", "retry": "rn"}
 _CODES = {v: k for k, v in _ACTIONS.items()}
-_CALLBACK_RE = re.compile(r"^(ap|rj|fr|pr):([A-Za-z0-9_-]{1,64})$")
+_CALLBACK_RE = re.compile(r"^(ap|rj|fr|pr|sd|dc|rn):([A-Za-z0-9_-]{1,64})$")
 _PRICE_RE = re.compile(r"^\d+(?:[.,]\d+)?$")
 _FREE_WORDS = {"gratis", "gratuito", "gratuita", "free"}
 
@@ -91,6 +91,19 @@ def review_keyboard(job_id: str, price: float | None) -> list[list[dict]]:
     return [first, second]
 
 
+def result_keyboard(job_id: str) -> list[list[dict]]:
+    """Buttons on a finished pipeline result: Luigi reviews before anything reaches the customer."""
+    return [[
+        {"text": "📤 Invia al cliente", "callback_data": encode_callback("send", job_id)},
+        {"text": "🗑 Scarta", "callback_data": encode_callback("discard", job_id)},
+    ]]
+
+
+def retry_keyboard(job_id: str) -> list[list[dict]]:
+    """Button on a failed pipeline run."""
+    return [[{"text": "🔁 Riprova", "callback_data": encode_callback("retry", job_id)}]]
+
+
 # ── the decision ─────────────────────────────────────────────────────────────
 
 
@@ -143,6 +156,37 @@ def decide(store, job_id: str, admin_id, action: str, price=None, reason: str = 
     if latest and latest.get("status") in ("approved", "rejected"):
         return Decision(False, "already_decided", latest)
     return Decision(False, "not_pending", latest)
+
+
+def restart_job(store, job_id: str, admin_id) -> Decision:
+    """Put a failed (or never-queued approved) job back in line for the pipeline.
+
+    failed   -> approved, so the worker can claim it again (costs a new run: that is why only Luigi can)
+    approved -> unchanged; the caller just queues it again (e.g. the first enqueue failed)
+    anything else is refused: a running job must not be run twice, a delivered one is done.
+    """
+    if not is_admin(admin_id):
+        return Decision(False, "forbidden")
+    job = store.get(job_id)
+    if job is None:
+        return Decision(False, "not_found")
+    status = job.get("status")
+    if status == "approved":
+        return Decision(True, "restarted", job)
+    if status == "failed":
+        won = store.transition(
+            job_id, "failed",
+            {
+                "status": "approved",
+                "error": None,
+                "restarted_at": datetime.now(timezone.utc).isoformat(),
+                "restarted_by": str(admin_id).strip(),
+            },
+        )
+        if won is not None:
+            return Decision(True, "restarted", won)
+        job = store.get(job_id)
+    return Decision(False, "not_restartable", job)
 
 
 # ── messages ─────────────────────────────────────────────────────────────────

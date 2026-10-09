@@ -44,6 +44,16 @@ gcloud() {
         add)    cat > "$STORE/$4.secret" ;;
         access) name="${5#--secret=}"; cat "$STORE/$name.secret" ;;
       esac ;;
+    "iam service-accounts")
+      case "$3" in
+        describe) n="${4%%@*}"; [ -f "$STORE/sa_$n" ] ;;
+        create)   : > "$STORE/sa_$4" ;;
+      esac ;;
+    "tasks queues")
+      case "$3" in
+        describe)      [ -f "$STORE/queue_$4" ] ;;
+        create|update) : > "$STORE/queue_$4" ;;
+      esac ;;
   esac
 }
 env_val() { eval "printf '%s' \"\${FAKE_ENV_$1:-}\""; }
@@ -178,3 +188,55 @@ def test_the_default_generator_makes_a_telegram_safe_token(tmp_path):
 def test_webhook_secret_never_appears_in_command_arguments(tmp_path):
     res, log = _run(tmp_path, "resolve_webhook_secret", env={"FAKE_ENV_TELEGRAM_WEBHOOK_SECRET": "topsecretvalue"})
     assert "topsecretvalue" not in log
+
+
+# ── pipeline worker infrastructure ───────────────────────────────────────────
+
+
+def test_the_tasks_service_account_is_created_once(tmp_path):
+    res, log = _run(tmp_path, 'ensure_service_account pipeline-tasks proj "Pipeline tasks"')
+    assert res.returncode == 0 and "created" in res.stdout
+    assert "service-accounts create pipeline-tasks" in log
+    res, log = _run(tmp_path, 'ensure_service_account pipeline-tasks proj "Pipeline tasks"')
+    assert "exists" in res.stdout and "service-accounts create" not in log.split("describe")[-1]
+
+
+def test_a_new_queue_never_retries_a_paid_run(tmp_path):
+    res, log = _run(tmp_path, "ensure_tasks_queue pipeline-runs europe-west8")
+    assert "created" in res.stdout and "queues create pipeline-runs --location=europe-west8" in log
+    for flag in ("--max-attempts=1", "--max-concurrent-dispatches=2", "--max-dispatches-per-second=1"):
+        assert flag in log
+
+
+def test_an_existing_queue_is_reset_to_the_safe_settings(tmp_path):
+    (tmp_path / "queue_pipeline-runs").write_text("")
+    res, log = _run(tmp_path, "ensure_tasks_queue pipeline-runs europe-west8")
+    assert "updated" in res.stdout and "queues update pipeline-runs" in log and "queues create" not in log
+    assert "--max-attempts=1" in log  # someone raising it in the console would make failures cost twice
+
+
+def test_gateway_env_vars_accepts_extra_settings(tmp_path):
+    res, _ = _run(tmp_path, 'gateway_env_vars PIPELINE_QUEUE=pipeline-runs "PIPELINE_WORKER_URL=https://w.run.app"')
+    out = res.stdout.strip()
+    assert out.startswith("^|^") and "|PIPELINE_QUEUE=pipeline-runs" in out and "|PIPELINE_WORKER_URL=https://w.run.app" in out
+
+
+def test_worker_env_vars_defaults(tmp_path):
+    res, _ = _run(tmp_path, "worker_env_vars")
+    out = res.stdout.strip()
+    assert out.startswith("^|^") and "JOB_STORE=firestore" in out and "PIPELINE_PROVIDER=openai" in out
+    assert "NOTIFY_TELEGRAM_CHAT_IDS" not in out  # nothing set in this environment
+
+
+def test_worker_env_vars_carry_settings_but_never_secrets(tmp_path):
+    res, _ = _run(
+        tmp_path, "worker_env_vars",
+        env={
+            "FAKE_ENV_NOTIFY_TELEGRAM_CHAT_IDS": "5670736210", "FAKE_ENV_PIPELINE_PROVIDER": "anthropic",
+            "FAKE_ENV_OPENAI_API_KEY": "k-should-not-appear", "FAKE_ENV_TELEGRAM_BOT_TOKEN": "t-should-not-appear",
+            "FAKE_ENV_SMTP_PASSWORD": "p-should-not-appear",
+        },
+    )
+    out = res.stdout
+    assert "PIPELINE_PROVIDER=anthropic" in out and "NOTIFY_TELEGRAM_CHAT_IDS=5670736210" in out
+    assert "should-not-appear" not in out  # secrets travel as Secret Manager references only

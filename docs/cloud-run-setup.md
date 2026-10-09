@@ -82,6 +82,42 @@ SMTP_PASSWORD=<password per app di Gmail, 16 caratteri>
 Limiti noti: gli avvisi sono best-effort (un canale che fallisce non blocca l'altro né la risposta all'utente), al massimo
 10 al minuto, uno per job. I bottoni Approva/Rifiuta arrivano con le Fasi 2 e 3 del piano.
 
+## 1e. Dalla tua approvazione al file finito (Fase 5, nuovo)
+
+Quando approvi un job (Approva, Gratis o Imposta prezzo) la pipeline a 6 agenti parte da sola:
+
+1. Il gateway mette il job in una coda Cloud Tasks (`pipeline-runs`) e ti scrive "Pipeline avviata per il job ...".
+2. La coda chiama il servizio **`pipeline-worker`**, che è **privato**: lo può chiamare solo l'account di servizio
+   `pipeline-tasks`, quindi nessuno può far partire una run (a pagamento) conoscendo l'URL.
+3. Il worker reclama il job con un cambio di stato atomico (`approved` -> `running`), esegue la pipeline e salva il
+   risultato (`awaiting_review`). Un secondo avvio dello stesso job viene saltato senza spendere LLM.
+4. Ti arriva su Telegram il **file** con la scheda (prodotto, prezzo, QA, rischio) e i bottoni **Invia al cliente / Scarta**.
+   Se la run fallisce, ricevi il motivo e il bottone **Riprova** (oppure `/run <job_id>`).
+
+Il cliente non riceve nulla finché non decidi tu. (I bottoni Invia / Scarta arrivano con la prossima PR: per ora vedi il
+file e il job resta in `awaiting_review`.)
+
+**Per attivarlo** (è il primo deploy che crea la coda, l'account di servizio e il worker):
+
+```
+bash scripts/deploy_cloudrun.sh --build=gateway,worker
+```
+
+`--build=` ricostruisce solo le immagini indicate (la build di `rag-api` dura circa 10 minuti e qui non serve).
+Prima prova: `bash scripts/deploy_cloudrun.sh --dry-run --build=gateway,worker`. Lo script abilita l'API Cloud Tasks,
+crea `pipeline-tasks` e la coda con `max-attempts=1` (una run fallita non si ripete da sola), distribuisce il worker e
+passa al gateway coda, URL del worker e account di servizio. La prima volta i permessi possono impiegare qualche
+minuto a propagarsi: se la prima run non parte, `/run <job_id>` la rimette in coda.
+
+**Costi.** Ogni run chiama OpenAI circa 10 volte (qualche centesimo). Parte solo ciò che approvi tu, quindi nessuno
+sconosciuto può farti spendere. Cloud Tasks è gratuito fino a 1 milione di operazioni al mese; il worker scala a zero.
+
+**Cosa non fa dal cloud:** niente `git push`, niente email Gmail di Francesca, niente scritture nel repo né audit log
+automatico. Il risultato sta sul job in Firestore (`result`) e nel messaggio a te. Il registro in `process/audit/`
+resta manuale.
+
+**Prezzo.** La pipeline fattura al prezzo che hai approvato (anche gratis), non al listino.
+
 ## 1d. Approvare le richieste da Telegram (nuovo)
 
 Quando arriva una richiesta fuori catalogo ricevi il messaggio con quattro bottoni: **Approva EUR x** (solo se esiste un
@@ -89,6 +125,7 @@ prezzo a catalogo), **Gratis**, **Imposta prezzo**, **Rifiuta**. Comandi equival
 
 | Comando | Cosa fa |
 |---------|---------|
+| `/run <job_id>` | rimette in coda la pipeline per un job approvato o fallito |
 | `/pending` | elenca le richieste in attesa, ciascuna con i bottoni |
 | `/approve <job_id> [prezzo\|gratis]` | approva; senza prezzo usa quello a catalogo |
 | `/prezzo <job_id> <prezzo>` | approva a un prezzo che scegli (es. `12,50`) |
@@ -133,6 +170,7 @@ Quando hai cambiato il codice, scegli la riga giusta. Tutti i comandi partono da
 | Cosa è cambiato | Comando |
 |-----------------|---------|
 | **Tutto** (codice di gateway e rag-api, secret, webhook) | `bash scripts/deploy_cloudrun.sh` — la build di `rag-api` dura circa 10 minuti |
+| **Solo il worker della pipeline** | `bash scripts/deploy_cloudrun.sh --build=worker` |
 | **Solo il gateway** | build gateway (passo 2 sopra), poi `gcloud run deploy gateway --image europe-west8-docker.pkg.dev/aistudio-milano/aistudio/gateway --region europe-west8 --project aistudio-milano` |
 | **Solo rag-api** | `gcloud builds submit . --config deploy/cloudbuild.ragapi.yaml --substitutions _IMAGE=europe-west8-docker.pkg.dev/aistudio-milano/aistudio/rag-api --project aistudio-milano`, poi `gcloud run deploy rag-api --image europe-west8-docker.pkg.dev/aistudio-milano/aistudio/rag-api --region europe-west8 --project aistudio-milano` |
 | **Solo chiavi/token** (nuovo valore in `.env`) | `bash scripts/deploy_cloudrun.sh --skip-build` |

@@ -14,6 +14,7 @@ The bot object is passed in, so tests drive this with a fake.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 
@@ -26,19 +27,22 @@ from gateway.admin import (
     parse_price,
     pending_jobs,
     proposed_price,
+    restart_job,
     review_keyboard,
     user_message,
 )
 from gateway.convlog import log_message
+from gateway.pipeline_queue import enqueue_run
 
 logger = logging.getLogger(__name__)
 
 PRICE_PROMPT = "Imposta il prezzo per la richiesta (es. 12,50 oppure gratis). Rispondi a questo messaggio.\nJob ID: {job_id}"
 _PROMPT_JOB_RE = re.compile(r"Job ID: ([A-Za-z0-9_-]{1,64})")
-_COMMANDS = {"/pending", "/approve", "/reject", "/prezzo"}
+_COMMANDS = {"/pending", "/approve", "/reject", "/prezzo", "/run"}
 _MAX_PENDING_CARDS = 5
 _USAGE = (
-    "Uso:\n/pending\n/approve <job_id> [prezzo|gratis]\n/prezzo <job_id> <prezzo>\n/reject <job_id> [motivo]"
+    "Uso:\n/pending\n/approve <job_id> [prezzo|gratis]\n/prezzo <job_id> <prezzo>\n/reject <job_id> [motivo]\n"
+    "/run <job_id>  (riavvia la pipeline per un job approvato o fallito)"
 )
 
 
@@ -83,6 +87,10 @@ def _outcome(decision: Decision) -> str:
         return "Prezzo non valido o non disponibile: usa Imposta prezzo."
     if code == "forbidden":
         return "Non autorizzato."
+    if code == "restarted":
+        return "Riavviata"
+    if code == "not_restartable":
+        return f"Non si può riavviare (stato: {job.get('status', 'sconosciuto')})."
     return "Azione non valida."
 
 
@@ -108,6 +116,25 @@ async def _apply(bot, store, admin_id, action: str, job_id: str, price=None, rea
         )
         told = await _tell_the_user(bot, decision.job)
     return decision, told
+
+
+async def _start_pipeline(bot, chat_id, job_id: str) -> None:
+    """Queue the approved job for the pipeline worker and tell Luigi how that went.
+
+    The approval already stands whatever happens here: a failure only means nothing started yet,
+    and /run <job_id> (or the Riprova button) tries again.
+    """
+    # enqueue_run is a blocking Google client call: keep it off the event loop
+    result = await asyncio.to_thread(enqueue_run, job_id)
+    if result.ok:
+        text = (f"Il job {job_id} e' gia' in coda." if result.reason == "already_queued"
+                else f"Pipeline avviata per il job {job_id}. Ti mando il risultato appena e' pronto.")
+    elif result.reason == "not_configured":
+        text = f"Approvazione registrata, ma la pipeline non è configurata: per il job {job_id} nessun lavoro è partito."
+    else:
+        text = (f"Non sono riuscito ad avviare la pipeline per il job {job_id} ({result.reason}). "
+                f"L'approvazione resta valida: riprova con /run {job_id}.")
+    await _say(bot, chat_id, text)
 
 
 # ── button presses ───────────────────────────────────────────────────────────
@@ -145,11 +172,25 @@ async def handle_callback(bot, store, callback: dict) -> None:
         )
         return
 
+    if action == "retry":
+        decision = restart_job(store, job_id, from_id)
+        await bot.answer_callback_query(cb_id, text=_outcome(decision))
+        if decision.ok:
+            await _start_pipeline(bot, chat_id, job_id)
+        return
+
+    if action in ("send", "discard"):  # the review buttons on a finished result
+        await bot.answer_callback_query(cb_id, text="Non ancora disponibile.")
+        return
+
     if action == "reject":
         decision, told = await _apply(bot, store, from_id, "reject", job_id)
-    else:
+    elif action in ("approve", "free"):
         price = 0.0 if action == "free" else proposed_price(job)
         decision, told = await _apply(bot, store, from_id, "approve", job_id, price=price)
+    else:
+        await bot.answer_callback_query(cb_id, text="Azione non valida.")
+        return
 
     text = _outcome(decision)
     await bot.answer_callback_query(cb_id, text=text)
@@ -165,6 +206,8 @@ async def handle_callback(bot, store, callback: dict) -> None:
             logger.warning("[approval] could not edit the card for job %s: %s", job_id, type(exc).__name__)
     if told is False:
         await _say(bot, chat_id, f"Non sono riuscito ad avvisare l'utente per il job {job_id} (ha bloccato il bot?).")
+    if decision.ok and action != "reject":
+        await _start_pipeline(bot, chat_id, job_id)
 
 
 # ── commands and the price answer ────────────────────────────────────────────
@@ -204,6 +247,8 @@ async def _approve_and_report(bot, store, admin_id, chat_id, job_id: str, price)
     await _say(bot, chat_id, f"{_outcome(decision)} (job {job_id})")
     if told is False:
         await _say(bot, chat_id, f"Non sono riuscito ad avvisare l'utente per il job {job_id} (ha bloccato il bot?).")
+    if decision.ok:
+        await _start_pipeline(bot, chat_id, job_id)
 
 
 async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -> None:
@@ -221,6 +266,13 @@ async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -
         await _say(bot, chat_id, _USAGE)
         return
     job_id = parts[1]
+
+    if command == "/run":
+        decision = restart_job(store, job_id, admin_id)
+        await _say(bot, chat_id, f"{_outcome(decision)} (job {job_id})")
+        if decision.ok:
+            await _start_pipeline(bot, chat_id, job_id)
+        return
 
     if command == "/reject":
         decision, told = await _apply(bot, store, admin_id, "reject", job_id, reason=parts[2] if len(parts) > 2 else "")
