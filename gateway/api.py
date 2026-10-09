@@ -45,12 +45,16 @@ from pydantic import BaseModel, field_validator
 
 from config.brand import b
 from gateway.bot_whatsapp import router as whatsapp_router
+from gateway.convlog import log_message, silence_http_loggers
 from gateway.middleware import check_rate_limit
 from gateway.pipeline_adapter import PipelineAdapter
 from gateway.showcase import ShowcaseCard, load_cards
 
 _queue_dir = os.environ.get("GATEWAY_QUEUE_DIR", "gateway/queue")
 _adapter = PipelineAdapter(queue_dir=_queue_dir)
+
+# httpx logs request URLs at INFO, and Telegram's URLs carry the bot token.
+silence_http_loggers()
 
 
 def _sync_reply_enabled() -> bool:
@@ -462,6 +466,12 @@ async def get_status(job_id: str):
     return job
 
 
+async def _reply(bot, chat_id, text: str, **kwargs) -> None:
+    """Log the outgoing message, then send it. Logged first so a failed send is still on record."""
+    log_message("out", chat_id, text)
+    await bot.send_message(chat_id=chat_id, text=text, **kwargs)
+
+
 @app.post("/webhook/telegram")
 async def telegram_webhook(request: Request):
     """Telegram update webhook — receives updates from Telegram servers."""
@@ -489,11 +499,13 @@ async def telegram_webhook(request: Request):
         return {"ok": True}
 
     bot = Bot(token=token)
+    log_message("in", chat_id, text)
 
     if text.startswith("/start"):
-        await bot.send_message(
-            chat_id=chat_id,
-            text=(
+        await _reply(
+            bot,
+            chat_id,
+            (
                 "Benvenuto in " + b("studio.name") + "!\n\n"
                 "Dimmi cosa ti serve e lo costruiamo per te.\n\n"
                 "Esempi:\n"
@@ -525,14 +537,14 @@ async def telegram_webhook(request: Request):
         else:
             answer = "RAG_API_URL not configured — knowledge base unavailable."
         try:
-            await bot.send_message(chat_id=chat_id, text=answer)
+            await _reply(bot, chat_id, answer)
         except Exception as exc:
             logger.warning("Telegram send failed (chat_id=%s): %s", chat_id, exc)
         return {"ok": True}
 
     normalized = _normalize(text)
     if not normalized:
-        await bot.send_message(chat_id=chat_id, text="Invia un messaggio di testo con la tua richiesta.")
+        await _reply(bot, chat_id, "Invia un messaggio di testo con la tua richiesta.")
         return {"ok": True}
 
     result = _adapter.submit(
@@ -543,9 +555,10 @@ async def telegram_webhook(request: Request):
 
     try:
         if result["status"] == "error":
-            await bot.send_message(
-                chat_id=chat_id,
-                text="Non riesco a elaborare questa richiesta. Prova con una diversa.",
+            await _reply(
+                bot,
+                chat_id,
+                "Non riesco a elaborare questa richiesta. Prova con una diversa.",
             )
         elif _sync_reply_enabled():
             # Scale-to-zero host: the container is frozen once we return, so the
@@ -555,11 +568,12 @@ async def telegram_webhook(request: Request):
 
             job = _adapter.get_status(result["job_id"])
             _, reply = await QueueWorker(queue_dir=_queue_dir).process_job(job)
-            await bot.send_message(chat_id=chat_id, text=reply, parse_mode="Markdown")
+            await _reply(bot, chat_id, reply, parse_mode="Markdown")
         else:
-            await bot.send_message(
-                chat_id=chat_id,
-                text=f"Ricevuto! La tua richiesta è in elaborazione.\n\nJob ID: `{result['job_id']}`",
+            await _reply(
+                bot,
+                chat_id,
+                f"Ricevuto! La tua richiesta è in elaborazione.\n\nJob ID: `{result['job_id']}`",
                 parse_mode="Markdown",
             )
     except Exception as exc:

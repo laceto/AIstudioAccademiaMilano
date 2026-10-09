@@ -24,6 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from config.brand import b, fmt
+from gateway.convlog import log_message
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +169,7 @@ class QueueWorker:
         token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
         if not token or not chat_id:
             return
+        log_message("out", chat_id, text)
         try:
             import httpx
             async with httpx.AsyncClient(timeout=10.0) as http:
