@@ -189,11 +189,18 @@ resta per sempre:
 - **Controllare il criterio:** console Firestore, [Time to live](https://console.cloud.google.com/firestore/databases/-default-/ttl?project=aistudio-milano):
   deve esserci `jobs` / `expire_at` con stato *Serving* (subito dopo la creazione può essere *Creating*). Da riga di
   comando: `gcloud firestore fields ttls list --collection-group=jobs --database='(default)'`.
+- **Attenzione: un job ancora in sospeso al giorno N viene cancellato al giorno N.** La scadenza conta dalla
+  creazione, non dall'ultima attività: una richiesta rimasta in `needs_review` (o `approved`, `running`...) oltre il
+  periodo di retention sparisce comunque. Se serve più tempo per agire, alza `JOB_RETENTION_DAYS`: il numero (e
+  quello dell'informativa privacy) viene solo da `gateway/retention.py`, non va scritto altrove.
 - **Job creati prima del TTL** non hanno `expire_at` e non scadrebbero mai. Si sistemano una volta, con lo script
-  (prima senza `--apply`: è una prova a vuoto che stampa solo i conteggi):
+  (prima senza `--apply`: è una prova a vuoto che stampa solo i conteggi per stato, mai il testo dei clienti):
   `python -m scripts.backfill_job_expiry`, poi `python -m scripts.backfill_job_expiry --apply`
-  (con `JOB_STORE=firestore FIRESTORE_PROJECT=aistudio-milano`). I job più vecchi di 90 giorni vengono cancellati
-  dal TTL entro circa 24 ore dall'`--apply`.
+  (con `JOB_STORE=firestore FIRESTORE_PROJECT=aistudio-milano`). Due regole:
+  - job **conclusi** (`delivered`, `discarded`, `rejected`, `classified`): creazione + retention; quelli già più vecchi
+    del periodo vengono cancellati dal TTL entro circa 24 ore dall'`--apply`;
+  - job **in sospeso** (ogni altro stato, compresi quelli che lo script non conosce): oggi + retention, un periodo
+    intero nuovo, così Luigi fa in tempo ad agire. Dopo quel periodo valgono le stesse regole di tutti gli altri.
 - **Protezione dalla cancellazione:** finché è attiva, il database non si può cancellare (né da comando né dalla
   console). Per cancellarlo di proposito va prima spenta, in modo volontario:
   `gcloud firestore databases update --database='(default)' --no-delete-protection`

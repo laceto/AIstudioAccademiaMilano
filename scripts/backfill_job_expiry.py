@@ -1,9 +1,15 @@
 """Give jobs created before the retention policy existed an expire_at.
 
 New jobs get expire_at when they are submitted (gateway/pipeline_adapter.py). Jobs already in
-the store have none, so Firestore's TTL policy would never delete them. This sets it from
-created_at (gateway/retention.py: created_at + JOB_RETENTION_DAYS, default 90). Jobs older than
-the retention period therefore expire at the next TTL sweep, typically within about 24 hours.
+the store have none, so Firestore's TTL policy would never delete them. This sets it, using
+the one retention number in gateway/retention.py (JOB_RETENTION_DAYS, default 90):
+
+  * FINISHED jobs (delivered, discarded, rejected, classified): created_at + retention.
+    Older than the retention? They are deleted at the next TTL sweep, typically within ~24 h.
+  * PENDING jobs (every other status: needs_review, approved, running, awaiting_review,
+    delivering, failed, queued, and any status this script does not know): now + retention.
+    A full fresh period, so Luigi can still act on them. created_at + retention would delete
+    a request that is still waiting for him.
 
 DRY RUN BY DEFAULT: nothing is written without --apply.
 
@@ -11,8 +17,9 @@ DRY RUN BY DEFAULT: nothing is written without --apply.
     python -m scripts.backfill_job_expiry --apply
     JOB_STORE=firestore FIRESTORE_PROJECT=aistudio-milano python -m scripts.backfill_job_expiry
 
-Only counts are printed, never what customers typed. Each write goes through store.transition,
-so a job whose status changed while the script ran is skipped, not overwritten: run it again.
+Only counts per status are printed, never what customers typed. Each write goes through
+store.transition, so a job whose status changed while the script ran is skipped, not
+overwritten: run it again.
 """
 
 from __future__ import annotations
@@ -20,45 +27,53 @@ from __future__ import annotations
 import argparse
 import sys
 from collections import Counter
-from typing import Iterator
+from datetime import datetime, timezone
 
-from gateway.jobstore import FileJobStore, FirestoreJobStore, JobStore, _from_storage, make_store
+from gateway.jobstore import JobStore, make_store
 from gateway.retention import expiry_for, retention_days
 
-
-def all_jobs(store: JobStore) -> Iterator[dict]:
-    """Every job in the store, whatever its status (the JobStore contract lists by status only)."""
-    if isinstance(store, FileJobStore):
-        for path in sorted(store.queue_dir.glob("*.json")):
-            job = store.get(path.stem)
-            if job is not None:
-                yield job
-    elif isinstance(store, FirestoreJobStore):
-        for snap in store._collection().stream():
-            yield _from_storage(snap.to_dict())
-    else:
-        raise TypeError(f"cannot list every job of a {type(store).__name__}")
+# A job in one of these statuses has nothing left to do. Anything else counts as pending.
+TERMINAL_STATUSES = frozenset({"delivered", "discarded", "rejected", "classified"})
 
 
-def backfill(store: JobStore, apply: bool = False) -> Counter:
-    """Set expire_at on jobs that lack it. Returns counts; writes only when `apply` is true."""
+def backfill(store: JobStore, apply: bool = False, now: str | None = None) -> Counter:
+    """Set expire_at on jobs that lack it. Returns counts; writes only when `apply` is true.
+
+    Besides the totals, counts has "missing:<status>" and "updated:<status>" per status.
+    `now` (ISO-8601) is for tests; it defaults to the current time.
+    """
+    now = now or datetime.now(timezone.utc).isoformat()
     counts: Counter = Counter()
-    # Materialise first: do not write to the collection while streaming it.
-    for job in list(all_jobs(store)):
+    for job in store.all_jobs():  # a list: nothing is written while a stream is open
         counts["seen"] += 1
         if job.get("expire_at"):
             counts["already_set"] += 1
             continue
+        status = job.get("status")
         counts["missing"] += 1
+        counts[f"missing:{status}"] += 1
         if not job.get("created_at"):
             counts["no_created_at"] += 1  # expiry_for counts it from now
         if not apply:
             continue
-        done = store.transition(job["job_id"], job.get("status"), {"expire_at": expiry_for(job.get("created_at"))})
+        basis = job.get("created_at") if status in TERMINAL_STATUSES else now
+        done = store.transition(job["job_id"], status, {"expire_at": expiry_for(basis)})
         counts["updated" if done is not None else "changed_meanwhile"] += 1
+        if done is not None:
+            counts[f"updated:{status}"] += 1
     for key in ("updated", "changed_meanwhile"):
         counts.setdefault(key, 0)
     return counts
+
+
+def _breakdown_lines(counts: Counter, apply: bool) -> list[str]:
+    lines = []
+    statuses = sorted(k.split(":", 1)[1] for k in counts if k.startswith("missing:"))
+    for status in statuses:
+        rule = "creation + retention" if status in TERMINAL_STATUSES else "fresh period (now + retention)"
+        done = f", updated {counts[f'updated:{status}']}" if apply else ""
+        lines.append(f"    {status:<18} {counts[f'missing:{status}']:>5} missing{done}  -> {rule}")
+    return lines
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -75,6 +90,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  jobs seen:              {counts['seen']}")
     print(f"  already have expire_at: {counts['already_set']}")
     print(f"  missing expire_at:      {counts['missing']}")
+    for line in _breakdown_lines(counts, args.apply):
+        print(line)
     if counts["no_created_at"]:
         print(f"    of which no created_at (expiry counted from now): {counts['no_created_at']}")
     if args.apply:

@@ -38,6 +38,7 @@ class JobStore(Protocol):
     def get(self, job_id: str) -> dict | None: ...
     def list_by_status(self, status: str) -> list[dict]: ...
     def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None: ...
+    def all_jobs(self) -> list[dict]: ...
 
 
 def _oldest_first(jobs: list[dict]) -> list[dict]:
@@ -84,6 +85,15 @@ class FileJobStore:
                 jobs.append(job)
         return _oldest_first(jobs)
 
+    def all_jobs(self) -> list[dict]:
+        """Every job, whatever its status (maintenance scripts; not for request handling)."""
+        jobs = []
+        for f in self.queue_dir.glob("*.json"):
+            try:
+                jobs.append(json.loads(f.read_text(encoding="utf-8")))
+            except (json.JSONDecodeError, OSError):
+                continue
+        return _oldest_first(jobs)
 
     def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None:
         """Apply `updates` only if the job is still in `from_status`. Returns the new job, or None.
@@ -162,6 +172,9 @@ class FirestoreJobStore:
         # Filter on one field only: ordering by created_at would need a composite index.
         return _oldest_first([_from_storage(snap.to_dict()) for snap in query.stream()])
 
+    def all_jobs(self) -> list[dict]:
+        """Every job, whatever its status (maintenance scripts; reads the whole collection)."""
+        return _oldest_first([_from_storage(snap.to_dict()) for snap in self._collection().stream()])
 
     def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None:
         """Same contract as FileJobStore.transition, atomic across instances via a transaction."""

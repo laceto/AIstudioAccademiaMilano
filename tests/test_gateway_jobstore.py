@@ -57,6 +57,10 @@ class _Coll:
     def document(self, doc_id):
         return _Doc(self.db, self.name, doc_id)
 
+    def stream(self):
+        for data in self.db.data.get(self.name, {}).values():
+            yield _Snap(data)
+
     def where(self, *args, filter=None, **kwargs):
         if filter is not None:  # FieldFilter(field, op, value)
             field, op, value = filter.field_path, filter.op_string, filter.value
@@ -380,3 +384,18 @@ def test_adapter_on_firestore_stores_a_timestamp_and_reads_a_string():
     job_id = adapter.submit("serve un sito", "api", {})["job_id"]
     assert isinstance(db.data["jobs"][job_id]["expire_at"], datetime)
     assert isinstance(adapter.get_status(job_id)["expire_at"], str)
+
+
+# ── all_jobs: every document, whatever its status ────────────────────────────
+
+
+def test_all_jobs_lists_every_status_and_returns_strings(store):
+    store.put(_job("a1", status="queued", expire_at=EXPIRY))
+    store.put(_job("a2", status="delivered"))
+    store.put(_job("a3", status="some_new_status"))
+    got = {j["job_id"]: j for j in store.all_jobs()}
+    assert set(got) == {"a1", "a2", "a3"} and got["a1"]["expire_at"] == EXPIRY
+
+
+def test_all_jobs_of_an_empty_store_is_empty(store):
+    assert list(store.all_jobs()) == []

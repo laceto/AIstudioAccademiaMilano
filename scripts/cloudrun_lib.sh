@@ -129,9 +129,12 @@ resolve_webhook_secret() {
 # deletes expired documents in the background, typically within about 24 hours of expiry.
 # Prints "GROUP.FIELD — TTL enabled | TTL already enabled".
 ensure_firestore_ttl() {
-  local group="${1:-jobs}" field="${2:-expire_at}"
-  if gcloud firestore fields ttls list --collection-group="$group" --database='(default)' \
-       --format='value(name)' 2>/dev/null | grep -q "/fields/$field\$"; then
+  local group="${1:-jobs}" field="${2:-expire_at}" ttl_fields
+  # Capture first, grep after: `gcloud | grep -q` under pipefail can report a failure (SIGPIPE
+  # when grep quits early) and fall through to a needless update. A failing list counts as "not set".
+  ttl_fields="$(gcloud firestore fields ttls list --collection-group="$group" --database='(default)' \
+    --format='value(name)' 2>/dev/null)" || ttl_fields=""
+  if grep -q "/fields/$field\$" <<<"$ttl_fields"; then  # here-string: no second pipe to break
     echo "  $group.$field — TTL already enabled"
   else
     gcloud firestore fields ttls update "$field" --collection-group="$group" \
@@ -148,7 +151,10 @@ ensure_firestore_ttl() {
 # Prints "(default) — delete protection enabled | already enabled".
 ensure_delete_protection() {
   local state
-  state="$(gcloud firestore databases describe --database='(default)' --format='value(deleteProtectionState)')"
+  # Under `set -e` a failing describe (permissions, API) must not abort the deploy silently.
+  state="$(gcloud firestore databases describe --database='(default)' \
+    --format='value(deleteProtectionState)')" || state=""
+  [ -n "$state" ] || echo "  WARN: could not read the delete protection state of (default); trying to enable it" >&2
   if [ "$state" = "DELETE_PROTECTION_ENABLED" ]; then
     echo "  (default) — delete protection already enabled"
   else

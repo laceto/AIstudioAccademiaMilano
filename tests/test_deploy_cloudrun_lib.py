@@ -56,12 +56,14 @@ gcloud() {
       esac ;;
     "firestore fields")
       case "$4" in
-        list)   [ -f "$STORE/ttl_on" ] && echo "projects/p/databases/(default)/collectionGroups/jobs/fields/expire_at" ;;
+        list)   [ -f "$STORE/list_fails" ] && return 1
+                [ -f "$STORE/ttl_on" ] && echo "projects/p/databases/(default)/collectionGroups/jobs/fields/expire_at" ;;
         update) : > "$STORE/ttl_on" ;;
       esac ;;
     "firestore databases")
       case "$3" in
-        describe) if [ -f "$STORE/delete_protection" ]; then echo DELETE_PROTECTION_ENABLED; else echo DELETE_PROTECTION_DISABLED; fi ;;
+        describe) [ -f "$STORE/describe_fails" ] && return 1
+                  if [ -f "$STORE/delete_protection" ]; then echo DELETE_PROTECTION_ENABLED; else echo DELETE_PROTECTION_DISABLED; fi ;;
         update)   : > "$STORE/delete_protection" ;;
       esac ;;
   esac
@@ -310,3 +312,38 @@ def test_the_deploy_script_wires_both_steps_after_the_database_exists():
     assert "ensure_firestore_ttl" in deploy and "ensure_delete_protection" in deploy
     create = deploy.index("firestore databases create")
     assert deploy.index("ensure_firestore_ttl") > create and deploy.index("ensure_delete_protection") > create
+
+
+# The deploy runs under `set -euo pipefail`: a failing look-up must warn and carry on, not abort silently.
+
+
+def test_delete_protection_survives_a_failing_describe_under_strict_mode(tmp_path):
+    (tmp_path / "describe_fails").write_text("")
+    res, log = _run(tmp_path, "set -euo pipefail\nensure_delete_protection\necho after")
+    assert res.returncode == 0, res.stderr
+    assert "after" in res.stdout and "WARN" in res.stderr + res.stdout
+    assert "databases update" in log and (tmp_path / "delete_protection").exists()
+
+
+def test_ttl_check_is_not_fooled_by_sigpipe_under_pipefail(tmp_path):
+    (tmp_path / "ttl_on").write_text("")
+    # a gcloud that prints a lot, so that `grep -q` closing the pipe early would SIGPIPE it
+    body = (
+        "set -euo pipefail\n"
+        'gcloud() { if [ "$3" = ttls ] && [ "$4" = list ]; then\n'
+        '  echo "projects/p/databases/(default)/collectionGroups/jobs/fields/expire_at"\n'
+        "  yes padding | head -n 200000 || true\n"
+        'else echo "gcloud $*" >> "$STORE/calls.log"; fi; }\n'
+        "ensure_firestore_ttl"
+    )
+    res, log = _run(tmp_path, body)
+    assert res.returncode == 0, res.stderr
+    assert "already" in res.stdout and "ttls update" not in log
+
+
+def test_ttl_survives_a_failing_list_and_still_tries_to_enable(tmp_path):
+    (tmp_path / "list_fails").write_text("")
+    res, log = _run(tmp_path, "set -euo pipefail\nensure_firestore_ttl")
+    assert res.returncode == 0, res.stderr
+    assert "ttls update expire_at" in log
+

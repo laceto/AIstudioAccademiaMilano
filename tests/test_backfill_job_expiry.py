@@ -103,3 +103,66 @@ def test_output_never_contains_what_customers_typed(tmp_path, capsys):
     _put(store, "a1", text="il mio segreto personale")
     bf.main(["--queue-dir", str(tmp_path), "--apply"])
     assert "segreto" not in capsys.readouterr().out
+
+
+# ── pending jobs get a fresh period, finished ones count from creation ───────
+
+OLD = "2026-01-01T10:00:00+00:00"  # long before the retention window ends
+NOW = "2026-10-09T12:00:00+00:00"
+
+
+def test_a_pending_job_older_than_the_retention_gets_a_full_fresh_period(tmp_path):
+    store = FileJobStore(str(tmp_path))
+    for status in ("needs_review", "approved", "running", "awaiting_review", "delivering", "failed", "queued"):
+        store.put({"job_id": status, "status": status, "created_at": OLD, "text": "x"})
+    counts = bf.backfill(store, apply=True, now=NOW)
+    assert counts["updated"] == 7
+    for status in ("needs_review", "running", "failed"):
+        assert store.get(status)["expire_at"] == expiry_for(NOW)  # now + retention, not OLD + retention
+
+
+def test_a_finished_job_keeps_creation_plus_retention(tmp_path):
+    store = FileJobStore(str(tmp_path))
+    for status in ("delivered", "discarded", "rejected", "classified"):
+        store.put({"job_id": status, "status": status, "created_at": OLD, "text": "x"})
+    bf.backfill(store, apply=True, now=NOW)
+    for status in ("delivered", "discarded", "rejected", "classified"):
+        assert store.get(status)["expire_at"] == expiry_for(OLD)
+
+
+def test_an_unknown_status_is_treated_as_pending(tmp_path):
+    store = FileJobStore(str(tmp_path))
+    store.put({"job_id": "u", "status": "brand_new_state", "created_at": OLD, "text": "x"})
+    bf.backfill(store, apply=True, now=NOW)
+    assert store.get("u")["expire_at"] == expiry_for(NOW)
+
+
+def test_the_fresh_period_follows_the_retention_setting(tmp_path, monkeypatch):
+    monkeypatch.setenv("JOB_RETENTION_DAYS", "30")
+    store = FileJobStore(str(tmp_path))
+    store.put({"job_id": "p", "status": "approved", "created_at": OLD, "text": "x"})
+    bf.backfill(store, apply=True, now=NOW)
+    assert store.get("p")["expire_at"] == "2026-11-08T12:00:00+00:00"
+
+
+def test_dry_run_prints_a_per_status_breakdown_without_job_text(tmp_path, capsys):
+    store = FileJobStore(str(tmp_path))
+    store.put({"job_id": "a", "status": "needs_review", "created_at": OLD, "text": "dati riservati"})
+    store.put({"job_id": "b", "status": "needs_review", "created_at": OLD, "text": "dati riservati"})
+    store.put({"job_id": "c", "status": "delivered", "created_at": OLD, "text": "dati riservati"})
+    assert bf.main(["--queue-dir", str(tmp_path)]) == 0
+    out = capsys.readouterr().out
+    assert "needs_review" in out and "delivered" in out and "riservati" not in out
+    nr = next(l for l in out.splitlines() if "needs_review" in l)
+    assert "2" in nr and "fresh" in nr
+    dl = next(l for l in out.splitlines() if "delivered" in l)
+    assert "1" in dl and "creation" in dl
+    assert store.get("a").get("expire_at") is None
+
+
+def test_apply_prints_the_breakdown_too(tmp_path, capsys):
+    store = FileJobStore(str(tmp_path))
+    store.put({"job_id": "a", "status": "approved", "created_at": OLD, "text": "x"})
+    bf.main(["--queue-dir", str(tmp_path), "--apply"])
+    out = capsys.readouterr().out
+    assert "approved" in out and "fresh" in out
