@@ -74,12 +74,24 @@ def route_after_qa(state: StudioState) -> str:
 
 
 def route_after_luigi(state: StudioState) -> str:
-    return "gianni_scope" if state.get("luigi_decision") == "approved" else END
+    if state.get("luigi_decision") != "approved":
+        return END
+    # Approving a RISK escalation happens after Chiara has built something: carry on to QA
+    # instead of re-scoping from scratch (which looped until the resume limit). Approving an
+    # unknown product happens before any work exists: scope it first.
+    if (state.get("deliverable_content") or "").strip():
+        return "stacy_qa"
+    return "gianni_scope"
 
 
 # ── Graph assembly ─────────────────────────────────────────────────────────────
 
-def build_studio_graph():
+def build_studio_graph(deliver=francesca_deliver, checkpointer=None, interrupt_before=("luigi_escalate",)):
+    """Assemble the pipeline.
+
+    `deliver` replaces Francesca (the gateway swaps in a version that does no git/email/disk work);
+    the defaults build exactly the graph the Streamlit app and the CLI have always used.
+    """
     g = StateGraph(StudioState)
 
     # Register nodes
@@ -92,7 +104,7 @@ def build_studio_graph():
     g.add_node("risk_aggregator",     risk_aggregator)
     g.add_node("stacy_qa",            stacy_qa)
     g.add_node("marco_invoice",       marco_invoice)
-    g.add_node("francesca_deliver",   francesca_deliver)
+    g.add_node("francesca_deliver",   deliver)
     g.add_node("luigi_escalate",      luigi_escalate)
 
     # Entry
@@ -125,7 +137,7 @@ def build_studio_graph():
     # Luigi → Gianni (approved) | END (rejected)
     g.add_conditional_edges("luigi_escalate", route_after_luigi)
 
-    return g.compile(checkpointer=MemorySaver(), interrupt_before=["luigi_escalate"])
+    return g.compile(checkpointer=checkpointer or MemorySaver(), interrupt_before=list(interrupt_before))
 
 
 studio_graph = build_studio_graph()
@@ -138,8 +150,15 @@ def run_pipeline(
     user_email: str | None = None,
     config: dict | None = None,
     auto_approve: bool = True,
+    graph=None,
+    extra_state: dict | None = None,
 ) -> tuple[list[dict], dict]:
-    """Stream the pipeline and return (steps, final_state)."""
+    """Stream the pipeline and return (steps, final_state).
+
+    `graph` runs a different compiled graph (default: studio_graph); `extra_state` is merged into
+    the initial state, e.g. {"approved_price": "5.50", "luigi_decision": "approved"}.
+    """
+    graph = graph or studio_graph
     thread_id = f"PIPELINE-{uuid.uuid4().hex[:8].upper()}"
     _config = {**(config or {})}
     _config.setdefault("configurable", {})
@@ -167,6 +186,7 @@ def run_pipeline(
         "aggregate_risk_score": 0.0,
         "qa_result":           None,
         "qa_passed":           False,
+        "approved_price":      None,
         "product_price":       None,
         "invoice":             None,
         "invoice_id":          None,
@@ -179,11 +199,12 @@ def run_pipeline(
         "error":               None,
         "finished":            False,
     }
+    initial.update(extra_state or {})
 
     steps: list[dict] = []
     final_state: dict = {}
 
-    for event in studio_graph.stream(initial, config=_config, stream_mode="values"):
+    for event in graph.stream(initial, config=_config, stream_mode="values"):
         msgs = event.get("messages", [])
         if msgs:
             steps.append({"content": msgs[-1].content, "state_snapshot": event})
@@ -192,8 +213,8 @@ def run_pipeline(
     # HITL resume: inject approved decision then continue (up to 3 escalations)
     resumes = 0
     while not final_state.get("finished") and auto_approve and resumes < 3:
-        studio_graph.update_state(_config, {"luigi_decision": "approved"})
-        for event in studio_graph.stream(None, config=_config, stream_mode="values"):
+        graph.update_state(_config, {"luigi_decision": "approved"})
+        for event in graph.stream(None, config=_config, stream_mode="values"):
             msgs = event.get("messages", [])
             if msgs:
                 steps.append({"content": msgs[-1].content, "state_snapshot": event})
