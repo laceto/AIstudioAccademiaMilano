@@ -82,6 +82,30 @@ SMTP_PASSWORD=<password per app di Gmail, 16 caratteri>
 Limiti noti: gli avvisi sono best-effort (un canale che fallisce non blocca l'altro né la risposta all'utente), al massimo
 10 al minuto, uno per job. I bottoni Approva/Rifiuta arrivano con le Fasi 2 e 3 del piano.
 
+## 1d. Approvare le richieste da Telegram (nuovo)
+
+Quando arriva una richiesta fuori catalogo ricevi il messaggio con quattro bottoni: **Approva EUR x** (solo se esiste un
+prezzo a catalogo), **Gratis**, **Imposta prezzo**, **Rifiuta**. Comandi equivalenti, solo dal tuo account:
+
+| Comando | Cosa fa |
+|---------|---------|
+| `/pending` | elenca le richieste in attesa, ciascuna con i bottoni |
+| `/approve <job_id> [prezzo\|gratis]` | approva; senza prezzo usa quello a catalogo |
+| `/prezzo <job_id> <prezzo>` | approva a un prezzo che scegli (es. `12,50`) |
+| `/reject <job_id> [motivo]` | rifiuta; il motivo resta interno |
+
+La persona che ha fatto la richiesta riceve l'esito. Una decisione si applica una volta sola.
+
+**Sicurezza.** Il gateway ti riconosce dall'ID numerico, e quell'ID sta nel messaggio che Telegram invia al webhook:
+senza controllo sarebbe falsificabile. Per questo il deploy genera `TELEGRAM_WEBHOOK_SECRET` (in Secret Manager), lo passa al
+gateway e lo registra su Telegram con `setWebhook`. Il gateway rifiuta con 403 ogni richiesta che non lo porta. Se il segreto
+manca, i bottoni e i comandi restano spenti ma gli utenti normali sono serviti.
+
+**Per attivarlo:** ricostruisci il gateway e lancia `bash scripts/deploy_cloudrun.sh --skip-build` (sezione 1, passi 2-3).
+Poi scrivi al bot una richiesta fuori catalogo, premi un bottone e controlla che l'utente riceva l'esito.
+Verifica rapida del segreto: `curl -s -o /dev/null -w "%{http_code}" -X POST <url-gateway>/webhook/telegram -d "{}"` deve
+rispondere `403`.
+
 ## 1c. Job su Firestore (nuovo)
 
 I job non sono più file in `/tmp/queue`: `gateway/jobstore.py` li salva in Firestore (`JOB_STORE=firestore`, collezione

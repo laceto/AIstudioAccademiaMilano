@@ -44,3 +44,31 @@ gateway_env_vars() {
   done
   echo "$out"
 }
+
+# _random_secret
+#
+# 64 hex characters: within what Telegram accepts for a webhook secret_token (A-Z a-z 0-9 _ -, 1-256).
+_random_secret() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -hex 32
+  else
+    python3 -c 'import secrets; print(secrets.token_hex(32))'
+  fi
+}
+
+# resolve_webhook_secret
+#
+# The value registered with Telegram's setWebhook as secret_token and checked by the gateway on
+# every update (header X-Telegram-Bot-Api-Secret-Token). Order: TELEGRAM_WEBHOOK_SECRET from .env,
+# else the one already in Secret Manager, else a fresh random one. It is stored in Secret Manager
+# (new version only if it changed) and printed on stdout, and nothing else is.
+resolve_webhook_secret() {
+  local value
+  value="$(env_val TELEGRAM_WEBHOOK_SECRET)"
+  if [ -z "$value" ]; then
+    value="$(gcloud secrets versions access latest --secret=TELEGRAM_WEBHOOK_SECRET 2>/dev/null || true)"
+  fi
+  [ -n "$value" ] || value="$(_random_secret)"
+  upsert_secret TELEGRAM_WEBHOOK_SECRET "$value" >/dev/null
+  printf '%s' "$value"
+}

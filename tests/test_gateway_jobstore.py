@@ -34,7 +34,7 @@ class _Doc:
     def set(self, data):
         self.db.data.setdefault(self.name, {})[self.id] = json.loads(json.dumps(data))
 
-    def get(self):
+    def get(self, transaction=None):
         return _Snap(self.db.data.get(self.name, {}).get(self.id))
 
 
@@ -64,12 +64,23 @@ class _Coll:
         return _Query(self.db, self.name, field, value)
 
 
+class _Txn:
+    """Stand-in for a Firestore transaction: applies writes immediately, which is
+    enough to exercise the read-check-write logic in a single process."""
+
+    def set(self, ref, data):
+        ref.set(data)
+
+
 class FakeFirestore:
     def __init__(self):
         self.data = {}
 
     def collection(self, name):
         return _Coll(self, name)
+
+    def transaction(self):
+        return _Txn()
 
 
 @pytest.fixture(params=["file", "firestore"])
@@ -227,3 +238,60 @@ def test_process_job_persists_through_the_store(monkeypatch, tmp_path):
     saved = db_store.get(job_id)
     assert saved["status"] == "classified" and saved["classification"]["product_type"] == "static_landing_page"
     assert not list(tmp_path.glob("*.json"))  # nothing leaked to local disk
+
+
+# ── transition: atomic status change (approval must happen once) ─────────────
+
+
+@pytest.fixture(autouse=True)
+def _fake_transactional(monkeypatch):
+    # The real decorator comes from google-cloud-firestore (not installed in the tests).
+    monkeypatch.setattr(jobstore, "_transactional", lambda fn: lambda txn: fn(txn))
+
+
+def test_transition_applies_updates_when_status_matches(store):
+    store.put(_job("a1", status="needs_review"))
+    got = store.transition("a1", "needs_review", {"status": "approved", "price": 9.9})
+    assert got["status"] == "approved" and got["price"] == 9.9
+    assert store.get("a1")["status"] == "approved" and store.get("a1")["text"] == "caffè ☕"
+
+
+def test_transition_refuses_when_status_differs(store):
+    store.put(_job("a1", status="approved"))
+    assert store.transition("a1", "needs_review", {"status": "rejected"}) is None
+    assert store.get("a1")["status"] == "approved"
+
+
+def test_transition_unknown_job_returns_none(store):
+    assert store.transition("ghost", "needs_review", {"status": "approved"}) is None
+
+
+def test_second_transition_loses(store):
+    store.put(_job("a1", status="needs_review"))
+    first = store.transition("a1", "needs_review", {"status": "approved"})
+    second = store.transition("a1", "needs_review", {"status": "rejected"})
+    assert first is not None and second is None
+    assert store.get("a1")["status"] == "approved"
+
+
+def test_transition_cannot_change_the_job_id(store):
+    store.put(_job("a1", status="needs_review"))
+    got = store.transition("a1", "needs_review", {"status": "approved", "job_id": "evil"})
+    assert got["job_id"] == "a1" and store.get("evil") is None
+
+
+def test_concurrent_file_transitions_have_a_single_winner(tmp_path):
+    import threading
+
+    store = FileJobStore(str(tmp_path))
+    store.put(_job("a1", status="needs_review"))
+    wins = []
+
+    def attempt(n):
+        if store.transition("a1", "needs_review", {"status": "approved", "by": n}):
+            wins.append(n)
+
+    threads = [threading.Thread(target=attempt, args=(n,)) for n in range(8)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert len(wins) == 1

@@ -126,6 +126,17 @@ for S in "${SECRETS[@]}"; do
   fi
 done
 
+# Secret token for the Telegram webhook: Telegram echoes it in a header on every update and the
+# gateway refuses updates without it. Without it anyone could forge "Luigi pressed Approve".
+if $DRY_RUN; then
+  echo "  [dry-run] TELEGRAM_WEBHOOK_SECRET (from .env, else Secret Manager, else generated)"
+  WEBHOOK_SECRET="dry-run-placeholder"
+else
+  WEBHOOK_SECRET="$(resolve_webhook_secret)"
+  echo "  TELEGRAM_WEBHOOK_SECRET — ready"
+fi
+PRESENT_SECRETS+=(TELEGRAM_WEBHOOK_SECRET)
+
 printf '%s\n' "${PRESENT_SECRETS[@]}" | grep -qx TELEGRAM_BOT_TOKEN \
   || die "TELEGRAM_BOT_TOKEN did not make it into Secret Manager."
 if ! printf '%s\n' "${PRESENT_SECRETS[@]}" | grep -qxE 'ANTHROPIC_API_KEY|OPENAI_API_KEY'; then
@@ -194,7 +205,7 @@ run gcloud run deploy gateway \
   --image "$IMAGE_BASE/gateway" --region "$REGION" \
   --allow-unauthenticated --memory 512Mi --timeout 120 \
   --set-env-vars "$(gateway_env_vars)" \
-  --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN ANTHROPIC_API_KEY OPENAI_API_KEY SMTP_PASSWORD)" \
+  --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN ANTHROPIC_API_KEY OPENAI_API_KEY SMTP_PASSWORD TELEGRAM_WEBHOOK_SECRET)" \
   --quiet
 
 if $DRY_RUN; then
@@ -213,11 +224,12 @@ gcloud run services update gateway --region "$REGION" \
 # ── Webhooks ─────────────────────────────────────────────────────────────────
 
 say "Registering Telegram webhooks"
-register() {  # $1 = token, $2 = base url, $3 = label
-  local code
+register() {  # $1 = token, $2 = base url, $3 = label, $4 = optional secret_token
+  local code extra=()
+  [ -n "${4:-}" ] && extra=(-d "secret_token=$4")
   code="$(curl -sS -o /tmp/tg_hook.$$ -w '%{http_code}' \
     "https://api.telegram.org/bot$1/setWebhook" \
-    -d "url=$2/webhook/telegram" -d "drop_pending_updates=true")"
+    -d "url=$2/webhook/telegram" -d "drop_pending_updates=true" "${extra[@]}")"
   if [ "$code" = "200" ] && grep -q '"ok":true' /tmp/tg_hook.$$; then
     echo "  $3 -> $2/webhook/telegram"
   else
@@ -225,7 +237,7 @@ register() {  # $1 = token, $2 = base url, $3 = label
   fi
   rm -f /tmp/tg_hook.$$
 }
-register "$PIPELINE_TOKEN" "$GW_URL"  "pipeline bot"
+register "$PIPELINE_TOKEN" "$GW_URL"  "pipeline bot" "$WEBHOOK_SECRET"
 register "$RAG_TOKEN"      "$RAG_URL" "RAG bot"
 
 # ── Verify ───────────────────────────────────────────────────────────────────

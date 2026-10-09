@@ -21,6 +21,7 @@ Environment variables:
 """
 
 import asyncio
+import hmac
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -45,6 +46,7 @@ from pydantic import BaseModel, field_validator
 
 from config.brand import b
 from gateway.bot_whatsapp import router as whatsapp_router
+from gateway.admin_telegram import handle_admin_message, handle_callback, refuse_admin_command
 from gateway.convlog import log_message, silence_http_loggers
 from gateway.middleware import check_rate_limit
 from gateway.pipeline_adapter import PipelineAdapter
@@ -482,9 +484,31 @@ async def telegram_webhook(request: Request):
     if not token:
         raise HTTPException(status_code=503, detail="TELEGRAM_BOT_TOKEN not configured")
 
+    # Luigi is recognised by the numeric id inside the payload, which anyone could forge. Telegram
+    # echoes the secret_token given to setWebhook in this header, so it proves the sender.
+    # Without TELEGRAM_WEBHOOK_SECRET the webhook still serves ordinary users but every admin
+    # action stays off (fail closed). With it, requests that do not carry it are refused.
+    secret = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
+    supplied = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+    authentic = bool(secret) and hmac.compare_digest(supplied.encode(), secret.encode())
+    if secret and not authentic:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     try:
         data = await request.json()
     except Exception:
+        return {"ok": True}
+
+    callback = data.get("callback_query")
+    if callback:
+        if not authentic:
+            logger.warning("callback_query ignored: TELEGRAM_WEBHOOK_SECRET is not configured")
+            return {"ok": True}
+        # Luigi pressed a button on a review card. Always answer 200: Telegram retries anything else.
+        try:
+            await handle_callback(Bot(token=token), _adapter.store, callback)
+        except Exception as exc:
+            logger.error("callback_query failed: %s", type(exc).__name__)
         return {"ok": True}
 
     message = data.get("message") or data.get("edited_message")
@@ -500,6 +524,18 @@ async def telegram_webhook(request: Request):
 
     bot = Bot(token=token)
     log_message("in", chat_id, text)
+
+    # Luigi's commands and price answers; a stranger's /approve is swallowed, never queued as a job.
+    try:
+        if authentic:
+            handled = await handle_admin_message(bot, _adapter.store, message)
+        else:
+            handled = await refuse_admin_command(bot, message)
+        if handled:
+            return {"ok": True}
+    except Exception as exc:
+        logger.error("admin message failed: %s", type(exc).__name__)
+        return {"ok": True}
 
     if text.startswith("/start"):
         await _reply(

@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
 from functools import lru_cache
 from pathlib import Path
 from typing import Protocol
@@ -33,10 +34,14 @@ class JobStore(Protocol):
     def put(self, job: dict) -> None: ...
     def get(self, job_id: str) -> dict | None: ...
     def list_by_status(self, status: str) -> list[dict]: ...
+    def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None: ...
 
 
 def _oldest_first(jobs: list[dict]) -> list[dict]:
     return sorted(jobs, key=lambda j: j.get("created_at", ""))
+
+
+_file_lock = threading.Lock()  # FileJobStore.transition; the file backend is for local runs
 
 
 class FileJobStore:
@@ -75,6 +80,21 @@ class FileJobStore:
             if job.get("status") == status:
                 jobs.append(job)
         return _oldest_first(jobs)
+
+
+    def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None:
+        """Apply `updates` only if the job is still in `from_status`. Returns the new job, or None.
+
+        This is what makes an approval happen once: of two concurrent decisions, one wins.
+        (A lock, so single process; Firestore uses a transaction.)
+        """
+        with _file_lock:
+            job = self.get(job_id)
+            if job is None or job.get("status") != from_status:
+                return None
+            job = {**job, **updates, "job_id": job_id}
+            self.put(job)
+            return job
 
 
 def _firestore_client(project: str | None = None):
@@ -117,6 +137,38 @@ class FirestoreJobStore:
             query = coll.where("status", "==", status)
         # Filter on one field only: ordering by created_at would need a composite index.
         return _oldest_first([snap.to_dict() for snap in query.stream()])
+
+
+    def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None:
+        """Same contract as FileJobStore.transition, atomic across instances via a transaction."""
+        if not _JOB_ID_RE.match(job_id or ""):
+            return None
+        ref = self._collection().document(job_id)
+
+        @_transactional
+        def apply(txn):
+            snap = ref.get(transaction=txn)
+            if not snap.exists:
+                return None
+            job = snap.to_dict()
+            if job.get("status") != from_status:
+                return None
+            job = {**job, **updates, "job_id": job_id}
+            txn.set(ref, job)
+            return job
+
+        return apply(self._client.transaction())
+
+
+def _transactional(fn):
+    """Wrap fn(transaction) in Firestore's retrying transaction decorator (lazy import)."""
+    try:
+        from google.cloud import firestore
+    except ImportError as exc:
+        raise RuntimeError(
+            "JOB_STORE=firestore needs the google-cloud-firestore package (see gateway/requirements.txt)"
+        ) from exc
+    return firestore.transactional(fn)
 
 
 @lru_cache(maxsize=None)

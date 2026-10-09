@@ -104,18 +104,21 @@ def build_message(job: dict) -> tuple[str, str]:
     return subject, body
 
 
-async def _send_telegram(chat_ids: list[str], text: str) -> None:
-    """Send plain text (no parse_mode: the text contains user input) to each chat id."""
+async def _send_telegram(chat_ids: list[str], text: str, buttons: list[list[dict]] | None = None) -> None:
+    """Send plain text (no parse_mode: the text contains user input) to each chat id.
+
+    `buttons` is an inline keyboard (rows of {"text", "callback_data"}); see gateway/admin.py.
+    """
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     if not token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN not configured")
     failed = 0
     async with httpx.AsyncClient(timeout=10.0) as client:
         for chat_id in chat_ids:
-            resp = await client.post(
-                f"https://api.telegram.org/bot{token}/sendMessage",
-                json={"chat_id": chat_id, "text": text},
-            )
+            payload: dict = {"chat_id": chat_id, "text": text}
+            if buttons:
+                payload["reply_markup"] = {"inline_keyboard": buttons}
+            resp = await client.post(f"https://api.telegram.org/bot{token}/sendMessage", json=payload)
             if resp.status_code != 200:
                 failed += 1
     if failed:
@@ -178,7 +181,10 @@ async def notify_review(job: dict) -> dict:
     subject, body = build_message(job)
     channels: dict[str, object] = {}
     if chat_ids:
-        channels["telegram"] = _send_telegram(chat_ids, f"{subject}\n\n{body}")
+        from gateway.admin import proposed_price, review_keyboard  # lazy: admin imports this module
+
+        buttons = review_keyboard(job_id, proposed_price(job))
+        channels["telegram"] = _send_telegram(chat_ids, f"{subject}\n\n{body}", buttons=buttons)
     if emails:
         channels["email"] = asyncio.to_thread(_send_email, emails, subject, body)
 
