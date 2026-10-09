@@ -25,7 +25,8 @@ from pathlib import Path
 
 from config.brand import b, fmt
 from gateway.convlog import log_message
-from gateway.notify import notify_review
+from gateway import safety
+from gateway.notify import notify_refusal, notify_review
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +37,16 @@ Classify the request and return ONLY a valid JSON object — no prose, no markdo
   "product_type": "<one of: static_landing_page|premium_landing_page|commercial_landing_page|pdf_document|invoice_pdf|strategic_report|chatbot_app|email_delivery|rag_knowledge_base|calendar_integration|weather_dashboard|agent_deploy_streamlit|unknown_product>",
   "confidence": <float 0.0-1.0>,
   "summary": "<one sentence: what the user needs>",
-  "needs_review": <true if confidence < 0.8 or product_type is unknown_product, else false>
-}"""
+  "needs_review": <true if confidence < 0.8 or product_type is unknown_product, else false>,
+  "refuse": <true ONLY if the request is clearly fraudulent or illegal, otherwise false>,
+  "refuse_reason": "<empty string when refuse is false; otherwise one of: fake_document|fraud|malware|harassment|other>"
+}
+
+Rules for "refuse". Be CONSERVATIVE: when in doubt, refuse is false.
+- refuse=true only when the user asks us to produce or carry out something clearly illegal: forged or fake documents (medical prescriptions, certificates, IDs, payslips), fraud or scams, phishing pages or messages meant to deceive, malware (ransomware, keyloggers), stealing credentials or card data, harassment or threats against a person.
+- refuse=false for ordinary tasks, and for anything merely outside the catalogue (that is needs_review, not a refusal).
+- refuse=false for educational, defensive or journalistic requests, e.g. "come riconoscere una ricetta falsa", "come difendersi dal phishing", an article or training material about phishing or ransomware.
+- Never refuse a request only because it is unusual, vague or unprofitable."""
 
 def _load_prices() -> dict[str, float | None]:
     """Load prices from global_settings.json; fall back to hardcoded values."""
@@ -123,7 +132,7 @@ class QueueWorker:
         if self._provider == "anthropic":
             message = await self._llm.messages.create(  # type: ignore[union-attr]
                 model="claude-haiku-4-5-20251001",
-                max_tokens=256,
+                max_tokens=320,
                 system=_STACY_SYSTEM,
                 messages=[{"role": "user", "content": text}],
             )
@@ -132,7 +141,7 @@ class QueueWorker:
             model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini").strip()
             response = await self._llm.chat.completions.create(  # type: ignore[union-attr]
                 model=model,
-                max_tokens=256,
+                max_tokens=320,
                 messages=[
                     {"role": "system", "content": _STACY_SYSTEM},
                     {"role": "user", "content": text},
@@ -144,10 +153,16 @@ class QueueWorker:
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
-        return json.loads(raw.strip())
+        cls = json.loads(raw.strip())
+        if isinstance(cls, dict):
+            cls.setdefault("refuse", False)  # a missing field means "not a refusal"
+        return cls
 
     def _build_reply(self, job: dict, cls: dict) -> tuple[str, str]:
         """Return (new_status, reply_text) from classification result."""
+        if safety.is_refusal(cls):
+            return "refused", safety.REFUSAL_REPLY
+
         product = cls.get("product_type", "unknown_product")
         price = _PRICES.get(product)
         summary = cls.get("summary", job["text"][:60])
@@ -193,8 +208,17 @@ class QueueWorker:
         job["status"] = "processing"
         store.put(job)
 
+        # Layer 2 first: a deterministic hit needs no model call and works with no API key.
+        category = safety.check(job["text"])
         try:
-            cls = await self.classify(job["text"])
+            if category:
+                cls = {
+                    "intent": "refused", "product_type": "unknown_product", "confidence": 1.0,
+                    "summary": "", "needs_review": False,
+                    "refuse": True, "refuse_reason": category, "refused_by": "safety_backstop",
+                }
+            else:
+                cls = await self.classify(job["text"])
         except Exception as exc:
             logger.error("[worker] classify failed for job %s: %s", job["job_id"], exc)
             reply = f"Classification failed: {exc}"
@@ -216,6 +240,13 @@ class QueueWorker:
         store.put(job)
 
         logger.info("[worker] job %s -> %s (product=%s)", job["job_id"], status, cls.get("product_type"))
+
+        if status == "refused":
+            # Telegram only, no buttons to approve: Luigi can still Riesamina a false positive.
+            try:
+                await notify_refusal(job, store)
+            except Exception as exc:
+                logger.warning("[worker] notify_refusal failed for job %s: %s", job["job_id"], type(exc).__name__)
 
         if status == "needs_review":
             # Awaited, not fire-and-forget: Cloud Run freezes the container once the

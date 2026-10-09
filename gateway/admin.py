@@ -298,3 +298,87 @@ def job_line(job: dict) -> str:
         price = proposed_price(job)
     price_txt = "gratis" if price == 0 else (f"EUR {price:.2f}" if price is not None else "prezzo da definire")
     return f"{job.get('job_id', '?')} - {cls.get('summary', job.get('text', '')[:60])} ({price_txt})"
+
+
+# ── refused requests (clearly illegal ones, see gateway/safety.py) ───────────
+# refused --Riesamina--> needs_review   (Luigi only, once; then the normal review card follows)
+# A refused job is terminal for everyone else: decide() only accepts needs_review, so it can
+# never be approved, priced or queued for the pipeline without this explicit step first.
+# The callback action is registered here, below the originals, so the tables above stay as they were.
+
+_ACTIONS["reexamine"] = "rx"
+_CODES = {v: k for k, v in _ACTIONS.items()}
+_CALLBACK_RE = re.compile(r"^(" + "|".join(_ACTIONS.values()) + r"):([A-Za-z0-9_-]{1,64})$")
+
+REFUSED_RECENT_DAYS = 3
+
+
+def refused_keyboard(job_id: str) -> list[list[dict]]:
+    """The one button on a refused request: no approve, no price."""
+    return [[{"text": "\U0001F50D Riesamina", "callback_data": encode_callback("reexamine", job_id)}]]
+
+
+def _chat_of(job: dict) -> str:
+    return str((job.get("metadata") or {}).get("chat_id", "")).strip()
+
+
+def refused_count(store, chat_id) -> int | None:
+    """How many refused requests this chat has made (counting the current one). None if unreadable."""
+    wanted = str(chat_id).strip()
+    if not wanted:
+        return None
+    try:
+        return sum(1 for j in store.list_by_status("refused") if _chat_of(j) == wanted)
+    except Exception:
+        return None
+
+
+def refused_category(job: dict) -> str:
+    return str((job.get("classification") or {}).get("refuse_reason") or "other")
+
+
+def recent_refused(store, days: int = REFUSED_RECENT_DAYS, limit: int = 5) -> tuple[list[dict], int]:
+    """Refused jobs from the last `days` days, newest first, at most `limit`; plus how many more exist."""
+    cutoff = datetime.now(timezone.utc).timestamp() - days * 86400
+    recent = []
+    for job in store.list_by_status("refused"):
+        stamp = job.get("processed_at") or job.get("created_at") or ""
+        try:
+            when = datetime.fromisoformat(stamp)
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        if when.timestamp() >= cutoff:
+            recent.append((when, job))
+    recent.sort(key=lambda pair: pair[0], reverse=True)
+    jobs = [job for _, job in recent]
+    return jobs[:limit], max(0, len(jobs) - limit)
+
+
+def refused_line(job: dict) -> str:
+    """One line for /pending."""
+    text = (job.get("text") or "").replace("\n", " ")[:80]
+    return f"Rifiutata ({refused_category(job)}): {job.get('job_id', '?')} - {text}"
+
+
+def reexamine(store, job_id: str, admin_id) -> Decision:
+    """Luigi disagrees with an automatic refusal: refused -> needs_review, once, atomically."""
+    if not is_admin(admin_id):
+        return Decision(False, "forbidden")
+    job = store.get(job_id)
+    if job is None:
+        return Decision(False, "not_found")
+    if job.get("status") != "refused":
+        return Decision(False, "not_refused", job)
+    won = store.transition(
+        job_id, "refused",
+        {
+            "status": "needs_review",
+            "reexamined_by": str(admin_id).strip(),
+            "reexamined_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    if won is not None:
+        return Decision(True, "reexamined", won)
+    return Decision(False, "not_refused", store.get(job_id))

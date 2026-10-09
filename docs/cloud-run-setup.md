@@ -179,6 +179,31 @@ Poi scrivi al bot una richiesta fuori catalogo, premi un bottone e controlla che
 Verifica rapida del segreto: `curl -s -o /dev/null -w "%{http_code}" -X POST <url-gateway>/webhook/telegram -d "{}"` deve
 rispondere `403`.
 
+## 1f. Richieste chiaramente illegali: rifiuto automatico (nuovo)
+
+Una richiesta come "una ricetta medica falsa", una pagina di phishing o un ransomware non viene messa in coda per la tua
+approvazione: viene **rifiutata** (stato `refused`, terminale). Due controlli indipendenti, basta uno dei due:
+
+1. **Il classificatore** (`gateway/worker.py`): il JSON di Stacy ha `refuse` e `refuse_reason`
+   (`fake_document`, `fraud`, `malware`, `harassment`, `other`). Il prompt e' prudente: le richieste ordinarie, quelle
+   solo fuori catalogo e quelle didattiche o difensive ("come riconoscere una ricetta falsa") non si rifiutano.
+2. **Il filtro fisso** (`gateway/safety.py`): poche frasi inequivocabili, italiano e inglese. Scatta anche se il modello
+   sbaglia o non risponde, e in quel caso non viene chiamato nessun modello.
+
+**Il cliente** riceve solo: "Non posso aiutarti con questa richiesta." e l'invito a riscrivere se pensa a un errore.
+Niente categoria, niente spiegazioni. **Tu** ricevi su Telegram (mai per e-mail, mai bottoni di approvazione) job ID,
+categoria, i primi 200 caratteri e quante richieste rifiutate ha fatto quella chat. Nessun blocco automatico dell'utente.
+
+**Se e' un falso positivo:** premi **Riesamina** sul messaggio, oppure `/riesamina <job_id>`. Il job passa da `refused` a
+`needs_review` (una volta sola, solo tu) e ti arriva la solita scheda con Approva/Prezzo/Rifiuta. `/pending` mostra anche
+le richieste rifiutate degli ultimi 3 giorni (massimo 5, una riga ciascuna, con il bottone Riesamina).
+
+**Estendere il filtro:** in `gateway/safety.py` aggiungi un sostantivo (`_DOC_NOUNS`), un verbo (`_MAKE_VERBS`), un tipo
+di malware (`_MALWARE`) o una nuova regola in `RULES`. Prima aggiungi la frase da rifiutare a `MUST_REFUSE` e una frase
+innocua simile a `MUST_NOT_REFUSE` in `tests/test_gateway_safety.py`. Tienilo stretto: un falso positivo costa una risposta
+a un cliente vero. Limite: e' un elenco di frasi, parafrasi, refusi, altre lingue o richieste spezzate su piu' messaggi
+passano; li devono prendere il modello e la tua revisione.
+
 ## 1c. Job su Firestore (nuovo)
 
 I job non sono più file in `/tmp/queue`: `gateway/jobstore.py` li salva in Firestore (`JOB_STORE=firestore`, collezione
