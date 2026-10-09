@@ -5,15 +5,16 @@ Canonical bridge between any input channel and the 6-agent pipeline.
 Accepts (text, channel, metadata), sanitizes, queues the job, returns
 {job_id, status, result}.
 
-Stacy picks up jobs from gateway/queue/ and processes them through the pipeline.
+Jobs are kept in a JobStore (gateway/jobstore.py): files locally, Firestore in
+production (JOB_STORE=firestore), so they survive a Cloud Run restart.
 """
 
-import json
 import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from gateway.jobstore import JobStore, make_store
 
 _CONTROL_CHAR_RE = re.compile(r"[^\x09\x0A\x0D\x20-\x7E\x80-\xFF]")
 _MAX_TEXT_LEN = 4000
@@ -21,9 +22,9 @@ _ALLOWED_CHANNELS = {"api", "streamlit", "telegram", "whatsapp"}
 
 
 class PipelineAdapter:
-    def __init__(self, queue_dir: str = "gateway/queue"):
-        self.queue_dir = Path(queue_dir)
-        self.queue_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, queue_dir: str = "gateway/queue", store: JobStore | None = None):
+        self.queue_dir = Path(queue_dir)  # used by the file backend only
+        self.store = store if store is not None else make_store(queue_dir)
 
     def submit(self, text: str, channel: str, metadata: dict) -> dict:
         """Normalize input and queue for pipeline processing.
@@ -57,28 +58,19 @@ class PipelineAdapter:
             "created_at": now,
         }
 
-        job_file = self.queue_dir / f"{job_id}.json"
-        job_file.write_text(json.dumps(job, indent=2, ensure_ascii=False), encoding="utf-8")
+        self.store.put(job)
 
         return {"job_id": job_id, "status": "queued", "result": None}
 
     def get_status(self, job_id: str) -> dict:
-        job_file = self.queue_dir / f"{job_id}.json"
-        if not job_file.exists():
+        job = self.store.get(job_id)
+        if job is None:
             return {"job_id": job_id, "status": "not_found", "result": None}
-        return json.loads(job_file.read_text(encoding="utf-8"))
+        return job
 
     def list_pending(self) -> list[dict]:
         """Return all queued jobs, oldest first."""
-        jobs = []
-        for f in sorted(self.queue_dir.glob("*.json")):
-            try:
-                job = json.loads(f.read_text(encoding="utf-8"))
-                if job.get("status") == "queued":
-                    jobs.append(job)
-            except (json.JSONDecodeError, OSError):
-                continue
-        return jobs
+        return self.store.list_by_status("queued")
 
     def _sanitize(self, text: str) -> str:
         clean = _CONTROL_CHAR_RE.sub("", text)

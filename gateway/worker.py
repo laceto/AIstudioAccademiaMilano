@@ -188,10 +188,10 @@ class QueueWorker:
         inline — on a scale-to-zero host (Cloud Run) the container is frozen once
         the response is sent, so the polling loop in run() never gets to it.
         """
-        job_file = self.queue_dir / f"{job['job_id']}.json"
+        store = self.adapter.store
 
         job["status"] = "processing"
-        job_file.write_text(json.dumps(job, indent=2, ensure_ascii=False), encoding="utf-8")
+        store.put(job)
 
         try:
             cls = await self.classify(job["text"])
@@ -203,7 +203,7 @@ class QueueWorker:
                 result=reply,
                 processed_at=datetime.now(timezone.utc).isoformat(),
             )
-            job_file.write_text(json.dumps(job, indent=2, ensure_ascii=False), encoding="utf-8")
+            store.put(job)
             return "error", reply
 
         status, reply = self._build_reply(job, cls)
@@ -213,7 +213,7 @@ class QueueWorker:
             classification=cls,
             processed_at=datetime.now(timezone.utc).isoformat(),
         )
-        job_file.write_text(json.dumps(job, indent=2, ensure_ascii=False), encoding="utf-8")
+        store.put(job)
 
         logger.info("[worker] job %s -> %s (product=%s)", job["job_id"], status, cls.get("product_type"))
 
