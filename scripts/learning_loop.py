@@ -167,6 +167,15 @@ def update_mcp(settings: dict, audit: dict) -> int:
     return changes
 
 
+# What audit logs write for an agent that did its job. Counted across process/audit/: success 132,
+# ok 50, pass 19, completed 4. Anything else (pending, escalated, blocked, fail_then_fixed, ...) is not.
+_SUCCESS_STATUSES = frozenset({"success", "ok", "pass", "completed"})
+
+
+def is_success_status(status) -> bool:
+    return str(status or "").strip().lower() in _SUCCESS_STATUSES
+
+
 def update_agent_stats(settings: dict, audit: dict) -> int:
     changes = 0
     intent = audit.get("intent", "unknown")
@@ -184,8 +193,10 @@ def update_agent_stats(settings: dict, audit: dict) -> int:
             (s["avg_sec"] * n + agent_entry.get("duration_sec", 0)) / (n + 1), 1
         )
         s["count"] = n + 1
-        if agent_entry["status"] != "success":
-            s["success_rate"] = round((s["success_rate"] * n) / (n + 1), 3)
+        # A running mean over every entry. The old code only ever lowered the rate (on a failure) and
+        # never raised it, so one early failure kept it down for good.
+        outcome = 1.0 if is_success_status(agent_entry.get("status")) else 0.0
+        s["success_rate"] = round((s["success_rate"] * n + outcome) / (n + 1), 3)
     return changes
 
 
