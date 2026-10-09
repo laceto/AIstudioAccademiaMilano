@@ -1,7 +1,7 @@
 # Deliverables Catalogue
 
 Every shipped product. Auto-updated by `scripts/learning_loop.py` after each delivery.
-Last updated: 2026-09-16
+Last updated: 2026-10-09
 
 | ID | Date | Product | Stack | Price | Path |
 |----|------|---------|-------|-------|------|
@@ -20,6 +20,7 @@ Last updated: 2026-09-16
 | 014 | 2026-05-24 | Dispenser input v1 | Stripe, Twilio, Telegram Bot, Streamlit | €0.00 (internal infra) | `deliverables/2026-05-24_014_dispenser-input/` |
 | 001✓ | 2026-05-24 | Warranty fix: bakery placeholder + form sentinel | JS, SVG | €0.00 (courtesy) | `deliverables/2026-05-23_001_bakery-website/` |
 | 034 | 2026-09-16 | deepagents-gcal — deepagents agent + Google Calendar tools (pip package) | deepagents, LangGraph, LangChain, Google Calendar API v3 | €14.90 | `deliverables/2026-09-16_034_deepagents-gcal/` |
+| 035 | 2026-10-09 | Cloud Run deploy — gateway + rag-api on `aistudio-milano` (europe-west8), Telegram webhook live | Cloud Run, Cloud Build, Artifact Registry, Secret Manager | €0.00 (internal) | `deliverables/2026-10-09_035_cloud-run-deploy/` |
 
 ## Revenue Summary
 
