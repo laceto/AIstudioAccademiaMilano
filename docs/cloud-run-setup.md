@@ -117,6 +117,10 @@ crea `pipeline-tasks` e la coda con `max-attempts=1` (una run fallita non si rip
 passa al gateway coda, URL del worker e account di servizio. La prima volta i permessi possono impiegare qualche
 minuto a propagarsi: se la prima run non parte, `/run <job_id>` la rimette in coda.
 
+**Regione della coda.** Cloud Tasks non esiste a Milano (`europe-west8` dà "not a valid location"): la coda sta a Zurigo
+(`europe-west6`, la regione supportata più vicina; cambia con `TASKS_LOCATION=...`). Nella coda viaggia solo il Job ID,
+nessun dato personale, quindi non conta che stia in una regione diversa dai servizi. Elenco: `gcloud tasks locations list`.
+
 **Costi.** Ogni run chiama OpenAI circa 10 volte (qualche centesimo). Parte solo ciò che approvi tu, quindi nessuno
 sconosciuto può farti spendere. Cloud Tasks è gratuito fino a 1 milione di operazioni al mese; il worker scala a zero.
 

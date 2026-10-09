@@ -69,3 +69,31 @@ def test_the_gateway_has_the_cloud_tasks_client():
 def test_cloud_build_names_the_worker_dockerfile_explicitly():
     # The repo holds several Dockerfiles; a default source build picks the wrong one.
     assert "gateway/Dockerfile.worker" in CLOUDBUILD and "${_IMAGE}" in CLOUDBUILD
+
+
+# ── Cloud Tasks is not available in every Cloud Run region ───────────────────
+# europe-west8 (Milan) hosts the services but Cloud Tasks refuses it:
+#   "Location 'europe-west8' is not a valid location".
+
+
+def _script():
+    return (ROOT / "scripts" / "deploy_cloudrun.sh").read_text(encoding="utf-8")
+
+
+def test_the_queue_has_its_own_region_that_cloud_tasks_supports():
+    text = _script()
+    match = re.search(r'TASKS_LOCATION="\$\{TASKS_LOCATION:-([a-z0-9-]+)\}"', text)
+    assert match, "TASKS_LOCATION default missing"
+    # regions Cloud Tasks lists for Europe (gcloud tasks locations list); Milan is not one of them
+    assert match.group(1) in {"europe-west1", "europe-west2", "europe-west3", "europe-west6", "europe-central2"}
+
+
+def test_the_queue_is_created_in_the_tasks_region_not_the_service_region():
+    text = _script()
+    assert 'ensure_tasks_queue "$QUEUE_NAME" "$TASKS_LOCATION"' in text
+    assert 'ensure_tasks_queue "$QUEUE_NAME" "$REGION"' not in text
+
+
+def test_the_gateway_is_told_where_the_queue_lives():
+    assert '"TASKS_LOCATION=$TASKS_LOCATION"' in _script()
+    assert '"TASKS_LOCATION=$REGION"' not in _script()
