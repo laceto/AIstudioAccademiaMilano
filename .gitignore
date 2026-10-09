@@ -70,3 +70,6 @@ deliverables/**/output/
 ONBOARDING.md
 Usersl_ace.claude/
 project_state.md
+
+# Erasure records (file backend, local runs)
+gateway/erasures/

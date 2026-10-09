@@ -21,9 +21,10 @@ from gateway.notify import parse_list
 
 MAX_PRICE = 10_000.0
 
-_ACTIONS = {"approve": "ap", "reject": "rj", "free": "fr", "price": "pr", "send": "sd", "discard": "dc", "retry": "rn"}
+_ACTIONS = {"approve": "ap", "reject": "rj", "free": "fr", "price": "pr", "send": "sd", "discard": "dc", "retry": "rn",
+            "erase_job": "ej", "erase_chat": "ec", "erase_cancel": "xc"}
 _CODES = {v: k for k, v in _ACTIONS.items()}
-_CALLBACK_RE = re.compile(r"^(ap|rj|fr|pr|sd|dc|rn):([A-Za-z0-9_-]{1,64})$")
+_CALLBACK_RE = re.compile(r"^(ap|rj|fr|pr|sd|dc|rn|ej|ec|xc):([A-Za-z0-9_-]{1,64})$")
 _PRICE_RE = re.compile(r"^\d+(?:[.,]\d+)?$")
 _FREE_WORDS = {"gratis", "gratuito", "gratuita", "free"}
 
@@ -102,6 +103,15 @@ def result_keyboard(job_id: str) -> list[list[dict]]:
 def retry_keyboard(job_id: str) -> list[list[dict]]:
     """Button on a failed pipeline run."""
     return [[{"text": "🔁 Riprova", "callback_data": encode_callback("retry", job_id)}]]
+
+
+def erase_keyboard(action: str, target: str) -> list[list[dict]]:
+    """Conferma / Annulla under an erasure card. action: erase_job (target = job id) or erase_chat
+    (target = chat id, may be negative). Callback data stays well under Telegram's 64 bytes."""
+    return [[
+        {"text": "✅ Conferma", "callback_data": encode_callback(action, target)},
+        {"text": "↩️ Annulla", "callback_data": encode_callback("erase_cancel", "x")},
+    ]]
 
 
 # ── the decision ─────────────────────────────────────────────────────────────

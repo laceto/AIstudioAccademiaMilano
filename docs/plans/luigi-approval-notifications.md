@@ -112,6 +112,8 @@ l'utente riceve esattamente un messaggio di esito.
 
 - [x] Informativa privacy: `/start` rimanda a `/privacy` (`gateway/privacy.py`); restano da confermare titolare, contatto e base giuridica (`docs/cloud-run-setup.md`, sezione 4b).
 
+- [x] Cancellazione su richiesta: `/cancella <job_id>` e `/cancella chat <chat_id>` con scheda di conferma, rifiuto dei job in corso, registro `erasures` e promemoria dei passi manuali (`gateway/erasure.py`, `tests/test_gateway_erasure.py`; runbook `process/runbook_privacy_requests.md`). Da attivare con il redeploy.
+
 ### Fase 4 — Richieste fraudolente (già in lista da fare)
 - [x] FATTA nel codice (`gateway/safety.py`, `gateway/worker.py`, `gateway/notify.py` `notify_refusal`, `gateway/admin.py` `reexamine`, `tests/test_gateway_refusal.py`, `tests/test_gateway_safety.py`; da attivare con il redeploy). Stato `refused` terminale: due controlli indipendenti (campo `refuse` del classificatore + filtro a frasi), risposta neutra al cliente, messaggio a Luigi solo su Telegram con il bottone Riesamina (`/riesamina <job_id>`: `refused` -> `needs_review`), niente blocco automatico. Dettagli: `docs/cloud-run-setup.md`, sezione 1f.
 
