@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from gateway.jobstore import JobStore, make_store
+from gateway.retention import expiry_for
 
 _CONTROL_CHAR_RE = re.compile(r"[^\x09\x0A\x0D\x20-\x7E\x80-\xFF]")
 _MAX_TEXT_LEN = 4000
@@ -56,6 +57,7 @@ class PipelineAdapter:
             "status": "queued",
             "result": None,
             "created_at": now,
+            "expire_at": expiry_for(now),  # Firestore TTL deletes the job then; never refreshed
         }
 
         self.store.put(job)

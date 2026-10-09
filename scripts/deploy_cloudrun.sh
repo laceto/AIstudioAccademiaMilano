@@ -111,7 +111,7 @@ say "Enabling APIs"
 run gcloud services enable \
   run.googleapis.com cloudbuild.googleapis.com \
   artifactregistry.googleapis.com secretmanager.googleapis.com \
-  firestore.googleapis.com cloudtasks.googleapis.com
+  firestore.googleapis.com cloudtasks.googleapis.com cloudscheduler.googleapis.com
 
 say "Artifact Registry repository '$AR_REPO'"
 if gcloud artifacts repositories describe "$AR_REPO" --location="$REGION" >/dev/null 2>&1; then
@@ -184,6 +184,14 @@ fi
 run gcloud projects add-iam-policy-binding "$PROJECT" \
   --member="serviceAccount:$RUNTIME_SA" \
   --role=roles/datastore.user --condition=None --quiet >/dev/null
+
+say "Firestore: jobs expire (TTL on expire_at) and the database cannot be deleted by accident"
+if $DRY_RUN; then
+  echo "  [dry-run] TTL policy on jobs.expire_at, delete protection on (default)"
+else
+  ensure_firestore_ttl jobs expire_at
+  ensure_delete_protection
+fi
 
 # ── Pipeline worker: queue and identities ────────────────────────────────────
 # Jobs Luigi approves are queued in Cloud Tasks; the queue calls the private pipeline-worker as the
@@ -273,6 +281,23 @@ else
 fi
 run gcloud run services add-iam-policy-binding pipeline-worker --region "$REGION" \
   --member="serviceAccount:$TASKS_SA" --role=roles/run.invoker --quiet >/dev/null
+
+# A run the worker never finished (crash, kill, the 900 s request limit) would stay `running` for
+# ever. Every 10 minutes Cloud Scheduler calls the worker's POST /sweep as pipeline-tasks (the same
+# identity, and the same run.invoker grant, as Cloud Tasks): stale jobs become `failed` and Luigi is
+# told once. Cloud Scheduler is free for the first 3 jobs per billing account.
+# Like Cloud Tasks, it may not offer Milan: check `gcloud scheduler locations list` (SCHEDULER_LOCATION
+# overrides). The location only affects where the trigger lives, not the worker.
+SCHEDULER_LOCATION="${SCHEDULER_LOCATION:-europe-west6}"
+say "Stuck-job sweep (Cloud Scheduler, every 10 minutes)"
+if $DRY_RUN; then
+  echo "  [dry-run] scheduler job sweep-stuck-jobs ($SCHEDULER_LOCATION) -> POST $WORKER_URL/sweep as $TASKS_SA"
+else
+  # Not fatal: a bad location (like Cloud Tasks in europe-west8) must not stop the gateway deploy.
+  if ! ensure_scheduler_job sweep-stuck-jobs "$SCHEDULER_LOCATION" "$WORKER_URL/sweep" "$TASKS_SA" "$WORKER_URL" "*/10 * * * *"; then
+    warn "The Cloud Scheduler job sweep-stuck-jobs was NOT created (location used: $SCHEDULER_LOCATION). Stuck jobs will not be swept automatically; /sweep on Telegram still works. Retry: SCHEDULER_LOCATION=<supported region> bash scripts/deploy_cloudrun.sh --skip-build"
+  fi
+fi
 
 say "Deploying gateway"
 run gcloud run deploy gateway \

@@ -130,6 +130,29 @@ resta manuale.
 
 **Prezzo.** La pipeline fattura al prezzo che hai approvato (anche gratis), non al listino.
 
+### Cosa succede a un job fermo in `running`
+
+Se il worker crasha, viene ucciso o Cloud Run taglia la richiesta a 900 s, il job resterebbe `running` per sempre.
+Un job è **fermo** quando è `running` da più di `PIPELINE_STALE_SECONDS` (default 1200 = 900 s più margine; conta da
+`started_at`, altrimenti da `created_at`). Lo "sweep" lo porta a `failed` con "Interrotta: il worker non ha finito, job
+fermo da N minuti" (transizione atomica `running -> failed`: un job che finisce nello stesso istante non viene toccato),
+registra `swept_at` e ti manda **una sola volta** il messaggio di errore con il bottone Riprova. **Non rilancia mai nulla**
+(costa e la prima run potrebbe essere ancora viva): ripartire è una tua scelta (Riprova o `/run <job_id>`).
+
+Chi lancia lo sweep:
+- **Cloud Scheduler**, ogni 10 minuti: job `sweep-stuck-jobs` che fa `POST <url worker>/sweep` con token OIDC come
+  `pipeline-tasks@<progetto>.iam.gserviceaccount.com` (audience = URL del worker; stessa identità e stesso `run.invoker`
+  di Cloud Tasks). Lo crea o aggiorna `deploy_cloudrun.sh` (abilita `cloudscheduler.googleapis.com`). Gratuito per i primi
+  3 job per account di fatturazione. Anche Scheduler potrebbe non supportare Milano: la sede è `SCHEDULER_LOCATION`
+  (default `europe-west6`); verifica con `gcloud scheduler locations list`. Sposta solo il trigger, non i dati.
+- **`/sweep` su Telegram** (solo tu; per gli altri "Comando non disponibile"): lo stesso controllo, subito.
+- **`/pending`** elenca anche i job `running` con l'età e segna **FERMO?** quelli oltre la soglia.
+
+**Risultato in ritardo.** Se la run originale finisce dopo lo sweep, il suo risultato (già pagato) non va perso: il worker
+lo salva (`failed -> awaiting_review`, `late_result: true`) e ti manda il file con Invia / Scarta, ma solo se il job è
+ancora `failed` per mano dello sweep e `started_at` è quello della sua run. Se nel frattempo hai premuto Riprova il
+risultato vecchio viene scartato, così non sovrascrive la run nuova. Una run che fallisce dopo lo sweep non ti riscrive.
+
 ## 1d. Approvare le richieste da Telegram (nuovo)
 
 Quando arriva una richiesta fuori catalogo ricevi il messaggio con quattro bottoni: **Approva EUR x** (solo se esiste un
@@ -173,8 +196,39 @@ compaia il documento `jobs/<job_id>`, e che `GET <url-gateway>/status/<job_id>` 
 
 Il backend Firestore è testato con un client finto, non contro Firestore vero: la prima prova reale è questo deploy.
 
-- [ ] **Retention dei job.** Ogni documento contiene il testo dell'utente. Aggiungi un criterio TTL su un campo di scadenza
-      (es. `expire_at`, 90 giorni) prima di avere traffico reale.
+**Retention dei job (TTL) e protezione dalla cancellazione.** Ogni documento contiene il testo dell'utente, quindi non
+resta per sempre:
+
+- Ogni nuovo job nasce con `expire_at` = data di creazione + `JOB_RETENTION_DAYS` (90 giorni se non impostato; vedi
+  `gateway/retention.py`). Nel codice è una stringa ISO-8601; `FirestoreJobStore` la salva come *timestamp* UTC, perché
+  il TTL di Firestore legge solo campi di tipo timestamp. La scadenza conta dalla creazione: cambiare lo stato del job
+  (approvato, consegnato...) **non** la sposta.
+- Il deploy (`scripts/deploy_cloudrun.sh`) crea il criterio TTL sul campo `expire_at` del gruppo di collezioni `jobs`
+  e attiva la protezione dalla cancellazione del database `(default)`. Entrambi i passi controllano prima lo stato e
+  non fanno nulla se è già a posto. Con `--dry-run` vengono solo elencati.
+- Firestore cancella i documenti scaduti in background, **di solito entro circa 24 ore** dalla scadenza (non è
+  istantaneo: un job scaduto può restare leggibile per un giorno). Le cancellazioni TTL si pagano come normali
+  cancellazioni di documenti.
+- **Controllare il criterio:** console Firestore, [Time to live](https://console.cloud.google.com/firestore/databases/-default-/ttl?project=aistudio-milano):
+  deve esserci `jobs` / `expire_at` con stato *Serving* (subito dopo la creazione può essere *Creating*). Da riga di
+  comando: `gcloud firestore fields ttls list --collection-group=jobs --database='(default)'`.
+- **Attenzione: un job ancora in sospeso al giorno N viene cancellato al giorno N.** La scadenza conta dalla
+  creazione, non dall'ultima attività: una richiesta rimasta in `needs_review` (o `approved`, `running`...) oltre il
+  periodo di retention sparisce comunque. Se serve più tempo per agire, alza `JOB_RETENTION_DAYS`: il numero (e
+  quello dell'informativa privacy) viene solo da `gateway/retention.py`, non va scritto altrove.
+- **Job creati prima del TTL** non hanno `expire_at` e non scadrebbero mai. Si sistemano una volta, con lo script
+  (prima senza `--apply`: è una prova a vuoto che stampa solo i conteggi per stato, mai il testo dei clienti):
+  `python -m scripts.backfill_job_expiry`, poi `python -m scripts.backfill_job_expiry --apply`
+  (con `JOB_STORE=firestore FIRESTORE_PROJECT=aistudio-milano`). Due regole:
+  - job **conclusi** (`delivered`, `discarded`, `rejected`, `classified`): creazione + retention; quelli già più vecchi
+    del periodo vengono cancellati dal TTL entro circa 24 ore dall'`--apply`;
+  - job **in sospeso** (ogni altro stato, compresi quelli che lo script non conosce): oggi + retention, un periodo
+    intero nuovo, così Luigi fa in tempo ad agire. Dopo quel periodo valgono le stesse regole di tutti gli altri.
+- **Protezione dalla cancellazione:** finché è attiva, il database non si può cancellare (né da comando né dalla
+  console). Per cancellarlo di proposito va prima spenta, in modo volontario:
+  `gcloud firestore databases update --database='(default)' --no-delete-protection`
+  (oppure console Firestore, Impostazioni database, Protezione dalla cancellazione). Un nuovo `deploy_cloudrun.sh` la
+  riaccende. Non cancellare il database per "ripartire da zero" senza prima aver esportato ciò che serve.
 
 ## 2. Come ridistribuire (promemoria)
 
@@ -220,6 +274,8 @@ gcloud run services logs read gateway --region europe-west8 --project aistudio-m
 | `RAG_API_URL` | gateway | Impostata dallo script all'URL di `rag-api` |
 | `NOTIFY_EMAILS`, `NOTIFY_TELEGRAM_CHAT_IDS` | `notify.py` | Destinatari degli avvisi `needs_review` (liste con virgole) |
 | `SMTP_USER`, `SMTP_PASSWORD` | `notify.py` | Gmail con password per app; `SMTP_PASSWORD` è un secret. Opzionali `SMTP_HOST`, `SMTP_PORT`, `NOTIFY_FROM` |
+| `PIPELINE_STALE_SECONDS` | worker, gateway | Dopo quanti secondi in `running` un job è fermo (default 1200). Vedi "Cosa succede a un job fermo" |
+| `SCHEDULER_LOCATION` | `deploy_cloudrun.sh` | Sede del job Cloud Scheduler `sweep-stuck-jobs` (default `europe-west6`) |
 | `OPENAI_MODEL`, `ALGO_TRADING_URL`, `TRADING_API_URL` | varie | Opzionali |
 
 I secret (`TELEGRAM_*`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) stanno in Secret Manager, copiati da `.env` dallo script.

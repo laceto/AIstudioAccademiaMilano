@@ -13,8 +13,10 @@ Pick with JOB_STORE=file|firestore (default file). Firestore uses the Cloud Run
 service account (needs roles/datastore.user); FIRESTORE_PROJECT and
 FIRESTORE_COLLECTION override the defaults (ADC project, "jobs").
 
-Jobs hold what users typed. Set a retention policy (Firestore TTL on a field
-such as expire_at) before real traffic: see docs/plans/luigi-approval-notifications.md.
+Jobs hold what users typed, so each carries expire_at (gateway/retention.py). Firestore's TTL
+policy deletes a document once that time passes, but only reads a timestamp field: the Firestore
+store turns the ISO string into a UTC datetime on write and back on read. Retention counts
+from creation: status changes never move expire_at.
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ import json
 import os
 import re
 import threading
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import Protocol
@@ -35,6 +38,7 @@ class JobStore(Protocol):
     def get(self, job_id: str) -> dict | None: ...
     def list_by_status(self, status: str) -> list[dict]: ...
     def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None: ...
+    def all_jobs(self) -> list[dict]: ...
 
 
 def _oldest_first(jobs: list[dict]) -> list[dict]:
@@ -81,6 +85,15 @@ class FileJobStore:
                 jobs.append(job)
         return _oldest_first(jobs)
 
+    def all_jobs(self) -> list[dict]:
+        """Every job, whatever its status (maintenance scripts; not for request handling)."""
+        jobs = []
+        for f in self.queue_dir.glob("*.json"):
+            try:
+                jobs.append(json.loads(f.read_text(encoding="utf-8")))
+            except (json.JSONDecodeError, OSError):
+                continue
+        return _oldest_first(jobs)
 
     def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None:
         """Apply `updates` only if the job is still in `from_status`. Returns the new job, or None.
@@ -107,6 +120,27 @@ def _firestore_client(project: str | None = None):
     return firestore.Client(project=project)
 
 
+def _to_storage(job: dict) -> dict:
+    """Copy of `job` with expire_at as a UTC datetime: Firestore TTL only works on timestamps."""
+    raw = job.get("expire_at")
+    if raw is None:
+        return job
+    try:
+        when = raw if isinstance(raw, datetime) else datetime.fromisoformat(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"expire_at must be an ISO-8601 time, got {raw!r}") from exc
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return {**job, "expire_at": when.astimezone(timezone.utc)}
+
+
+def _from_storage(job: dict | None) -> dict | None:
+    """Inverse of _to_storage: expire_at back to the ISO string the rest of the code uses."""
+    if job is not None and isinstance(job.get("expire_at"), datetime):
+        return {**job, "expire_at": job["expire_at"].astimezone(timezone.utc).isoformat()}
+    return job
+
+
 class FirestoreJobStore:
     def __init__(self, client=None, collection: str = "jobs", project: str | None = None):
         self._client = client
@@ -119,13 +153,13 @@ class FirestoreJobStore:
         return self._client.collection(self.collection)
 
     def put(self, job: dict) -> None:
-        self._collection().document(job["job_id"]).set(job)
+        self._collection().document(job["job_id"]).set(_to_storage(job))
 
     def get(self, job_id: str) -> dict | None:
         if not _JOB_ID_RE.match(job_id or ""):
             return None
         snap = self._collection().document(job_id).get()
-        return snap.to_dict() if snap.exists else None
+        return _from_storage(snap.to_dict()) if snap.exists else None
 
     def list_by_status(self, status: str) -> list[dict]:
         coll = self._collection()
@@ -136,8 +170,11 @@ class FirestoreJobStore:
         except ImportError:
             query = coll.where("status", "==", status)
         # Filter on one field only: ordering by created_at would need a composite index.
-        return _oldest_first([snap.to_dict() for snap in query.stream()])
+        return _oldest_first([_from_storage(snap.to_dict()) for snap in query.stream()])
 
+    def all_jobs(self) -> list[dict]:
+        """Every job, whatever its status (maintenance scripts; reads the whole collection)."""
+        return _oldest_first([_from_storage(snap.to_dict()) for snap in self._collection().stream()])
 
     def transition(self, job_id: str, from_status: str, updates: dict) -> dict | None:
         """Same contract as FileJobStore.transition, atomic across instances via a transaction."""
@@ -150,11 +187,11 @@ class FirestoreJobStore:
             snap = ref.get(transaction=txn)
             if not snap.exists:
                 return None
-            job = snap.to_dict()
+            job = _from_storage(snap.to_dict())
             if job.get("status") != from_status:
                 return None
             job = {**job, **updates, "job_id": job_id}
-            txn.set(ref, job)
+            txn.set(ref, _to_storage(job))
             return job
 
         return apply(self._client.transaction())

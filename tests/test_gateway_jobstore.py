@@ -6,8 +6,10 @@ is now pluggable: files for local runs and tests, Firestore in production.
 Both backends must honour the same contract.
 """
 
+import copy
 import json
 import sys
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -32,7 +34,7 @@ class _Doc:
         self.db, self.name, self.id = db, name, doc_id
 
     def set(self, data):
-        self.db.data.setdefault(self.name, {})[self.id] = json.loads(json.dumps(data))
+        self.db.data.setdefault(self.name, {})[self.id] = copy.deepcopy(data)  # keeps datetimes, like Firestore
 
     def get(self, transaction=None):
         return _Snap(self.db.data.get(self.name, {}).get(self.id))
@@ -54,6 +56,10 @@ class _Coll:
 
     def document(self, doc_id):
         return _Doc(self.db, self.name, doc_id)
+
+    def stream(self):
+        for data in self.db.data.get(self.name, {}).values():
+            yield _Snap(data)
 
     def where(self, *args, filter=None, **kwargs):
         if filter is not None:  # FieldFilter(field, op, value)
@@ -295,3 +301,101 @@ def test_concurrent_file_transitions_have_a_single_winner(tmp_path):
     [t.start() for t in threads]
     [t.join() for t in threads]
     assert len(wins) == 1
+
+
+# ── expire_at: Firestore TTL needs a timestamp, the rest of the code keeps ISO strings ──
+
+EXPIRY = "2027-01-07T10:00:00+00:00"
+
+
+def test_expire_at_roundtrips_as_the_same_string_on_both_backends(store):
+    store.put(_job("a1", expire_at=EXPIRY))
+    assert store.get("a1")["expire_at"] == EXPIRY
+    assert store.list_by_status("queued")[0]["expire_at"] == EXPIRY
+
+
+def test_firestore_stores_expire_at_as_a_timezone_aware_utc_datetime():
+    db = FakeFirestore()
+    FirestoreJobStore(client=db, collection="jobs").put(_job("a1", expire_at=EXPIRY))
+    raw = db.data["jobs"]["a1"]["expire_at"]
+    assert isinstance(raw, datetime)
+    assert raw.utcoffset() == timedelta(0) and raw == datetime(2027, 1, 7, 10, tzinfo=timezone.utc)
+
+
+def test_firestore_converts_other_offsets_and_naive_times_to_utc():
+    db = FakeFirestore()
+    s = FirestoreJobStore(client=db, collection="jobs")
+    s.put(_job("a1", expire_at="2027-01-07T12:00:00+02:00"))
+    s.put(_job("a2", expire_at="2027-01-07T10:00:00"))  # naive counts as UTC
+    assert db.data["jobs"]["a1"]["expire_at"] == datetime(2027, 1, 7, 10, tzinfo=timezone.utc)
+    assert db.data["jobs"]["a2"]["expire_at"] == datetime(2027, 1, 7, 10, tzinfo=timezone.utc)
+    assert s.get("a1")["expire_at"] == EXPIRY
+
+
+def test_firestore_without_expire_at_adds_nothing():
+    db = FakeFirestore()
+    s = FirestoreJobStore(client=db, collection="jobs")
+    s.put(_job("a1"))
+    assert "expire_at" not in db.data["jobs"]["a1"] and "expire_at" not in s.get("a1")
+
+
+def test_firestore_rejects_an_expire_at_that_is_not_a_time():
+    with pytest.raises(ValueError, match="expire_at"):
+        FirestoreJobStore(client=FakeFirestore(), collection="jobs").put(_job("a1", expire_at="soon"))
+
+
+def test_put_does_not_modify_the_callers_job():
+    job = _job("a1", expire_at=EXPIRY)
+    FirestoreJobStore(client=FakeFirestore(), collection="jobs").put(job)
+    assert job["expire_at"] == EXPIRY
+
+
+def test_transition_returns_strings_and_keeps_the_original_expiry(store):
+    store.put(_job("a1", status="needs_review", expire_at=EXPIRY))
+    got = store.transition("a1", "needs_review", {"status": "approved"})
+    assert got["expire_at"] == EXPIRY and store.get("a1")["expire_at"] == EXPIRY
+
+
+def test_firestore_transition_writes_a_datetime_back():
+    db = FakeFirestore()
+    s = FirestoreJobStore(client=db, collection="jobs")
+    s.put(_job("a1", status="needs_review", expire_at=EXPIRY))
+    s.transition("a1", "needs_review", {"status": "approved"})
+    assert isinstance(db.data["jobs"]["a1"]["expire_at"], datetime)
+
+
+def test_adapter_gives_every_new_job_an_expiry_from_its_creation_time(tmp_path, monkeypatch):
+    from gateway.pipeline_adapter import PipelineAdapter
+    from gateway.retention import expiry_for
+
+    monkeypatch.setenv("JOB_RETENTION_DAYS", "30")
+    adapter = PipelineAdapter(queue_dir=str(tmp_path))
+    job = adapter.get_status(adapter.submit("serve un sito", "api", {})["job_id"])
+    assert job["expire_at"] == expiry_for(job["created_at"])
+    created = datetime.fromisoformat(job["created_at"])
+    assert datetime.fromisoformat(job["expire_at"]) - created == timedelta(days=30)
+
+
+def test_adapter_on_firestore_stores_a_timestamp_and_reads_a_string():
+    from gateway.pipeline_adapter import PipelineAdapter
+
+    db = FakeFirestore()
+    adapter = PipelineAdapter(store=FirestoreJobStore(client=db, collection="jobs"))
+    job_id = adapter.submit("serve un sito", "api", {})["job_id"]
+    assert isinstance(db.data["jobs"][job_id]["expire_at"], datetime)
+    assert isinstance(adapter.get_status(job_id)["expire_at"], str)
+
+
+# ── all_jobs: every document, whatever its status ────────────────────────────
+
+
+def test_all_jobs_lists_every_status_and_returns_strings(store):
+    store.put(_job("a1", status="queued", expire_at=EXPIRY))
+    store.put(_job("a2", status="delivered"))
+    store.put(_job("a3", status="some_new_status"))
+    got = {j["job_id"]: j for j in store.all_jobs()}
+    assert set(got) == {"a1", "a2", "a3"} and got["a1"]["expire_at"] == EXPIRY
+
+
+def test_all_jobs_of_an_empty_store_is_empty(store):
+    assert list(store.all_jobs()) == []
