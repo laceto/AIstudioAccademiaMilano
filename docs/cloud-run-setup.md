@@ -50,7 +50,7 @@ Poi, senza fretta:
       ma non succede nulla). Fase 5 di `docs/plans/luigi-approval-notifications.md`.
 - [ ] **Privacy.** I log ora contengono il testo degli utenti. Aggiungi un'informativa al messaggio `/start` e decidi la
       retention del bucket di log (default 30 giorni: Cloud Logging → Log Storage).
-- [ ] **Budget alert** in Google Cloud → Fatturazione → Budget e avvisi (in `europe-west8` non c'è free tier).
+- [ ] **Budget alert** in Google Cloud → Fatturazione → Budget e avvisi (es. 5 €): è la rete di sicurezza, vedi sezione 8.
 - [ ] `ANTHROPIC_API_KEY` in `.env` è un segnaposto: va bene finché c'è `OPENAI_API_KEY`.
 - [ ] Storage persistente per la coda (Firestore / Cloud SQL), vedi sezione 6.
 - [ ] Altri servizi: WhatsApp (webhook già nel gateway, servono le credenziali Twilio), form Streamlit, dashboard trading.
@@ -120,7 +120,7 @@ Lo script è idempotente: i secret esistenti ricevono una nuova versione, i serv
 Il deploy crea secret e servizi pubblici: Claude Code non può lanciarlo da solo (il sistema di permessi lo blocca),
 quindi lancialo tu con `!` oppure da un terminale.
 
-Altre regioni: `REGION=us-central1 bash scripts/deploy_cloudrun.sh` (il free tier vale solo per alcune regioni US).
+Altre regioni: `REGION=us-central1 bash scripts/deploy_cloudrun.sh`. Non serve per il free tier (vedi sezione 8); attenzione che il database Firestore, una volta creato, resta nella sua località.
 
 ### Controllo dello stato
 
@@ -197,8 +197,42 @@ il webhook WhatsApp usa `TWILIO_AUTH_TOKEN`. Non creare il secret finché la fir
 - Le app Streamlit vogliono `--session-affinity`, `--min-instances 1` e `--server.port=$PORT`.
 - Cold start: la prima richiesta dopo un'inattività è lenta, soprattutto su `rag-api`. Telegram può reinviare il
   webhook e produrre una risposta doppia. `--min-instances=1` lo evita ma costa.
-- In `europe-west8` non c'è free tier: con poche decine di messaggi al giorno la spesa resta di pochi centesimi,
-  ma le chiamate a OpenAI/Anthropic si pagano ovunque.
+- I costi di hosting a questi volumi restano nel free tier (sezione 8); le chiamate a OpenAI/Anthropic si pagano ovunque.
+
+## 8. Regione e costi (verificato il 2026-10-09)
+
+**Europa o USA: per il free tier non cambia.** Lo avevamo scritto al contrario (il runbook diceva che il free tier valeva solo
+per regioni US): non è supportato dalla documentazione attuale.
+
+- `europe-west8` (Milano) è nell'elenco "Tier 1" delle regioni Cloud Run
+  ([Cloud Run locations](https://docs.cloud.google.com/run/docs/locations)).
+- La tabella [Always Free](https://docs.cloud.google.com/free/docs/free-cloud-features) non indica restrizioni di regione
+  per queste righe:
+
+| Servizio | Gratis ogni mese (Firestore: ogni giorno) | Come lo usiamo |
+|----------|-------------------------------------------|----------------|
+| Cloud Run | 2 milioni di richieste, 360.000 GB-secondi, 180.000 vCPU-secondi | scala a zero (`--min-instances 0`): nessun costo da fermo |
+| Firestore | 1 GiB, 50.000 letture, 20.000 scritture, 20.000 cancellazioni al giorno, per progetto | poche decine di job al giorno |
+| Secret Manager | 6 versioni attive, 10.000 accessi | vedi sotto |
+| Cloud Build | 2.500 minuti `e2-standard-2` | build da 2 e 10 minuti |
+| Artifact Registry | 0,5 GB | vedi sotto |
+
+L'unico limite legato a un continente è il traffico in uscita di Cloud Run: 1 GB al mese "from North America".
+
+**Cosa può costare comunque, in centesimi**
+- **Secret Manager:** lo script aggiunge una nuova versione dei secret a ogni deploy; sopra le 6 versioni attive si paga
+  circa 0,06 $ per versione al mese. Rimedio: distruggere le versioni vecchie (`gcloud secrets versions destroy`) o
+  far aggiungere la versione solo se il valore è cambiato.
+- **Artifact Registry:** il repository pesa già circa 257 MB e cresce a ogni build; oltre 0,5 GB si pagano pochi
+  centesimi al mese. Rimedio: un criterio di pulizia che tiene le ultime 2-3 immagini.
+- **Traffico in uscita** oltre il gratuito, e `--min-instances 1` (non lo usiamo).
+- **OpenAI/Anthropic e SMTP di Gmail:** le API LLM si pagano a parte; Gmail è gratuito.
+- Sono prezzi della pagina ufficiale al momento della verifica: non ho potuto leggere la nota sul free tier nella pagina
+  dei prezzi di Cloud Run (la pagina si tronca), quindi **controlla il primo mese in Fatturazione → Report**.
+
+**Decisione già presa e non reversibile:** la località di Firestore. Lo script la crea uguale a `REGION`
+(`europe-west8`), che è la regione giusta per dati di utenti italiani/UE. Non cambiarla in `us-central1` per "risparmiare":
+non risparmia nulla e sposterebbe i dati degli utenti fuori dall'UE.
 
 ## 7. Prossimi passi possibili
 
