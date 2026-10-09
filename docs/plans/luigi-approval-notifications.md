@@ -1,6 +1,6 @@
 # Piano — notifica e approvazione di Luigi per le richieste `needs_review`
 
-Stato: **Fasi 1 (notifica) e 2 (storage) implementate il 2026-10-09**; Fasi 3-5 da fare. Storage: **Firestore**.
+Stato: **Fasi 1 (notifica), 2 (storage) e 3 (approvazione da Telegram) implementate il 2026-10-09**; Fasi 4-5 da fare. Storage: **Firestore**.
 Contesto: `docs/cloud-run-setup.md`, `gateway/worker.py` (`_build_reply`), `gateway/api.py` (`/webhook/telegram`).
 
 ## 1. Problema
@@ -98,7 +98,7 @@ configurati; escape del testo utente; deduplica; troncamento; nessun token o pas
 2. `GET /status/{job_id}` non risponde più 404 dopo un riavvio.
 3. Il service account di Cloud Run riceve `roles/datastore.user`.
 
-### Fase 3 — Approvazione
+### Fase 3 — Approvazione (FATTA nel codice: `gateway/admin.py`, `gateway/admin_telegram.py`; da attivare con il redeploy)
 1. Bottoni inline nel messaggio Telegram a Luigi: **Approva** (al prezzo proposto), **Rifiuta**, **Imposta prezzo** (risposta con un numero).
 2. Gestione di `callback_query` in `/webhook/telegram` (oggi legge solo `message`).
 3. Controllo `is_admin(chat_id)` su ogni azione; azioni idempotenti (un job già deciso non cambia).
@@ -128,6 +128,23 @@ Oggi il gateway classifica e notifica, ma **nessun job avvia la pipeline a 6 age
 5. Cloud Run: la pipeline può superare il timeout della richiesta; serve un'esecuzione asincrona (Cloud Run Jobs o Cloud Tasks).
 
 Dipende dalle Fasi 2 e 3 (job persistenti e stato di approvazione).
+
+### Come funziona la Fase 3 (com'è stata realizzata)
+
+- Il messaggio Telegram a Luigi porta quattro bottoni: **Approva EUR x** (solo se il prodotto ha un prezzo a catalogo), **Gratis**,
+  **Imposta prezzo**, **Rifiuta**. "Imposta prezzo" chiede il prezzo con una risposta forzata (nessuno stato da salvare: il
+  Job ID è nel testo del messaggio a cui rispondi).
+- Comandi: `/pending` (schede con bottoni), `/approve <id> [prezzo|gratis]`, `/prezzo <id> <prezzo>`, `/reject <id> [motivo]`.
+- La decisione è atomica (`JobStore.transition`, transazione in Firestore): due clic o due comandi producono una sola decisione.
+  Il secondo vede "Già deciso".
+- Dopo la decisione la scheda perde i bottoni e mostra l'esito; la persona che ha fatto la richiesta riceve un messaggio
+  (approvata con il prezzo, gratuita, oppure "non possiamo procedere"). Il motivo di un rifiuto resta interno.
+- Solo l'ID numerico di Luigi (`ADMIN_TELEGRAM_IDS`, altrimenti `NOTIFY_TELEGRAM_CHAT_IDS`) decide. Un comando scritto da altri
+  riceve "Comando non disponibile" e non diventa mai una richiesta.
+- **Verifica dell'origine.** L'ID di Luigi sta nel payload, che chiunque può falsificare. Il webhook accetta quindi aggiornamenti
+  solo con l'intestazione `X-Telegram-Bot-Api-Secret-Token` uguale a `TELEGRAM_WEBHOOK_SECRET` (registrato con `setWebhook`).
+  Senza quel segreto le funzioni di Luigi restano spente; gli utenti normali vengono serviti.
+- Non fatto: i link firmati nelle email come seconda via di approvazione (opzionale, vedi sopra).
 
 ## 8. Sicurezza e privacy
 

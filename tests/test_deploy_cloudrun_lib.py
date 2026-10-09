@@ -139,3 +139,42 @@ def test_env_vars_omit_unset_optional_values(tmp_path):
     out = _env(tmp_path)
     for name in ("NOTIFY_EMAILS", "NOTIFY_TELEGRAM_CHAT_IDS", "SMTP_USER", "SMTP_HOST"):
         assert name not in out
+
+
+# ── resolve_webhook_secret ───────────────────────────────────────────────────
+# Telegram echoes this value in a header on every webhook call; the gateway refuses updates
+# without it, which is what stops anyone forging "Luigi pressed Approve".
+
+
+def test_webhook_secret_from_env_is_stored_and_returned(tmp_path):
+    res, log = _run(tmp_path, "resolve_webhook_secret", env={"FAKE_ENV_TELEGRAM_WEBHOOK_SECRET": "from-env-123"})
+    assert res.returncode == 0, res.stderr
+    assert res.stdout == "from-env-123"  # nothing but the value on stdout
+    assert (tmp_path / "TELEGRAM_WEBHOOK_SECRET.secret").read_text() == "from-env-123"
+
+
+def test_webhook_secret_is_reused_from_secret_manager(tmp_path):
+    (tmp_path / "TELEGRAM_WEBHOOK_SECRET.secret").write_text("already-there")
+    res, log = _run(tmp_path, "resolve_webhook_secret")
+    assert res.stdout == "already-there"
+    assert "versions add" not in log and "secrets create" not in log  # no new version
+
+
+def test_webhook_secret_is_generated_when_nobody_has_one(tmp_path):
+    res, log = _run(tmp_path, '_random_secret() { printf "%s" "generated-xyz"; }\nresolve_webhook_secret')
+    assert res.stdout == "generated-xyz"
+    assert "secrets create TELEGRAM_WEBHOOK_SECRET" in log
+    assert (tmp_path / "TELEGRAM_WEBHOOK_SECRET.secret").read_text() == "generated-xyz"
+
+
+def test_the_default_generator_makes_a_telegram_safe_token(tmp_path):
+    res, _ = _run(tmp_path, "_random_secret")
+    token = res.stdout.strip()
+    # Telegram allows 1-256 characters from A-Z a-z 0-9 _ -
+    assert res.returncode == 0 and 32 <= len(token) <= 256
+    assert all(c.isalnum() or c in "_-" for c in token)
+
+
+def test_webhook_secret_never_appears_in_command_arguments(tmp_path):
+    res, log = _run(tmp_path, "resolve_webhook_secret", env={"FAKE_ENV_TELEGRAM_WEBHOOK_SECRET": "topsecretvalue"})
+    assert "topsecretvalue" not in log

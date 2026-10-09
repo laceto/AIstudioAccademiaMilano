@@ -164,6 +164,23 @@ def test_send_telegram_raises_on_http_error(monkeypatch):
         asyncio.run(notify._send_telegram(["111"], "x"))
 
 
+def test_send_telegram_attaches_the_buttons(monkeypatch):
+    calls = []
+    monkeypatch.setattr(notify.httpx, "AsyncClient", _fake_client(calls, 200))
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:tok")
+    kb = [[{"text": "ok", "callback_data": "ap:x"}]]
+    asyncio.run(notify._send_telegram(["111"], "t", buttons=kb))
+    assert calls[0][1]["reply_markup"] == {"inline_keyboard": kb}
+
+
+def test_send_telegram_without_buttons_sends_no_markup(monkeypatch):
+    calls = []
+    monkeypatch.setattr(notify.httpx, "AsyncClient", _fake_client(calls, 200))
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:tok")
+    asyncio.run(notify._send_telegram(["111"], "t"))
+    assert "reply_markup" not in calls[0][1]
+
+
 # ── notify_review ────────────────────────────────────────────────────────────
 
 
@@ -171,8 +188,9 @@ def test_send_telegram_raises_on_http_error(monkeypatch):
 def spies(monkeypatch):
     log = {"tg": [], "mail": []}
 
-    async def tg(chat_ids, text):
+    async def tg(chat_ids, text, buttons=None):
         log["tg"].append((chat_ids, text))
+        log.setdefault("buttons", []).append(buttons)
 
     def mail(recipients, subject, body):
         log["mail"].append((recipients, subject, body))
@@ -191,11 +209,32 @@ def test_notify_sends_on_both_channels(spies):
     assert result == {"telegram": "sent", "email": "sent"}
 
 
+def _actions(buttons):
+    from gateway import admin
+
+    return {admin.decode_callback(b["callback_data"]) for row in buttons for b in row}
+
+
+def test_telegram_notification_carries_the_decision_buttons(spies):
+    job = _job()
+    job["classification"].update(product_type="static_landing_page", confidence=0.6)
+    asyncio.run(notify.notify_review(job))
+    assert _actions(spies["buttons"][0]) == {
+        ("approve", "7dff0dd502"), ("free", "7dff0dd502"), ("price", "7dff0dd502"), ("reject", "7dff0dd502"),
+    }
+
+
+def test_unknown_product_has_no_approve_at_proposed_price_button(spies):
+    asyncio.run(notify.notify_review(_job()))  # unknown_product: no catalogue price
+    assert ("approve", "7dff0dd502") not in _actions(spies["buttons"][0])
+    assert ("price", "7dff0dd502") in _actions(spies["buttons"][0])
+
+
 def test_notify_does_nothing_when_not_configured(monkeypatch):
     calls = []
     monkeypatch.setattr(notify, "_send_email", lambda *a: calls.append("mail"))
 
-    async def tg(*a):
+    async def tg(*a, **kw):
         calls.append("tg")
 
     monkeypatch.setattr(notify, "_send_telegram", tg)
@@ -204,7 +243,7 @@ def test_notify_does_nothing_when_not_configured(monkeypatch):
 
 
 def test_failing_channel_does_not_block_the_other(spies, monkeypatch):
-    async def boom(chat_ids, text):
+    async def boom(chat_ids, text, buttons=None):
         raise RuntimeError("telegram down")
 
     monkeypatch.setattr(notify, "_send_telegram", boom)
@@ -238,7 +277,7 @@ def test_rate_limit_stops_a_flood(spies, monkeypatch):
 
 
 def test_failure_logs_never_contain_credentials(spies, monkeypatch, caplog):
-    async def boom(chat_ids, text):
+    async def boom(chat_ids, text, buttons=None):
         raise RuntimeError("POST https://api.telegram.org/bot123:SECRETTOKEN/sendMessage failed")
 
     def mail_boom(*a):
