@@ -50,7 +50,7 @@ Abilita le API, crea il repository immagini, copia i secret da `.env` a Secret M
 `gateway` e `rag-api`, registra i webhook Telegram e verifica. I comandi manuali di una versione precedente di questo
 documento (secret, deploy con `--source`) non servono più.
 
-Verificato con `--dry-run` il 2026-10-09 (nulla modificato): progetto `aistudio-milano`, regione `us-central1`.
+Verificato con `--dry-run` il 2026-10-09 (nulla modificato): progetto `aistudio-milano`, regione `europe-west8` (Milano).
 
 ### 4.1 Prima di lanciarlo
 
@@ -58,8 +58,8 @@ Verificato con `--dry-run` il 2026-10-09 (nulla modificato): progetto `aistudio-
    (secondo bot da @BotFather). Il dry-run li trova entrambi.
 2. `OPENAI_API_KEY` è presente. `ANTHROPIC_API_KEY` in `.env` è ancora un segnaposto: lo script lo salta, va bene
    perché basta una delle due chiavi.
-3. Regione: il default è `us-central1` (free tier). Per Milano: `REGION=europe-west8 ./scripts/deploy_cloudrun.sh`,
-   ma potresti uscire dal free tier.
+3. Regione: il default è `europe-west8` (Milano). Per il free tier US: `REGION=us-central1 ./scripts/deploy_cloudrun.sh`,
+   perché il free tier vale solo per alcune regioni US; in `europe-west8` potresti pagare piccole cifre.
 4. Verifica che `.env` sia ignorato da git (`git check-ignore .env`).
 
 ### 4.2 Lancio
@@ -77,7 +77,7 @@ al comando per eseguirlo in questa sessione. Lo script è idempotente.
 
 - Scrivi al bot pipeline: "Ho bisogno di una landing page per il mio ristorante". Deve arrivare **una** risposta con
   il prodotto e 9.90 EUR. Se arriva solo un Job ID, `GATEWAY_SYNC_REPLY` non è arrivata al container.
-- Log: `gcloud run services logs read gateway --region us-central1 --limit 50`
+- Log: `gcloud run services logs read gateway --region europe-west8 --limit 50`
 
 ### 4.4 Dopo il deploy
 

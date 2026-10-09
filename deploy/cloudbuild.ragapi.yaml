@@ -4,7 +4,7 @@
 # knowledge base ships with the container — no volume, nothing to restore.
 #
 #   gcloud builds submit --config deploy/cloudbuild.ragapi.yaml \
-#     --substitutions _IMAGE=us-central1-docker.pkg.dev/$PROJECT/aistudio/rag-api
+#     --substitutions _IMAGE=europe-west8-docker.pkg.dev/$PROJECT/aistudio/rag-api
 steps:
   - name: gcr.io/cloud-builders/docker
     args: ["build", "-f", "scripts/rag/Dockerfile", "-t", "${_IMAGE}", "."]
