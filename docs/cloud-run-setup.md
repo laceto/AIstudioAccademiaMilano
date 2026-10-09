@@ -94,8 +94,16 @@ Quando approvi un job (Approva, Gratis o Imposta prezzo) la pipeline a 6 agenti 
 4. Ti arriva su Telegram il **file** con la scheda (prodotto, prezzo, QA, rischio) e i bottoni **Invia al cliente / Scarta**.
    Se la run fallisce, ricevi il motivo e il bottone **Riprova** (oppure `/run <job_id>`).
 
-Il cliente non riceve nulla finché non decidi tu. (I bottoni Invia / Scarta arrivano con la prossima PR: per ora vedi il
-file e il job resta in `awaiting_review`.)
+5. **Invia al cliente**: il file parte dal bot verso chi l'ha chiesto, con un testo senza dettagli interni (niente esito QA né
+   punteggio di rischio): prezzo, numero di fattura e Job ID. **Scarta**: non parte nulla e il cliente non viene avvisato.
+6. L'invio avviene **una volta sola** (il risultato viene prima "preso in carico", poi inviato). Se Telegram rifiuta (il
+   cliente ha bloccato il bot) il risultato torna in attesa, tu vieni avvisato e puoi riprovare con lo stesso bottone.
+
+Il cliente non riceve nulla finché non premi Invia. Se il cliente non è su Telegram (canale API o WhatsApp) l'invio
+automatico non c'è: il bot te lo dice e il file lo giri tu a mano.
+
+Stati di un job: `needs_review` -> `approved` -> `running` -> `awaiting_review` -> `delivering` -> `delivered`
+(oppure `discarded`; una run andata male passa da `failed` e si riavvia con Riprova o `/run`).
 
 **Per attivarlo** (è il primo deploy che crea la coda, l'account di servizio e il worker):
 
@@ -126,7 +134,8 @@ prezzo a catalogo), **Gratis**, **Imposta prezzo**, **Rifiuta**. Comandi equival
 | Comando | Cosa fa |
 |---------|---------|
 | `/run <job_id>` | rimette in coda la pipeline per un job approvato o fallito |
-| `/pending` | elenca le richieste in attesa, ciascuna con i bottoni |
+| `/file <job_id>` | ti rimanda il file di un risultato in attesa di revisione (se il messaggio si è perso) |
+| `/pending` | elenca richieste da approvare, risultati da rivedere e run fallite, ciascuna con i suoi bottoni |
 | `/approve <job_id> [prezzo\|gratis]` | approva; senza prezzo usa quello a catalogo |
 | `/prezzo <job_id> <prezzo>` | approva a un prezzo che scegli (es. `12,50`) |
 | `/reject <job_id> [motivo]` | rifiuta; il motivo resta interno |

@@ -189,6 +189,89 @@ def restart_job(store, job_id: str, admin_id) -> Decision:
     return Decision(False, "not_restartable", job)
 
 
+# ── reviewing the pipeline's result ──────────────────────────────────────────
+# awaiting_review --send--> delivering --file sent--> delivered
+#                                  |--send failed--> awaiting_review (can be tried again)
+# awaiting_review --discard--> discarded            (the customer is told nothing)
+# Sending reaches a third party, so it is claimed first (delivering) and sent second: two presses
+# of the button cannot send the file twice.
+
+_HANDLED = ("delivering", "delivered", "discarded")
+
+
+def _review_gate(store, job_id: str, admin_id) -> tuple[Decision | None, dict | None]:
+    if not is_admin(admin_id):
+        return Decision(False, "forbidden"), None
+    job = store.get(job_id)
+    if job is None:
+        return Decision(False, "not_found"), None
+    return None, job
+
+
+def _why_not_reviewable(job: dict | None) -> Decision:
+    status = (job or {}).get("status")
+    return Decision(False, "already_handled" if status in _HANDLED else "not_reviewable", job)
+
+
+def begin_delivery(store, job_id: str, admin_id) -> Decision:
+    """Claim a finished result for sending (awaiting_review -> delivering). Once only."""
+    refusal, job = _review_gate(store, job_id, admin_id)
+    if refusal:
+        return refusal
+    if job.get("status") != "awaiting_review":
+        return _why_not_reviewable(job)
+    won = store.transition(job_id, "awaiting_review", {"status": "delivering", "delivery_error": None})
+    return Decision(True, "delivering", won) if won else _why_not_reviewable(store.get(job_id))
+
+
+def finish_delivery(store, job_id: str, admin_id) -> dict | None:
+    """The file reached the customer (delivering -> delivered)."""
+    return store.transition(
+        job_id, "delivering",
+        {"status": "delivered", "delivered_at": datetime.now(timezone.utc).isoformat(), "delivered_by": str(admin_id).strip()},
+    )
+
+
+def abort_delivery(store, job_id: str, reason: str) -> dict | None:
+    """Sending failed: put the result back (delivering -> awaiting_review) so Luigi can try again."""
+    return store.transition(job_id, "delivering", {"status": "awaiting_review", "delivery_error": reason})
+
+
+def discard_result(store, job_id: str, admin_id, reason: str = "") -> Decision:
+    """Luigi does not want to send this result (awaiting_review -> discarded)."""
+    refusal, job = _review_gate(store, job_id, admin_id)
+    if refusal:
+        return refusal
+    if job.get("status") != "awaiting_review":
+        return _why_not_reviewable(job)
+    won = store.transition(
+        job_id, "awaiting_review",
+        {
+            "status": "discarded",
+            "decision": {
+                "by": str(admin_id).strip(),
+                "at": datetime.now(timezone.utc).isoformat(),
+                "action": "discard",
+                "reason": reason,
+            },
+        },
+    )
+    return Decision(True, "discarded", won) if won else _why_not_reviewable(store.get(job_id))
+
+
+def customer_caption(job: dict) -> str:
+    """What the customer reads with the file. Nothing internal: no QA verdict, no risk score."""
+    price = job.get("price")
+    price_txt = "gratuito" if not price else f"EUR {price:.2f}"
+    invoice = (job.get("result") or {}).get("invoice_id")
+    lines = [
+        "Ecco il lavoro che hai richiesto.",
+        f"Prezzo: {price_txt}" + (f" (fattura {invoice})" if invoice else ""),
+        f"Job ID: {job.get('job_id', '?')}",
+    ]
+    return "\n".join(lines)
+
+
 # ── messages ─────────────────────────────────────────────────────────────────
 
 
@@ -203,13 +286,15 @@ def user_message(job: dict) -> str:
     return f"Non possiamo procedere con questa richiesta.\nJob ID: {job_id}"
 
 
-def pending_jobs(store, limit: int = 10) -> list[dict]:
-    return store.list_by_status("needs_review")[:limit]
+def pending_jobs(store, limit: int = 10, status: str = "needs_review") -> list[dict]:
+    return store.list_by_status(status)[:limit]
 
 
 def job_line(job: dict) -> str:
     """One-line summary of a job for /pending."""
     cls = job.get("classification") or {}
-    price = proposed_price(job)
-    price_txt = f"EUR {price:.2f}" if price is not None else "prezzo da definire"
+    price = job.get("price")  # the price Luigi approved, once there is one
+    if price is None:
+        price = proposed_price(job)
+    price_txt = "gratis" if price == 0 else (f"EUR {price:.2f}" if price is not None else "prezzo da definire")
     return f"{job.get('job_id', '?')} - {cls.get('summary', job.get('text', '')[:60])} ({price_txt})"
