@@ -153,3 +153,65 @@ def privacy_text() -> str:
         "chat: il titolare decide di persona.\n\n"
         "Questa è solo un'informazione: non devi accettare nulla per usare il bot."
     )
+
+
+# ── sending a notice that may not fit one Telegram message ───────────────────
+
+# Telegram refuses messages over 4096 characters. The notice was 4064: adding the controller's
+# details or one more digit in a retention figure would have broken /privacy. So it goes out in
+# as many messages as it takes, each well under the limit, cut between paragraphs.
+MESSAGE_LIMIT = 3500
+
+
+def _cut(paragraph: str, limit: int) -> list[str]:
+    """Cut one over-long paragraph at line breaks; a single over-long line is cut hard."""
+    parts: list[str] = []
+    current = ""
+    for line in paragraph.split("\n"):
+        while len(line) > limit:  # a line longer than a whole message: hard cut
+            if current:
+                parts.append(current)
+                current = ""
+            parts.append(line[:limit])
+            line = line[limit:]
+        candidate = line if not current else current + "\n" + line
+        if len(candidate) <= limit:
+            current = candidate
+        else:
+            parts.append(current)
+            current = line
+    if current:
+        parts.append(current)
+    return parts
+
+
+def split_message(text: str, limit: int = MESSAGE_LIMIT) -> list[str]:
+    """Split `text` into pieces of at most `limit` characters, between paragraphs where possible.
+
+    Joining the pieces with a blank line gives the original text back (when no paragraph had to be cut).
+    """
+    if len(text) <= limit:
+        return [text]
+    parts: list[str] = []
+    current = ""
+    for paragraph in text.split("\n\n"):
+        if len(paragraph) > limit:
+            if current:
+                parts.append(current)
+                current = ""
+            parts.extend(_cut(paragraph, limit))
+            continue
+        candidate = paragraph if not current else current + "\n\n" + paragraph
+        if len(candidate) <= limit:
+            current = candidate
+        else:
+            parts.append(current)
+            current = paragraph
+    if current:
+        parts.append(current)
+    return parts
+
+
+def privacy_messages() -> list[str]:
+    """The /privacy notice as the list of messages to send, in order."""
+    return split_message(privacy_text())

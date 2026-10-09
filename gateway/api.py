@@ -545,9 +545,10 @@ async def telegram_webhook(request: Request):
 
     # Privacy notice: information only, never a job. "/privacy@BotName" is how groups address it.
     if text.split()[0].split("@")[0].lower() == "/privacy":
-        from gateway.privacy import privacy_text
+        from gateway.privacy import privacy_messages
 
-        await _reply(bot, chat_id, privacy_text())
+        for part in privacy_messages():  # more than one message once the notice outgrows Telegram's limit
+            await _reply(bot, chat_id, part)
         return {"ok": True}
 
     # RIESAMINA: the customer asks a human to review a refusal. Never a job.

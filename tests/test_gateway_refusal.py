@@ -466,4 +466,5 @@ def test_privacy_notice_mentions_the_automatic_refusal():
     assert "illegal" in text and "rifiutat" in text
     assert "automatic" in text
     assert "titolare" in text and "riesam" in text  # the owner can review a refusal on request
-    assert len(privacy.privacy_text()) < 4096
+    # the notice is sent in as many messages as it needs; each one must fit with a margin
+    assert all(len(part) <= privacy.MESSAGE_LIMIT for part in privacy.privacy_messages())

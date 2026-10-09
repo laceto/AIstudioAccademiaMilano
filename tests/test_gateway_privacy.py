@@ -139,7 +139,9 @@ def test_start_message_is_short():
 def test_messages_fit_telegram_and_have_no_placeholders(monkeypatch, fn, contact):
     monkeypatch.setenv("PRIVACY_CONTACT", contact)
     text = getattr(privacy, fn)()
-    assert 0 < len(text) < TELEGRAM_LIMIT
+    assert len(text) > 0
+    if fn == "start_message":  # one message; the full notice is split (see privacy_messages)
+        assert len(text) < TELEGRAM_LIMIT
     assert not re.search(r"\{[^}]*\}", text)
     assert "TODO" not in text
 
@@ -189,16 +191,17 @@ def test_webhook_privacy_returns_full_text_and_creates_no_job(monkeypatch, tmp_p
     monkeypatch.setenv("JOB_RETENTION_DAYS", "45")
     resp = _post(monkeypatch, tmp_path, "/privacy")
     assert resp.status_code == 200
-    (chat, text), = _FakeBot.sent
-    assert chat == 555 and text == privacy.privacy_text()
+    assert {chat for chat, _ in _FakeBot.sent} == {555}
+    text = "\n\n".join(t for _, t in _FakeBot.sent)  # the notice may now arrive in several messages
+    assert text == privacy.privacy_text()
     assert "45 giorni" in text
-    assert "parse_mode" not in _FakeBot.kwargs[0]
+    assert all("parse_mode" not in kw for kw in _FakeBot.kwargs)
     assert list(tmp_path.iterdir()) == []
 
 
 def test_webhook_privacy_with_bot_suffix(monkeypatch, tmp_path):
     _post(monkeypatch, tmp_path, "/privacy@AIStudioMilanoBot")
-    assert _FakeBot.sent[0][1] == privacy.privacy_text()
+    assert "\n\n".join(t for _, t in _FakeBot.sent) == privacy.privacy_text()
     assert list(tmp_path.iterdir()) == []
 
 
@@ -227,7 +230,7 @@ def test_webhook_privacy_still_needs_the_webhook_secret(monkeypatch, tmp_path):
     resp = _post(
         monkeypatch, tmp_path, "/privacy", headers={"X-Telegram-Bot-Api-Secret-Token": "s3cret-for-test"}
     )
-    assert resp.status_code == 200 and len(_FakeBot.sent) == 1
+    assert resp.status_code == 200 and len(_FakeBot.sent) == len(privacy.privacy_messages())
 
 
 def test_normal_request_still_becomes_a_job(monkeypatch, tmp_path):
@@ -289,3 +292,62 @@ def test_runbook_exists_and_is_linked():
 def test_todo_list_mentions_transfer_safeguards():
     src = (ROOT / "gateway" / "privacy.py").read_text(encoding="utf-8")
     assert "safeguards wording to be confirmed with a professional" in src
+
+
+# ── /privacy is sent in as many messages as it takes ─────────────────────────
+# The notice was 4064 characters against Telegram's limit of 4096: adding the controller's
+# details or one more digit in a retention figure would have made /privacy fail. It is now
+# split at paragraph boundaries, and no single message is allowed anywhere near the limit.
+
+
+def test_the_limit_for_one_message_leaves_a_margin():
+    assert privacy.MESSAGE_LIMIT <= 3800 < TELEGRAM_LIMIT
+
+
+def test_a_short_text_stays_one_message():
+    assert privacy.split_message("uno\n\ndue") == ["uno\n\ndue"]
+
+
+def test_a_long_text_is_split_at_blank_lines_and_loses_nothing():
+    paras = [f"Paragrafo {i}: " + "x" * 900 for i in range(10)]
+    text = "\n\n".join(paras)
+    parts = privacy.split_message(text, limit=2000)
+    assert len(parts) > 1 and all(len(p) <= 2000 for p in parts)
+    assert "\n\n".join(parts) == text  # nothing dropped, nothing duplicated, order kept
+    assert all(p.startswith("Paragrafo") for p in parts)  # cut between paragraphs, never mid-sentence
+
+
+def test_a_paragraph_longer_than_the_limit_is_cut_at_line_breaks_then_hard():
+    lines = "\n".join(f"riga {i} " + "y" * 80 for i in range(40))
+    parts = privacy.split_message(lines, limit=500)
+    assert all(0 < len(p) <= 500 for p in parts) and "\n".join(parts).replace("\n", "") == lines.replace("\n", "")
+    blob = "z" * 5000
+    hard = privacy.split_message(blob, limit=1000)
+    assert all(len(p) <= 1000 for p in hard) and "".join(hard) == blob
+
+
+@pytest.mark.parametrize("contact", ["", "privacy@example.it", "privacy@" + "a" * 300 + ".it"])
+def test_every_message_of_the_notice_fits_with_room_to_spare(monkeypatch, contact):
+    monkeypatch.setenv("PRIVACY_CONTACT", contact)
+    monkeypatch.setenv("JOB_RETENTION_DAYS", "3650")
+    parts = privacy.privacy_messages()
+    assert parts and all(0 < len(p) <= privacy.MESSAGE_LIMIT for p in parts)
+
+
+def test_the_messages_together_are_the_full_notice():
+    assert "\n\n".join(privacy.privacy_messages()) == privacy.privacy_text()
+
+
+def test_a_much_longer_notice_still_goes_out(monkeypatch):
+    # e.g. the controller's name, address and tax code get added later
+    monkeypatch.setattr(privacy, "privacy_text", lambda: "\n\n".join(["Sezione " + "w" * 1500] * 8))
+    parts = privacy.privacy_messages()
+    assert len(parts) >= 3 and all(len(p) <= privacy.MESSAGE_LIMIT for p in parts)
+
+
+def test_the_webhook_sends_every_part_in_order(monkeypatch, tmp_path):
+    monkeypatch.setattr(privacy, "privacy_messages", lambda: ["prima parte", "seconda parte", "terza parte"])
+    resp = _post(monkeypatch, tmp_path, "/privacy")
+    assert resp.status_code == 200
+    assert [t for _, t in _FakeBot.sent] == ["prima parte", "seconda parte", "terza parte"]
+    assert len(list(tmp_path.iterdir())) == 0  # still never a job
