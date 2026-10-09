@@ -280,7 +280,8 @@ python scripts/learning_loop.py \
   --claude-dir C:\Users\l_ace\.claude
 ```
 Soglie promozione hook: `security` = 1, `external_api_write` = 2, `skill_preload` = 3.  
-Auto-commit se risk score < 3; escala a Luigi se ≥ 3.
+Auto-commit se risk score < 3; escala a Luigi se ≥ 3. Il risk score che decide è quello del **log di audit** della consegna (`learning_flags.risk_score`), non quello di un hook.  
+Una skill diventa hook solo se esiste `scripts/preload_<skill>.py` (le skill di Claude Code come `breakdown` non ne hanno); i record hook restano in `config/global_settings.json` e **non** sono collegati a `.claude/settings.json`.
 
 ---
 
