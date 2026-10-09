@@ -41,6 +41,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# httpx logs request URLs at INFO and Telegram's carry the bot token (see gateway/convlog.py).
+from gateway.convlog import silence_http_loggers  # noqa: E402
+
+silence_http_loggers()
+
 
 async def _rag_answer(query: str) -> str:
     rag_url = os.environ.get("RAG_API_URL", "").rstrip("/")
