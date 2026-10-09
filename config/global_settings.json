@@ -3,10 +3,10 @@
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
     "last_updated": "2026-10-09",
-    "last_request_id": "035",
-    "total_requests_processed": 26,
+    "last_request_id": "036",
+    "total_requests_processed": 27,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "035"
+    "last_processed_audit_log": "036"
   },
   "skills": {
     "html_tailwind_css": {
@@ -1461,6 +1461,11 @@
           "count": 1,
           "avg_sec": 0.0,
           "success_rate": 0.0
+        },
+        "internal_infra_build": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1491,6 +1496,11 @@
       "capabilities": [],
       "task_stats": {
         "agent_deploy_streamlit": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 0.0
+        },
+        "internal_infra_build": {
           "count": 1,
           "avg_sec": 0.0,
           "success_rate": 0.0
@@ -1555,16 +1565,18 @@
     "streamlit_app": 1,
     "suit_manager": 1,
     "strategic_report": 1,
-    "deep-agents-core": 1,
+    "deep-agents-core": 2,
     "deep-agents-orchestration": 1,
     "langgraph-subagents": 1,
-    "langgraph-persistence": 1,
+    "langgraph-persistence": 2,
     "langchain-fundamentals": 1,
     "deepagents_package_authoring": 1,
     "google_calendar_api_v3": 1,
     "langgraph_human_in_the_loop": 1,
     "python_packaging_hatchling": 1,
-    "breakdown": 1
+    "breakdown": 2,
+    "agentic-router": 1,
+    "langgraph-fundamentals": 1
   },
   "github_activity_counters": {
     "commit": 0,
