@@ -42,17 +42,19 @@ from gateway.convlog import log_message
 from gateway.notify import _safe_filename as safe_filename
 from gateway.notify import notify_result
 from gateway.pipeline_queue import enqueue_run
+from gateway.recovery import age_seconds, is_stale, sweep_and_notify
 
 logger = logging.getLogger(__name__)
 
 PRICE_PROMPT = "Imposta il prezzo per la richiesta (es. 12,50 oppure gratis). Rispondi a questo messaggio.\nJob ID: {job_id}"
 _PROMPT_JOB_RE = re.compile(r"Job ID: ([A-Za-z0-9_-]{1,64})")
-_COMMANDS = {"/pending", "/approve", "/reject", "/prezzo", "/run", "/file"}
+_COMMANDS = {"/pending", "/approve", "/reject", "/prezzo", "/run", "/file", "/sweep"}
 _MAX_PENDING_CARDS = 5
 _USAGE = (
     "Uso:\n/pending\n/approve <job_id> [prezzo|gratis]\n/prezzo <job_id> <prezzo>\n/reject <job_id> [motivo]\n"
     "/run <job_id>  (riavvia la pipeline per un job approvato o fallito)\n"
-    "/file <job_id>  (rimandami il file di un risultato in attesa di revisione)"
+    "/file <job_id>  (rimandami il file di un risultato in attesa di revisione)\n"
+    "/sweep  (segna come fallite le run ferme in 'running' da troppo tempo)"
 )
 
 
@@ -326,6 +328,16 @@ async def handle_admin_message(bot, store, message: dict) -> bool:
     return False
 
 
+def _running_line(job: dict) -> str:
+    """A job in `running`, with how long it has been going, and a flag when it looks stuck."""
+    age = age_seconds(job)
+    since = "da un tempo sconosciuto" if age is None else f"da {max(0, int(age // 60))} min"
+    line = f"In esecuzione {since}: {job_line(job)}"
+    if is_stale(job):
+        line += "\nFERMO? Sembra bloccato: /sweep lo segna come fallito (poi puoi usare Riprova)."
+    return line
+
+
 async def _approve_and_report(bot, store, admin_id, chat_id, job_id: str, price) -> None:
     decision, told = await _apply(bot, store, admin_id, "approve", job_id, price=price)
     await _say(bot, chat_id, f"{_outcome(decision)} (job {job_id})")
@@ -340,7 +352,8 @@ async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -
         jobs = pending_jobs(store, limit=_MAX_PENDING_CARDS)
         results = pending_jobs(store, limit=_MAX_PENDING_CARDS, status="awaiting_review")
         failures = pending_jobs(store, limit=_MAX_PENDING_CARDS, status="failed")
-        if not (jobs or results or failures):
+        running = pending_jobs(store, limit=_MAX_PENDING_CARDS, status="running")
+        if not (jobs or results or failures or running):
             await _say(bot, chat_id, "Nessuna richiesta in attesa.")
             return
         for job in jobs:
@@ -350,6 +363,16 @@ async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -
         for job in failures:
             await _say(bot, chat_id, f"Run fallita: {job_line(job)}\nMotivo: {job.get('error') or 'sconosciuto'}",
                        reply_markup=_markup(retry_keyboard(job["job_id"])))
+        for job in running:
+            await _say(bot, chat_id, _running_line(job))
+        return
+
+    if command == "/sweep":
+        swept = await sweep_and_notify(store, notify_result)  # Luigi also gets the failure card with Riprova
+        if swept:
+            await _say(bot, chat_id, "Segnati come falliti (fermi in 'running'): " + ", ".join(j["job_id"] for j in swept))
+        else:
+            await _say(bot, chat_id, "Nessun job fermo.")
         return
 
     parts = text.split(maxsplit=2)
