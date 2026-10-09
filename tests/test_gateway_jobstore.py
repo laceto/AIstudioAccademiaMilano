@@ -39,6 +39,9 @@ class _Doc:
     def get(self, transaction=None):
         return _Snap(self.db.data.get(self.name, {}).get(self.id))
 
+    def delete(self):
+        self.db.data.get(self.name, {}).pop(self.id, None)  # like Firestore: no error if missing
+
 
 class _Query:
     def __init__(self, db, name, field, value):
@@ -399,3 +402,26 @@ def test_all_jobs_lists_every_status_and_returns_strings(store):
 
 def test_all_jobs_of_an_empty_store_is_empty(store):
     assert list(store.all_jobs()) == []
+
+
+# ── delete (both backends) ───────────────────────────────────────────────────
+
+
+def test_delete_removes_the_job_and_reports_true(store):
+    store.put(_job("a1"))
+    store.put(_job("a2"))
+    assert store.delete("a1") is True
+    assert store.get("a1") is None
+    assert [j["job_id"] for j in store.all_jobs()] == ["a2"]
+
+
+def test_delete_twice_or_unknown_is_false_and_harmless(store):
+    store.put(_job("a1"))
+    assert store.delete("a1") is True
+    assert store.delete("a1") is False
+    assert store.delete("never-existed") is False
+
+
+def test_delete_refuses_a_malformed_id(store):
+    assert store.delete("../etc/passwd") is False
+    assert store.delete("") is False

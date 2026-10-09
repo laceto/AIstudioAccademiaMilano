@@ -26,6 +26,8 @@ from gateway.admin import (
     decide,
     decode_callback,
     discard_result,
+    encode_callback,
+    erase_keyboard,
     finish_delivery,
     is_admin,
     job_line,
@@ -39,6 +41,17 @@ from gateway.admin import (
     user_message,
 )
 from gateway.convlog import log_message
+from gateway.erasure import (
+    confirmation_card,
+    erase_chat,
+    erase_jobs,
+    jobs_for_chat,
+    make_erasure_log,
+    record_erasure,
+    result_message,
+    valid_chat_id,
+    valid_job_id,
+)
 from gateway.notify import _safe_filename as safe_filename
 from gateway.notify import notify_result
 from gateway.pipeline_queue import enqueue_run
@@ -48,13 +61,14 @@ logger = logging.getLogger(__name__)
 
 PRICE_PROMPT = "Imposta il prezzo per la richiesta (es. 12,50 oppure gratis). Rispondi a questo messaggio.\nJob ID: {job_id}"
 _PROMPT_JOB_RE = re.compile(r"Job ID: ([A-Za-z0-9_-]{1,64})")
-_COMMANDS = {"/pending", "/approve", "/reject", "/prezzo", "/run", "/file", "/sweep"}
+_COMMANDS = {"/pending", "/approve", "/reject", "/prezzo", "/run", "/file", "/sweep", "/cancella"}
 _MAX_PENDING_CARDS = 5
 _USAGE = (
     "Uso:\n/pending\n/approve <job_id> [prezzo|gratis]\n/prezzo <job_id> <prezzo>\n/reject <job_id> [motivo]\n"
     "/run <job_id>  (riavvia la pipeline per un job approvato o fallito)\n"
     "/file <job_id>  (rimandami il file di un risultato in attesa di revisione)\n"
-    "/sweep  (segna come fallite le run ferme in 'running' da troppo tempo)"
+    "/sweep  (segna come fallite le run ferme in 'running' da troppo tempo)\n"
+    "/cancella <job_id>  oppure  /cancella chat <chat_id>  (cancella i dati di un cliente, dopo conferma)"
 )
 
 
@@ -235,6 +249,10 @@ async def handle_callback(bot, store, callback: dict) -> None:
 
     action, job_id = parsed
 
+    if action in ("erase_job", "erase_chat", "erase_cancel"):
+        await _erase_callback(bot, store, from_id, chat_id, message, cb_id, action, job_id)
+        return
+
     job = store.get(job_id)
     if job is None:
         await bot.answer_callback_query(cb_id, text=_outcome(Decision(False, "not_found")))
@@ -375,6 +393,10 @@ async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -
             await _say(bot, chat_id, "Nessun job fermo.")
         return
 
+    if command == "/cancella":
+        await _erase_command(bot, store, chat_id, text)
+        return
+
     parts = text.split(maxsplit=2)
     if len(parts) < 2:
         await _say(bot, chat_id, _USAGE)
@@ -422,6 +444,69 @@ async def _run_command(bot, store, admin_id, chat_id, command: str, text: str) -
             await _say(bot, chat_id, "Questo prodotto non ha un prezzo a catalogo: usa /approve <job_id> <prezzo|gratis>.")
             return
     await _approve_and_report(bot, store, admin_id, chat_id, job_id, price)
+
+
+# ── erasure on request (/cancella) ───────────────────────────────────────────
+# The command only shows a card (counts, statuses, dates: never the customer's text). Deleting
+# happens on Conferma, re-checking each job's status at that moment.
+
+
+async def _erase_command(bot, store, chat_id, text: str) -> None:
+    args = text.split()[1:]
+    if len(args) == 1 and args[0].lower() != "chat" and valid_job_id(args[0]):
+        scope, action, target = "job", "erase_job", args[0]
+    elif len(args) == 2 and args[0].lower() == "chat" and valid_chat_id(args[1]):
+        scope, action, target = "chat", "erase_chat", args[1].strip()
+    else:
+        await _say(bot, chat_id, _USAGE)
+        return
+    if len(encode_callback(action, target).encode("utf-8")) > 64:
+        await _say(bot, chat_id, "Id troppo lungo per il bottone.\n" + _USAGE)
+        return
+
+    if scope == "job":
+        job = store.get(target)
+        jobs = [job] if job else []
+        if not jobs:
+            await _say(bot, chat_id, f"Job {target} non trovato: niente da cancellare.")
+            return
+    else:
+        jobs = jobs_for_chat(store, target)
+        if not jobs:
+            await _say(bot, chat_id, "Nessun job per questa chat: niente da cancellare.")
+            return
+    await _say(bot, chat_id, confirmation_card(jobs, scope), reply_markup=_markup(erase_keyboard(action, target)))
+
+
+async def _erase_callback(bot, store, admin_id, chat_id, message: dict, cb_id: str, action: str, target: str) -> None:
+    """Conferma / Annulla. The caller already proved admin_id is an admin."""
+    async def finish(note: str) -> None:  # strip the buttons: the card cannot be pressed again
+        try:
+            await bot.edit_message_text(chat_id=chat_id, message_id=message.get("message_id"),
+                                        text=f"{message.get('text', '')}\n\n{note}")
+        except Exception as exc:
+            logger.warning("[erasure] could not edit the card: %s", type(exc).__name__)
+
+    if action == "erase_cancel":
+        await bot.answer_callback_query(cb_id, text="Annullato.")
+        await finish("Annullato. Nessun dato cancellato.")
+        return
+
+    scope = "job" if action == "erase_job" else "chat"
+    if not (valid_job_id(target) if scope == "job" else valid_chat_id(target)):
+        await bot.answer_callback_query(cb_id, text="Azione non valida.")
+        return
+    result = erase_jobs(store, [target], admin_id) if scope == "job" else erase_chat(store, target, admin_id)
+    record_ok = record_erasure(make_erasure_log(), admin_id, scope, result)
+    if result.deleted:
+        await bot.answer_callback_query(cb_id, text="Cancellato.")
+        await finish("Cancellazione eseguita.")
+    elif result.refused:
+        await bot.answer_callback_query(cb_id, text="Non cancellato: job in corso.", show_alert=True)
+    else:
+        await bot.answer_callback_query(cb_id, text="Niente da cancellare (gia' fatto?).")
+        await finish("Niente da cancellare: gia' cancellato.")
+    await _say(bot, chat_id, result_message(result, record_ok))
 
 
 async def refuse_admin_command(bot, message: dict) -> bool:
