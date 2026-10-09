@@ -56,6 +56,10 @@ env_val() {
     | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//"
 }
 
+# upsert_secret and gateway_env_vars live in a separate file so they can be tested.
+# shellcheck source=cloudrun_lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/cloudrun_lib.sh"
+
 # ── Preconditions ────────────────────────────────────────────────────────────
 
 command -v gcloud >/dev/null || die "gcloud not found — install the Google Cloud CLI first."
@@ -117,12 +121,8 @@ for S in "${SECRETS[@]}"; do
   PRESENT_SECRETS+=("$S")
   if $DRY_RUN; then
     echo "  [dry-run] store $S (${#VALUE} chars)"
-  elif gcloud secrets describe "$S" >/dev/null 2>&1; then
-    printf '%s' "$VALUE" | gcloud secrets versions add "$S" --data-file=- >/dev/null
-    echo "  $S — new version"
   else
-    printf '%s' "$VALUE" | gcloud secrets create "$S" --data-file=- --replication-policy=automatic >/dev/null
-    echo "  $S — created"
+    upsert_secret "$S" "$VALUE"   # only adds a version when the value changed
   fi
 done
 
@@ -188,20 +188,6 @@ run gcloud run deploy rag-api \
   --allow-unauthenticated --memory 2Gi --cpu 2 --timeout 300 --cpu-boost \
   --set-secrets "$(secret_flags TELEGRAM_RAG_BOT_TOKEN OPENAI_API_KEY)" \
   --quiet
-
-# Non-secret settings for the "Luigi needs to review this job" notification
-# (gateway/notify.py). NOTIFY_EMAILS holds commas, so gcloud needs an alternate
-# list delimiter: "^|^" makes "|" the separator between KEY=VALUE pairs.
-gateway_env_vars() {
-  local store k v out
-  store="$(env_val JOB_STORE)"
-  out="^|^GATEWAY_SYNC_REPLY=1|GATEWAY_QUEUE_DIR=/tmp/queue|JOB_STORE=${store:-firestore}"
-  for k in NOTIFY_EMAILS NOTIFY_TELEGRAM_CHAT_IDS SMTP_USER SMTP_HOST SMTP_PORT NOTIFY_FROM; do
-    v="$(env_val "$k")"
-    [ -n "$v" ] && out="$out|$k=$v"
-  done
-  echo "$out"
-}
 
 say "Deploying gateway"
 run gcloud run deploy gateway \

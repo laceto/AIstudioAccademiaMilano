@@ -220,9 +220,10 @@ per regioni US): non è supportato dalla documentazione attuale.
 L'unico limite legato a un continente è il traffico in uscita di Cloud Run: 1 GB al mese "from North America".
 
 **Cosa può costare comunque, in centesimi**
-- **Secret Manager:** lo script aggiunge una nuova versione dei secret a ogni deploy; sopra le 6 versioni attive si paga
-  circa 0,06 $ per versione al mese. Rimedio: distruggere le versioni vecchie (`gcloud secrets versions destroy`) o
-  far aggiungere la versione solo se il valore è cambiato.
+- **Secret Manager:** fino al 2026-10-09 lo script aggiungeva una nuova versione dei secret a ogni deploy (oggi i secret
+  sono alla versione 4-5); sopra le 6 versioni attive si paga circa 0,06 $ per versione al mese. Ora la aggiunge solo se il
+  valore è cambiato (`upsert_secret` in `scripts/cloudrun_lib.sh`). Restano le versioni vecchie: distruggile con
+  `gcloud secrets versions destroy <n> --secret=<NOME>` (tieni l'ultima).
 - **Artifact Registry:** il repository pesa già circa 257 MB e cresce a ogni build; oltre 0,5 GB si pagano pochi
   centesimi al mese. Rimedio: un criterio di pulizia che tiene le ultime 2-3 immagini.
 - **Traffico in uscita** oltre il gratuito, e `--min-instances 1` (non lo usiamo).
