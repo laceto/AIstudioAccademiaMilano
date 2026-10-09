@@ -137,7 +137,15 @@ def check(role: str, expect_webhook: set[str], errors: list[str], warnings: list
         )
 
 
+def _ensure_utf8(stream) -> None:
+    """Make a text stream UTF-8 so the report prints on Windows consoles (cp1252)."""
+    reconfigure = getattr(stream, "reconfigure", None)
+    if reconfigure is not None:
+        reconfigure(encoding="utf-8", errors="replace")
+
+
 def main() -> int:
+    _ensure_utf8(sys.stdout)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--expect-webhook",
