@@ -199,10 +199,31 @@ def _day(job: dict) -> str:
     return str(job.get("created_at") or "?")[:10]
 
 
+# Length of a job id (the first 10 hex characters of a uuid, see PipelineAdapter.submit).
+JOB_ID_LENGTH = 10
+
+
+def job_not_found_message(target: str) -> str:
+    """Reply when /cancella is given an id that does not exist, with the most likely cause.
+
+    It does not point to /pending: that lists only what is waiting for the owner, not the refused,
+    delivered or classified jobs he usually wants to erase.
+    """
+    lines = [f"Job {target} non trovato: niente da cancellare."]
+    if len(target) != JOB_ID_LENGTH:
+        lines.append(
+            f"Un ID ha {JOB_ID_LENGTH} caratteri, il tuo ne ha {len(target)}: controlla di averlo copiato intero."
+        )
+    lines.append("Per tutti i job di un cliente usa /cancella chat <chat_id>.")
+    return "\n".join(lines)
+
+
 def confirmation_card(jobs: list[dict], scope: str) -> str:
     """The text of the confirmation card. Job id, status, date: never what the customer wrote."""
-    what = "questo job" if scope == "job" else "questa chat"
-    lines = [f"Cancellare {len(jobs)} job di {what}? Non si torna indietro."]
+    if scope == "job":
+        lines = ["Cancellare questo job? Non si torna indietro."]
+    else:
+        lines = [f"Cancellare {len(jobs)} job di questa chat? Non si torna indietro."]
     for job in jobs[:MAX_CARD_ROWS]:
         lines.append(f"- {job.get('job_id', '?')} | {job.get('status', '?')} | creato {_day(job)}")
     if len(jobs) > MAX_CARD_ROWS:

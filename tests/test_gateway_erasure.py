@@ -462,3 +462,51 @@ def test_message_stays_short_when_everything_is_listed_at_once():
     result = erasure.ErasureResult(True, "done", deleted=ids, refused=[(i, "running") for i in ids],
                                    missing=ids, failed=[(i, "RuntimeError") for i in ids])
     assert len(erasure.result_message(result)) < 4096
+
+
+# ── wording: the card reads naturally, and a wrong id says what is likely wrong ──
+
+
+def test_the_job_card_does_not_say_one_job_of_this_job(store):
+    bot = FakeBot()
+    _run(at.handle_admin_message(bot, store, _msg("/cancella " + next(iter(store.all_jobs()))["job_id"])))
+    first = bot.texts()[0].splitlines()[0]
+    assert first == "Cancellare questo job? Non si torna indietro."
+    assert "di questo job" not in bot.texts()[0]
+
+
+def test_the_chat_card_still_counts_the_jobs():
+    jobs = [{"job_id": f"j{i}", "status": "refused", "created_at": "2026-10-09T10:00:00+00:00"} for i in range(3)]
+    assert erasure.confirmation_card(jobs, "chat").splitlines()[0] == "Cancellare 3 job di questa chat? Non si torna indietro."
+    assert erasure.confirmation_card(jobs[:1], "job").splitlines()[0] == "Cancellare questo job? Non si torna indietro."
+
+
+def test_a_mistyped_id_gets_a_hint_about_its_length():
+    text = erasure.job_not_found_message("bee1ca15f")  # nine characters: one is missing
+    assert "bee1ca15f non trovato" in text
+    assert "10 caratteri" in text and "ne ha 9" in text
+    assert "/cancella chat" in text
+
+
+def test_a_well_formed_unknown_id_gets_no_length_complaint_but_the_chat_hint():
+    text = erasure.job_not_found_message("0123456789")
+    assert "non trovato" in text and "caratteri" not in text
+    assert "/cancella chat" in text
+
+
+def test_the_hint_does_not_send_the_owner_to_pending():
+    # /pending only lists jobs waiting for him; refused, delivered or classified ones are not there
+    assert "/pending" not in erasure.job_not_found_message("zzz")
+
+
+def test_the_id_length_in_the_hint_is_the_real_one(tmp_path):
+    from gateway.pipeline_adapter import PipelineAdapter
+
+    job_id = PipelineAdapter(queue_dir=str(tmp_path)).submit("richiesta", "api", {})["job_id"]
+    assert len(job_id) == erasure.JOB_ID_LENGTH
+
+
+def test_the_command_uses_the_hint_for_an_unknown_job(store):
+    bot = FakeBot()
+    _run(at.handle_admin_message(bot, store, _msg("/cancella ghost")))
+    assert "non trovato" in bot.texts()[0] and "/cancella chat" in bot.texts()[0]

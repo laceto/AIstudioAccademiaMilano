@@ -49,6 +49,7 @@ from gateway.erasure import (
     confirmation_card,
     erase_chat,
     erase_jobs,
+    job_not_found_message,
     jobs_for_chat,
     make_erasure_log,
     record_erasure,
@@ -525,7 +526,7 @@ async def _erase_command(bot, store, chat_id, text: str) -> None:
         job = store.get(target)
         jobs = [job] if job else []
         if not jobs:
-            await _say(bot, chat_id, f"Job {target} non trovato: niente da cancellare.")
+            await _say(bot, chat_id, job_not_found_message(target))
             return
     else:
         jobs = jobs_for_chat(store, target)
