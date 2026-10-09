@@ -1,106 +1,156 @@
-# Cloud Run — setup del gateway
+# Cloud Run — setup e deploy
 
-Stato al 2026-10-09 (aggiornato): **gateway e rag-api distribuiti e online** (audit 035). Progetto GCP: `aistudio-milano`. Regione scelta: `europe-west8` (Milano).
-Servizi: `gateway` e `rag-api`, distribuiti da `scripts/deploy_cloudrun.sh`.
+Stato al 2026-10-09: **`gateway` e `rag-api` online** (audit 035).
+Progetto GCP `aistudio-milano`, regione `europe-west8` (Milano).
 
-## 1. Cosa abbiamo scoperto nel repo
+| Servizio | URL | Origine |
+|----------|-----|---------|
+| `gateway` | https://gateway-947977086404.europe-west8.run.app | `gateway/Dockerfile` |
+| `rag-api` | https://rag-api-947977086404.europe-west8.run.app | `scripts/rag/Dockerfile` |
 
-- Dockerfile già presenti: `gateway/Dockerfile`, `gateway/Dockerfile.ragbot`, `scripts/rag/Dockerfile`,
-  `deliverables/2026-05-24_013_techa-streamlit/`, `…_014_dispenser-input/`,
-  `…_026_trading-agent-dashboard/`, `…_011_bakery-v2/site/`, `spaces/trading-agent-team/`.
-- `gateway/Dockerfile` è già pronto per Cloud Run: ascolta su `$PORT` (default 8080) e scrive la coda in `/tmp/queue`.
-- Il Dockerfile copia `config/` e `process/audit/` dalla root: il contesto di build deve essere la root del repo.
-- `config/accounts_registry.yaml` ora ha `project_id: aistudio-milano` e `region: europe-west8`.
-- Esistono `scripts/deploy_cloudrun.sh`, `process/runbook_cloudrun.md` e `deploy/cloudbuild.*.yaml`.
-- Nessun workflow GitHub Actions di deploy esiste ancora. L'audit `process/audit/2026-05-24_010_cloud-run-deploy.md`
-  descrive un deploy fatto per un altro repo (`laceto/rss_feed`).
+Console: [servizi](https://console.cloud.google.com/run?project=aistudio-milano) ·
+[build](https://console.cloud.google.com/cloud-build/builds?project=aistudio-milano) ·
+[log](https://console.cloud.google.com/logs/query?project=aistudio-milano)
 
-## 2. Cosa è stato fatto
+---
 
-| Passo | Esito |
-|-------|-------|
-| `gcloud` installato e autenticato come `luigi.vinegar@gmail.com`, progetto di default `aistudio-milano` | OK |
-| Fatturazione: gli account `…2DDB46` (1), `…03EE98` (2) e un terzo erano chiusi (`open: false`) | Bloccante, poi risolto |
-| Collegato l'account di fatturazione `016BA2-DDA96E-2DDB46` (ora `open: true`) a `aistudio-milano` | OK, `billingEnabled: true` |
-| Abilitate le API `run`, `cloudbuild`, `artifactregistry`, `secretmanager` | OK |
-| Creazione del secret `GATEWAY_HMAC_SECRET` | Bloccata dai permessi; poi risulta non necessaria (vedi sezione 3) |
-| `gcloud run deploy studio-gateway …` | Bloccato dai permessi; sostituito da `scripts/deploy_cloudrun.sh` |
+## 1. DA FARE ORA (in quest'ordine)
 
-Non è stato creato nessun secret e nessun servizio. Nessun valore sensibile è stato scritto in questo documento.
+Il codice con il log dei messaggi (PR #183) è su `main` ma **non è ancora online**. Il vecchio token del bot pipeline
+è finito nei log di Cloud Run (httpx scriveva l'URL con il token) e va considerato compromesso.
 
-## 3. Variabili d'ambiente del gateway
+Esegui i comandi dalla root del repo, con `!` davanti se li lanci da Claude Code.
+
+1. **Revoca il token del bot pipeline.** In Telegram: @BotFather → `/revoke` → `@AIStudioMilanoBot` → copia il nuovo token.
+   Mettilo in `.env` come `TELEGRAM_BOT_TOKEN=...` (il file è ignorato da git). Il bot resta muto fino al passo 3.
+2. **Ricostruisci l'immagine del gateway** (circa 2 minuti):
+   ```bash
+   gcloud builds submit . --config deploy/cloudbuild.gateway.yaml \
+     --substitutions _IMAGE=europe-west8-docker.pkg.dev/aistudio-milano/aistudio/gateway \
+     --project aistudio-milano
+   ```
+3. **Ripubblica secret, servizi e webhook** con il nuovo token (usa l'immagine appena costruita):
+   ```bash
+   bash scripts/deploy_cloudrun.sh --skip-build
+   ```
+4. **Verifica.** Scrivi un messaggio al bot: deve rispondere. Poi:
+   ```bash
+   gcloud run services logs read gateway --region europe-west8 --project aistudio-milano --limit 30
+   python scripts/check_telegram.py --expect-webhook pipeline
+   ```
+   Nei log devi vedere righe `[conv] dir=in chat=… text="…"` e `[conv] dir=out chat=…`, e **nessun** URL
+   `api.telegram.org/bot<token>`. `check_telegram` deve dire "All Telegram channels healthy".
+
+Poi, senza fretta:
+
+- [ ] **Privacy.** I log ora contengono il testo degli utenti. Aggiungi un'informativa al messaggio `/start` e decidi la
+      retention del bucket di log (default 30 giorni: Cloud Logging → Log Storage).
+- [ ] **Budget alert** in Google Cloud → Fatturazione → Budget e avvisi (in `europe-west8` non c'è free tier).
+- [ ] `ANTHROPIC_API_KEY` in `.env` è un segnaposto: va bene finché c'è `OPENAI_API_KEY`.
+- [ ] Storage persistente per la coda (Firestore / Cloud SQL), vedi sezione 6.
+- [ ] Altri servizi: WhatsApp (webhook già nel gateway, servono le credenziali Twilio), form Streamlit, dashboard trading.
+
+---
+
+## 2. Come ridistribuire (promemoria)
+
+Quando hai cambiato il codice, scegli la riga giusta. Tutti i comandi partono dalla root del repo.
+
+| Cosa è cambiato | Comando |
+|-----------------|---------|
+| **Tutto** (codice di gateway e rag-api, secret, webhook) | `bash scripts/deploy_cloudrun.sh` — la build di `rag-api` dura circa 10 minuti |
+| **Solo il gateway** | build gateway (passo 2 sopra), poi `gcloud run deploy gateway --image europe-west8-docker.pkg.dev/aistudio-milano/aistudio/gateway --region europe-west8 --project aistudio-milano` |
+| **Solo rag-api** | `gcloud builds submit . --config deploy/cloudbuild.ragapi.yaml --substitutions _IMAGE=europe-west8-docker.pkg.dev/aistudio-milano/aistudio/rag-api --project aistudio-milano`, poi `gcloud run deploy rag-api --image europe-west8-docker.pkg.dev/aistudio-milano/aistudio/rag-api --region europe-west8 --project aistudio-milano` |
+| **Solo chiavi/token** (nuovo valore in `.env`) | `bash scripts/deploy_cloudrun.sh --skip-build` |
+| **Anteprima senza modifiche** | `bash scripts/deploy_cloudrun.sh --dry-run` |
+
+`gcloud run deploy … --image` riusa le variabili d'ambiente e i secret già configurati sul servizio.
+Lo script è idempotente: i secret esistenti ricevono una nuova versione, i servizi vengono aggiornati sul posto.
+
+Il deploy crea secret e servizi pubblici: Claude Code non può lanciarlo da solo (il sistema di permessi lo blocca),
+quindi lancialo tu con `!` oppure da un terminale.
+
+Altre regioni: `REGION=us-central1 bash scripts/deploy_cloudrun.sh` (il free tier vale solo per alcune regioni US).
+
+### Controllo dello stato
+
+```bash
+gcloud run services list --region europe-west8 --project aistudio-milano
+gcloud builds list --project aistudio-milano --limit 5
+gcloud run services logs read gateway --region europe-west8 --project aistudio-milano --limit 50
+```
+
+---
+
+## 3. Variabili d'ambiente
 
 | Variabile | Dove | Note |
 |-----------|------|------|
-| `OPENAI_API_KEY` | `worker.py` | Classificazione / RAG |
-| `ANTHROPIC_API_KEY` | `worker.py` | Alternativa a OpenAI (basta una delle due) |
-| `TELEGRAM_BOT_TOKEN` | `worker.py`, `api.py` | Bot "pipeline" |
+| `OPENAI_API_KEY` | worker, rag-api | Classificazione / RAG |
+| `ANTHROPIC_API_KEY` | worker | Alternativa a OpenAI (basta una delle due) |
+| `TELEGRAM_BOT_TOKEN` | gateway | Bot "pipeline" |
 | `TELEGRAM_RAG_BOT_TOKEN` | rag-api | Secondo bot, token **diverso** dal primo |
 | `GATEWAY_SYNC_REPLY=1` | `api.py` | Obbligatoria su Cloud Run (lo script la imposta) |
 | `GATEWAY_QUEUE_DIR` | `api.py`, `worker.py` | `/tmp/queue` |
-| `OPENAI_MODEL`, `ALGO_TRADING_URL`, `TRADING_API_URL`, `RAG_API_URL` | varie | Opzionali |
+| `RAG_API_URL` | gateway | Impostata dallo script all'URL di `rag-api` |
+| `OPENAI_MODEL`, `ALGO_TRADING_URL`, `TRADING_API_URL` | varie | Opzionali |
 
-**`GATEWAY_HMAC_SECRET` non serve ora.** `verify_hmac()` esiste in `gateway/middleware.py` ma nessun endpoint la chiama;
-il webhook WhatsApp usa `TWILIO_AUTH_TOKEN`. Non creare questo secret finché la firma delle richieste non viene collegata.
+I secret (`TELEGRAM_*`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) stanno in Secret Manager, copiati da `.env` dallo script.
+`.env` è ignorato da git (`*.env` in `.gitignore`).
 
-## 4. Cosa devi fare tu
+**`GATEWAY_HMAC_SECRET` non serve.** `verify_hmac()` esiste in `gateway/middleware.py` ma nessun endpoint la chiama;
+il webhook WhatsApp usa `TWILIO_AUTH_TOKEN`. Non creare il secret finché la firma delle richieste non è collegata.
 
-Esiste già uno script che fa tutto: `scripts/deploy_cloudrun.sh` (vedi `process/runbook_cloudrun.md`).
-Abilita le API, crea il repository immagini, copia i secret da `.env` a Secret Manager, costruisce e distribuisce
-`gateway` e `rag-api`, registra i webhook Telegram e verifica. I comandi manuali di una versione precedente di questo
-documento (secret, deploy con `--source`) non servono più.
+---
 
-Verificato con `--dry-run` il 2026-10-09 (nulla modificato): progetto `aistudio-milano`, regione `europe-west8` (Milano).
+## 4. Log dei messaggi
 
-### 4.1 Prima di lanciarlo
+`gateway/convlog.py` scrive su stdout una riga per ogni messaggio, con il `chat_id` come sessione:
 
-1. In `.env` devono esserci **due token Telegram diversi**: `TELEGRAM_BOT_TOKEN` e `TELEGRAM_RAG_BOT_TOKEN`
-   (secondo bot da @BotFather). Il dry-run li trova entrambi.
-2. `OPENAI_API_KEY` è presente. `ANTHROPIC_API_KEY` in `.env` è ancora un segnaposto: lo script lo salta, va bene
-   perché basta una delle due chiavi.
-3. Regione: il default è `europe-west8` (Milano). Per il free tier US: `REGION=us-central1 ./scripts/deploy_cloudrun.sh`,
-   perché il free tier vale solo per alcune regioni US; in `europe-west8` potresti pagare piccole cifre.
-4. Verifica che `.env` sia ignorato da git (`git check-ignore .env`).
-
-### 4.2 Lancio
-
-```bash
-./scripts/deploy_cloudrun.sh --dry-run   # anteprima, nessuna modifica
-./scripts/deploy_cloudrun.sh             # deploy vero
-./scripts/deploy_cloudrun.sh --skip-build   # ridistribuisce senza ricostruire le immagini
+```
+2026-10-09 10:06:54 [conv] dir=in  chat=555 text="Vorrei una landing page\ncon un menu"
+2026-10-09 10:06:54 [conv] dir=out chat=555 text="Richiesta ricevuta: ..."
 ```
 
-Il deploy vero crea secret nel Secret Manager e servizi pubblici: per questo non l'ho lanciato io. Usa `!` davanti
-al comando per eseguirlo in questa sessione. Lo script è idempotente.
+- Copre i messaggi in arrivo, le risposte (incluse `/start`, `/ask` e gli errori) e le notifiche del worker.
+- Newline scritti come `\n`; il testo oltre 1000 caratteri è troncato.
+- `httpx` e `httpcore` loggano solo da WARNING in su, per non scrivere l'URL con il token del bot.
+- Per filtrare una sessione, in Cloud Logging cerca `chat=<id>`.
+- Resta fuori `rag-api` (webhook Telegram e `/chat`): non logga ancora i messaggi.
 
-### 4.3 Verifica
+---
 
-- Scrivi al bot pipeline: "Ho bisogno di una landing page per il mio ristorante". Deve arrivare **una** risposta con
-  il prodotto e 9.90 EUR. Se arriva solo un Job ID, `GATEWAY_SYNC_REPLY` non è arrivata al container.
-- Log: `gcloud run services logs read gateway --region europe-west8 --limit 50`
+## 5. Storia di questo setup
 
-### 4.4 Dopo il deploy
+- Il repo aveva già Dockerfile, `scripts/deploy_cloudrun.sh`, `process/runbook_cloudrun.md` e `deploy/cloudbuild.*.yaml`.
+- Gli account di fatturazione `…2DDB46` (1), `…03EE98` (2) e un terzo erano chiusi (`open: false`) e non collegabili.
+  Si è usato `016BA2-DDA96E-2DDB46`, poi collegato a `aistudio-milano`; abilitate le API `run`, `cloudbuild`,
+  `artifactregistry`, `secretmanager`.
+- Regione portata da `us-central1` a `europe-west8` (PR #180).
+- Deploy eseguito da Luigi con `scripts/deploy_cloudrun.sh`: build gateway 1m57s, rag-api 9m28s; `/docs` 200 su
+  entrambi; webhook Telegram registrati (check_telegram: healthy). Test end-to-end riuscito (risposta
+  `unknown_product` corretta per una richiesta fuori catalogo).
+- Bookkeeping: audit `process/audit/2026-10-09_035_cloud-run-deploy.md`, riga 035 in `CLAUDE.md`,
+  `config/accounts_registry.yaml` in stato `active`.
+- Log dei messaggi per sessione e fix della perdita del token (PR #183).
+- `scripts/check_telegram.py` forza UTF-8 (prima andava in errore sulle console Windows).
 
-- `config/accounts_registry.yaml` è già aggiornato (stato `provisioned`): cambialo in `active` a deploy riuscito.
-- Audit log in `process/audit/` e riga in "Delivered Requests" di `CLAUDE.md`.
-- Imposta un budget alert in Google Cloud, Fatturazione.
+---
 
-## 5. Limiti da conoscere
+## 6. Limiti da conoscere
 
-- Il filesystem di Cloud Run è effimero: la coda in `/tmp/queue` e ogni file SQLite sparisce a ogni riavvio.
-  Per la produzione serve uno storage persistente (Firestore, Cloud SQL o un bucket GCS).
-- Cloud Run dà CPU solo durante le richieste. Per bot in polling o worker in background serve `--no-cpu-throttling`
-  (oppure passare ai webhook).
+- Il filesystem di Cloud Run è effimero: la coda in `/tmp/queue` e ogni file SQLite spariscono a ogni riavvio, e
+  `GET /status/{job_id}` risponde 404 dopo la perdita dell'istanza. Per la produzione serve Firestore, Cloud SQL o GCS.
+- Cloud Run dà CPU solo durante le richieste: i bot in polling non funzionano, servono i webhook (già così).
 - Le app Streamlit vogliono `--session-affinity`, `--min-instances 1` e `--server.port=$PORT`.
+- Cold start: la prima richiesta dopo un'inattività è lenta, soprattutto su `rag-api`. Telegram può reinviare il
+  webhook e produrre una risposta doppia. `--min-instances=1` lo evita ma costa.
+- In `europe-west8` non c'è free tier: con poche decine di messaggi al giorno la spesa resta di pochi centesimi,
+  ma le chiamate a OpenAI/Anthropic si pagano ovunque.
 
-## 5b. Cronologia
+## 7. Prossimi passi possibili
 
-- 2026-10-09: fatturazione collegata, API abilitate, dry-run dello script OK, regione portata a `europe-west8` (PR #178, #179, #180).
-- 2026-10-09: deploy eseguito da Luigi con `scripts/deploy_cloudrun.sh`. `gateway` e `rag-api` online, `/docs` 200, webhook Telegram registrati (check_telegram: healthy). Resta il test end-to-end su Telegram.
-
-## 6. Prossimi passi possibili
-
-1. Workflow GitHub Actions `deploy-cloudrun.yml` con Workload Identity Federation (nessuna chiave JSON),
-   trigger su push a `main` con path filter per servizio.
-2. Script locale `scripts/deploy_cloudrun.sh` e un file di configurazione per servizio (nome, Dockerfile, secret, flag).
-3. Replicare il deploy per gli altri servizi (techa, dispenser, trading dashboard, ragbot).
+1. Workflow GitHub Actions `deploy-cloudrun.yml` con Workload Identity Federation (nessuna chiave JSON), trigger su
+   push a `main` con path filter per servizio.
+2. Log dei messaggi anche per `rag-api`.
+3. Replicare il deploy per gli altri servizi (techa, dispenser, trading dashboard, ragbot, form Streamlit, WhatsApp).
