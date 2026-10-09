@@ -369,7 +369,7 @@ def _running_line(job: dict) -> str:
 
 _REEXAMINE_TEXT = {
     "reexamined": "Rimessa in revisione: ti arriva la scheda per approvarla o rifiutarla.",
-    "not_refused": "Questa richiesta non e' tra quelle rifiutate (o e' gia' stata riesaminata).",
+    "not_refused": "Questa richiesta non e' tra quelle rifiutate o mai riviste (o e' gia' stata rimessa in revisione).",
     "not_found": "Richiesta non trovata.",
     "forbidden": "Non autorizzato.",
 }

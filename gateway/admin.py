@@ -374,17 +374,21 @@ def refused_line(job: dict) -> str:
     return f"Rifiutata ({refused_category(job)}){asked}: {job.get('job_id', '?')} - {text}"
 
 
+_REEXAMINABLE = ("refused", "classified")
+
+
 def reexamine(store, job_id: str, admin_id) -> Decision:
-    """Luigi disagrees with an automatic refusal: refused -> needs_review, once, atomically."""
+    """Back to review, once, atomically: refused (Luigi disagrees) or legacy classified (never reviewed)."""
     if not is_admin(admin_id):
         return Decision(False, "forbidden")
     job = store.get(job_id)
     if job is None:
         return Decision(False, "not_found")
-    if job.get("status") != "refused":
+    from_status = job.get("status")
+    if from_status not in _REEXAMINABLE:
         return Decision(False, "not_refused", job)
     won = store.transition(
-        job_id, "refused",
+        job_id, from_status,
         {
             "status": "needs_review",
             "reexamined": True,  # notify_review then skips the e-mail channel for this job
