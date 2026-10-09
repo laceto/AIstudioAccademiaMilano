@@ -24,6 +24,7 @@ Last updated: 2026-10-09
 
 | 036 | 2026-10-09 | Approval from Telegram + asynchronous pipeline worker — owner alerts (Telegram/e-mail), Firestore job store, approve/price/reject buttons, LangGraph pipeline on a private Cloud Run worker via Cloud Tasks, review before delivery | Cloud Run, Cloud Tasks, Firestore, LangGraph, python-telegram-bot, Secret Manager | €0.00 (internal) | `deliverables/2026-10-09_036_approval-pipeline-worker/` |
 | 037 | 2026-10-09 | Data retention, privacy notice and stuck-job recovery — 90-day Firestore TTL with delete protection, `/start` + `/privacy` notice, sweep of jobs stuck in `running` (Cloud Scheduler) | Firestore, Cloud Scheduler, Cloud Run, python-telegram-bot | €0.00 (internal) | `deliverables/2026-10-09_037_retention-privacy-recovery/` |
+| 038 | 2026-10-09 | Erase on request and refusal of fraudulent requests — `/cancella` with confirmation card and an erasure record, automatic refusal (phrase filter + model) with RIESAMINA for the customer and Riesamina for the owner, 30-day retention for refusals, `/privacy` in several messages, learning loop promotes hooks only when the script exists | Firestore, python-telegram-bot, Cloud Run | €0.00 (internal) | `deliverables/2026-10-09_038_erasure-and-refusals/` |
 ## Revenue Summary
 
 | Status | Amount |
