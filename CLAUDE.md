@@ -361,6 +361,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 032 | 2026-09-04 | Festa compleanno Niccolò — piano operativo parchetto via Zanoia (merenda, torta, intrattenimento, lista spesa e negozi) | null (pending Luigi — proposta 4.90) |
 | 033 | 2026-09-09 | YouTube Playlist Builder — YouTube Data API v3 + OAuth2, CLI con `--dry-run`, quota budgeting (50 + 50N unità) | null (pending Luigi — proposta 14.90) |
 | 034 | 2026-09-16 | deepagents-gcal — pacchetto Python installabile: agente deepagents + tool Google Calendar, HITL sulle scritture, subagente read-only | 14.90 |
+| 035 | 2026-10-09 | Cloud Run deploy — gateway + rag-api su `aistudio-milano` (europe-west8), webhook Telegram live, fix `check_telegram.py` su Windows | 0.00 (internal) |
 
 ---
 

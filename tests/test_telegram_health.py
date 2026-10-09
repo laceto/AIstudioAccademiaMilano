@@ -124,3 +124,17 @@ class TestTokenCollision:
         monkeypatch.setattr(ct, "_call", _call)
         monkeypatch.setattr("sys.argv", ["check_telegram.py"])
         assert ct.main() == 0
+
+
+def test_ensure_utf8_stdout_survives_cp1252_console(capsys):
+    """Windows consoles default to cp1252, which cannot encode the box-drawing
+    characters in the report. main() must not crash on them."""
+    import io
+
+    legacy = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+    with pytest.raises(UnicodeEncodeError):
+        print("── pipeline bot", file=legacy, flush=True)
+
+    legacy = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+    ct._ensure_utf8(legacy)
+    print("── pipeline bot", file=legacy, flush=True)

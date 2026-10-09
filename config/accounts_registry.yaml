@@ -84,7 +84,7 @@ hosting:
     used_for: containerized_apps
     auth_env: GOOGLE_CREDENTIALS_JSON
     region: europe-west8         # Milan; default of scripts/deploy_cloudrun.sh
-    status: provisioned          # billing linked + APIs enabled 2026-10-09; services not deployed yet
+    status: active               # gateway + rag-api deployed 2026-10-09 (audit 035)
     notes: see docs/cloud-run-setup.md and process/runbook_cloudrun.md
 
 version_control:

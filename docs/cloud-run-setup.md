@@ -1,6 +1,6 @@
 # Cloud Run — setup del gateway
 
-Stato al 2026-10-09 (aggiornato): infrastruttura pronta, **servizi non ancora distribuiti**. Progetto GCP: `aistudio-milano`. Regione scelta: `europe-west8` (Milano).
+Stato al 2026-10-09 (aggiornato): **gateway e rag-api distribuiti e online** (audit 035). Progetto GCP: `aistudio-milano`. Regione scelta: `europe-west8` (Milano).
 Servizi: `gateway` e `rag-api`, distribuiti da `scripts/deploy_cloudrun.sh`.
 
 ## 1. Cosa abbiamo scoperto nel repo
@@ -96,7 +96,7 @@ al comando per eseguirlo in questa sessione. Lo script è idempotente.
 ## 5b. Cronologia
 
 - 2026-10-09: fatturazione collegata, API abilitate, dry-run dello script OK, regione portata a `europe-west8` (PR #178, #179, #180).
-- In attesa: deploy vero (`! bash scripts/deploy_cloudrun.sh`), bloccato dal sistema di permessi quando lanciato da Claude.
+- 2026-10-09: deploy eseguito da Luigi con `scripts/deploy_cloudrun.sh`. `gateway` e `rag-api` online, `/docs` 200, webhook Telegram registrati (check_telegram: healthy). Resta il test end-to-end su Telegram.
 
 ## 6. Prossimi passi possibili
 
