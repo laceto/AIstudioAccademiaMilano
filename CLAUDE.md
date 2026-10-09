@@ -191,6 +191,12 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `process/runbook_cloudrun.md` | Runbook: deploy dei canali Telegram su Cloud Run (webhook, scale-to-zero, free tier) |
 | `deploy/cloudbuild.*.yaml` | Cloud Build: nomina esplicitamente il Dockerfile giusto per ciascun servizio |
 | `scripts/deploy_cloudrun.sh` | Deploy end-to-end su Cloud Run: API, secret da `.env`, build, deploy, webhook, verifica (`--dry-run` per anteprima) |
+| `gateway/jobstore.py` | Archivio dei job: file (locale) o Firestore (`JOB_STORE`), `transition()` atomico |
+| `gateway/notify.py` | Avvisi a Luigi (Telegram con bottoni + email a una lista) e invio del risultato della pipeline |
+| `gateway/admin.py`, `gateway/admin_telegram.py` | Decisioni di Luigi: approva/gratis/prezzo/rifiuta, riavvio, invio o scarto del risultato. Solo il suo ID numerico, una volta sola |
+| `gateway/pipeline_queue.py`, `gateway/pipeline_worker.py`, `gateway/studio_runner.py` | Pipeline LangGraph su worker Cloud Run privato via Cloud Tasks (coda `pipeline-runs`) |
+| `docs/plans/luigi-approval-notifications.md` | Piano e stato delle Fasi 1-5 (notifica, storage, approvazione, richieste fraudolente, pipeline) |
+| `deliverables/2026-10-09_036_approval-pipeline-worker/` | Guida al flusso richiesta → approvazione → pipeline → consegna |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
@@ -362,6 +368,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 033 | 2026-09-09 | YouTube Playlist Builder — YouTube Data API v3 + OAuth2, CLI con `--dry-run`, quota budgeting (50 + 50N unità) | null (pending Luigi — proposta 14.90) |
 | 034 | 2026-09-16 | deepagents-gcal — pacchetto Python installabile: agente deepagents + tool Google Calendar, HITL sulle scritture, subagente read-only | 14.90 |
 | 035 | 2026-10-09 | Cloud Run deploy — gateway + rag-api su `aistudio-milano` (europe-west8), webhook Telegram live, fix `check_telegram.py` su Windows | 0.00 (internal) |
+| 036 | 2026-10-09 | Approvazione da Telegram + worker asincrono della pipeline — avvisi a Luigi (Telegram/email), job su Firestore, Approva/Gratis/Imposta prezzo/Rifiuta (solo il suo ID, una volta sola), esecuzione LangGraph su worker privato via Cloud Tasks, revisione e invio al cliente | 0.00 (internal) |
 
 ---
 
@@ -384,7 +391,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | ISS-018 | P1 | Pablo: `gateway/pipeline_adapter.py` + FastAPI `/submit` + HMAC middleware | DELIVERED |
 | ISS-019 | P1 | Sofia: `gateway/streamlit_app.py` wired to PipelineAdapter | DELIVERED |
 | ISS-020 | P1 | Carlos: `gateway/bot_telegram.py` + `bot_whatsapp.py` wired to PipelineAdapter | DELIVERED |
-| ISS-021 | P2 | Deploy Input Gateway: tutti e 3 i canali live | OPEN |
+| ISS-021 | P2 | Deploy Input Gateway: tutti e 3 i canali live | OPEN (Telegram live dal 2026-10-09; mancano WhatsApp e form Streamlit) |
 | ISS-022 | P1 | Crash-recovery flush: checkpoint periodico su project_state.md | DELIVERED |
 | ISS-023 | P2 | Scope `etsy_digital_product_pack` intent | OPEN |
 | ISS-024 | P2 | Scope `digital_product_listing_pack` intent | OPEN |
