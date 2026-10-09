@@ -197,6 +197,12 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `gateway/pipeline_queue.py`, `gateway/pipeline_worker.py`, `gateway/studio_runner.py` | Pipeline LangGraph su worker Cloud Run privato via Cloud Tasks (coda `pipeline-runs`) |
 | `docs/plans/luigi-approval-notifications.md` | Piano e stato delle Fasi 1-5 (notifica, storage, approvazione, richieste fraudolente, pipeline) |
 | `deliverables/2026-10-09_036_approval-pipeline-worker/` | Guida al flusso richiesta → approvazione → pipeline → consegna |
+| `gateway/retention.py` | Un solo numero per quanto si conserva un job (`JOB_RETENTION_DAYS`, default 90) |
+| `gateway/privacy.py` | Informativa privacy: avviso breve su `/start`, testo completo su `/privacy` (`PRIVACY_CONTACT` opzionale) |
+| `gateway/recovery.py` | Recupero dei job `running` bloccati (`sweep_stale`, `finish_run`): messi in `failed`, mai rilanciati da soli |
+| `scripts/backfill_job_expiry.py` | Assegna `expire_at` ai job esistenti (prova a secco; `--apply` per scrivere) |
+| `process/runbook_privacy_requests.md` | Come Luigi risponde a una richiesta di accesso o cancellazione |
+| `deliverables/2026-10-09_037_retention-privacy-recovery/` | Guida a retention, informativa e recupero dei job bloccati |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
@@ -369,6 +375,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 034 | 2026-09-16 | deepagents-gcal — pacchetto Python installabile: agente deepagents + tool Google Calendar, HITL sulle scritture, subagente read-only | 14.90 |
 | 035 | 2026-10-09 | Cloud Run deploy — gateway + rag-api su `aistudio-milano` (europe-west8), webhook Telegram live, fix `check_telegram.py` su Windows | 0.00 (internal) |
 | 036 | 2026-10-09 | Approvazione da Telegram + worker asincrono della pipeline — avvisi a Luigi (Telegram/email), job su Firestore, Approva/Gratis/Imposta prezzo/Rifiuta (solo il suo ID, una volta sola), esecuzione LangGraph su worker privato via Cloud Tasks, revisione e invio al cliente | 0.00 (internal) |
+| 037 | 2026-10-09 | Retention dei dati, informativa privacy e recupero dei job bloccati — `expire_at` a 90 giorni con TTL Firestore e protezione dalla cancellazione, backfill, sweep dei job `running` (Cloud Scheduler ogni 10 min), `/start` e `/privacy` | 0.00 (internal) |
 
 ---
 
