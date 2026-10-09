@@ -1,6 +1,6 @@
 # Piano — notifica e approvazione di Luigi per le richieste `needs_review`
 
-Stato: **proposta con decisioni di Luigi (2026-10-09), nulla implementato**. Storage ancora da scegliere.
+Stato: **Fase 1 (notifica) implementata il 2026-10-09**; Fasi 2-4 da fare. Storage scelto: **Firestore**.
 Contesto: `docs/cloud-run-setup.md`, `gateway/worker.py` (`_build_reply`), `gateway/api.py` (`/webhook/telegram`).
 
 ## 1. Problema
@@ -39,12 +39,7 @@ modo per approvare**: l'unica traccia è una riga nei log di Cloud Run. Lo stess
 | Telegram | Messaggio a Luigi (`@acetoluigi`) con i bottoni **Approva / Rifiuta / Imposta prezzo** |
 | Chi approva | **Solo Luigi**, autorizzato dall'**ID numerico** Telegram (non dallo username) |
 | Altri utenti | Anche se scrivono al bot (ci sono altre sessioni, ad es. un secondo account ha provato richieste di test), nessun altro ID viene mai autorizzato |
-
-**Ancora aperta**
-
-- **Storage dei job.** Firestore (consigliato: 0 € a questi volumi, transazioni per l'approvazione "una volta sola",
-  regione UE `europe-west8`), Cloud Storage (cambio minimo, niente transazioni vere), Cloud SQL (8-10 € al mese, eccessivo)
-  o Postgres esterno. Senza storage persistente i bottoni non possono funzionare in modo affidabile.
+| Storage dei job | **Firestore**, regione `europe-west8` (Fase 2) |
 
 ## 5. Configurazione
 
@@ -85,7 +80,7 @@ Moduli nuovi:
 
 ## 7. Fasi
 
-### Fase 1 — Notifica (piccola, subito utile)
+### Fase 1 — Notifica (FATTA: `gateway/notify.py`, `tests/test_gateway_notify.py`)
 1. Nessun `/whoami` necessario: l'ID di Luigi è già noto (letto dai log).
 2. `gateway/notify.py` con canali Telegram ed email, liste da variabili d'ambiente. In questa fase il messaggio Telegram è
    solo testo con il Job ID: i bottoni diventano attivi in Fase 3, quando esistono storage e gestione dei `callback_query`.

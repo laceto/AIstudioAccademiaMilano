@@ -102,7 +102,7 @@ fi
 # ── Secrets ──────────────────────────────────────────────────────────────────
 
 say "Secrets from .env"
-SECRETS=(TELEGRAM_BOT_TOKEN TELEGRAM_RAG_BOT_TOKEN OPENAI_API_KEY ANTHROPIC_API_KEY)
+SECRETS=(TELEGRAM_BOT_TOKEN TELEGRAM_RAG_BOT_TOKEN OPENAI_API_KEY ANTHROPIC_API_KEY SMTP_PASSWORD)
 PRESENT_SECRETS=()
 
 for S in "${SECRETS[@]}"; do
@@ -174,12 +174,24 @@ run gcloud run deploy rag-api \
   --set-secrets "$(secret_flags TELEGRAM_RAG_BOT_TOKEN OPENAI_API_KEY)" \
   --quiet
 
+# Non-secret settings for the "Luigi needs to review this job" notification
+# (gateway/notify.py). NOTIFY_EMAILS holds commas, so gcloud needs an alternate
+# list delimiter: "^|^" makes "|" the separator between KEY=VALUE pairs.
+gateway_env_vars() {
+  local out="^|^GATEWAY_SYNC_REPLY=1|GATEWAY_QUEUE_DIR=/tmp/queue" k v
+  for k in NOTIFY_EMAILS NOTIFY_TELEGRAM_CHAT_IDS SMTP_USER SMTP_HOST SMTP_PORT NOTIFY_FROM; do
+    v="$(env_val "$k")"
+    [ -n "$v" ] && out="$out|$k=$v"
+  done
+  echo "$out"
+}
+
 say "Deploying gateway"
 run gcloud run deploy gateway \
   --image "$IMAGE_BASE/gateway" --region "$REGION" \
   --allow-unauthenticated --memory 512Mi --timeout 120 \
-  --set-env-vars "GATEWAY_SYNC_REPLY=1,GATEWAY_QUEUE_DIR=/tmp/queue" \
-  --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN ANTHROPIC_API_KEY OPENAI_API_KEY)" \
+  --set-env-vars "$(gateway_env_vars)" \
+  --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN ANTHROPIC_API_KEY OPENAI_API_KEY SMTP_PASSWORD)" \
   --quiet
 
 if $DRY_RUN; then

@@ -55,6 +55,31 @@ Poi, senza fretta:
 
 ---
 
+## 1b. Notifiche a Luigi per le richieste `needs_review` (nuovo)
+
+Quando un job va in `needs_review`, il gateway scrive a Luigi: messaggio Telegram (solo testo) e email a una lista di
+indirizzi (`gateway/notify.py`, piano in `docs/plans/luigi-approval-notifications.md`). Si attiva con queste righe in
+`.env` (il file non finisce su git); senza di esse non succede nulla.
+
+```
+NOTIFY_EMAILS=stekkino@hotmail.it,luigi.vinegar@gmail.com
+NOTIFY_TELEGRAM_CHAT_IDS=<il tuo ID numerico Telegram>
+SMTP_USER=luigi.vinegar@gmail.com
+SMTP_PASSWORD=<password per app di Gmail, 16 caratteri>
+```
+
+1. **Password per app di Gmail.** Account Google → Sicurezza → Verifica in due passaggi (deve essere attiva) →
+   Password per le app → crea "AI Studio gateway". Incollala in `.env` come `SMTP_PASSWORD`. Lo script la porta in
+   Secret Manager; non va mai in chat né su git.
+2. **Il tuo ID Telegram** è quello della riga di log `[conv] dir=in chat=<ID> text="test-id-luigi"`.
+3. Ricostruisci il gateway e ridistribuisci (stessi comandi della sezione 1, passi 2-3).
+4. **Prova.** Scrivi al bot una richiesta fuori catalogo (non fraudolenta). Devi ricevere il messaggio su Telegram e
+   l'email (controlla lo spam di Hotmail). I log mostrano `[notify] telegram sent for job …` e `[notify] email sent …`,
+   oppure `failed` con il solo tipo di errore.
+
+Limiti noti: gli avvisi sono best-effort (un canale che fallisce non blocca l'altro né la risposta all'utente), al massimo
+10 al minuto, uno per job. I bottoni Approva/Rifiuta arrivano con le Fasi 2 e 3 del piano.
+
 ## 2. Come ridistribuire (promemoria)
 
 Quando hai cambiato il codice, scegli la riga giusta. Tutti i comandi partono dalla root del repo.
@@ -96,6 +121,8 @@ gcloud run services logs read gateway --region europe-west8 --project aistudio-m
 | `GATEWAY_SYNC_REPLY=1` | `api.py` | Obbligatoria su Cloud Run (lo script la imposta) |
 | `GATEWAY_QUEUE_DIR` | `api.py`, `worker.py` | `/tmp/queue` |
 | `RAG_API_URL` | gateway | Impostata dallo script all'URL di `rag-api` |
+| `NOTIFY_EMAILS`, `NOTIFY_TELEGRAM_CHAT_IDS` | `notify.py` | Destinatari degli avvisi `needs_review` (liste con virgole) |
+| `SMTP_USER`, `SMTP_PASSWORD` | `notify.py` | Gmail con password per app; `SMTP_PASSWORD` è un secret. Opzionali `SMTP_HOST`, `SMTP_PORT`, `NOTIFY_FROM` |
 | `OPENAI_MODEL`, `ALGO_TRADING_URL`, `TRADING_API_URL` | varie | Opzionali |
 
 I secret (`TELEGRAM_*`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) stanno in Secret Manager, copiati da `.env` dallo script.

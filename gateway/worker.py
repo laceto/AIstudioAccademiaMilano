@@ -25,6 +25,7 @@ from pathlib import Path
 
 from config.brand import b, fmt
 from gateway.convlog import log_message
+from gateway.notify import notify_review
 
 logger = logging.getLogger(__name__)
 
@@ -215,6 +216,15 @@ class QueueWorker:
         job_file.write_text(json.dumps(job, indent=2, ensure_ascii=False), encoding="utf-8")
 
         logger.info("[worker] job %s -> %s (product=%s)", job["job_id"], status, cls.get("product_type"))
+
+        if status == "needs_review":
+            # Awaited, not fire-and-forget: Cloud Run freezes the container once the
+            # webhook returns. A notification failure must never break the user's reply.
+            try:
+                await notify_review(job)
+            except Exception as exc:
+                logger.warning("[worker] notify_review failed for job %s: %s", job["job_id"], type(exc).__name__)
+
         return status, reply
 
     async def _process(self, job: dict) -> None:
