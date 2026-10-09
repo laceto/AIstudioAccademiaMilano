@@ -121,3 +121,38 @@ resolve_webhook_secret() {
   upsert_secret TELEGRAM_WEBHOOK_SECRET "$value" >/dev/null
   printf '%s' "$value"
 }
+
+# ensure_firestore_ttl [COLLECTION_GROUP] [FIELD]
+#
+# Make Firestore delete a document once the timestamp in FIELD has passed (defaults: jobs,
+# expire_at). Looks at the TTL fields first and does nothing if FIELD is already one. Firestore
+# deletes expired documents in the background, typically within about 24 hours of expiry.
+# Prints "GROUP.FIELD — TTL enabled | TTL already enabled".
+ensure_firestore_ttl() {
+  local group="${1:-jobs}" field="${2:-expire_at}"
+  if gcloud firestore fields ttls list --collection-group="$group" --database='(default)' \
+       --format='value(name)' 2>/dev/null | grep -q "/fields/$field\$"; then
+    echo "  $group.$field — TTL already enabled"
+  else
+    gcloud firestore fields ttls update "$field" --collection-group="$group" \
+      --database='(default)' --enable-ttl >/dev/null
+    echo "  $group.$field — TTL enabled"
+  fi
+}
+
+# ensure_delete_protection
+#
+# Turn on delete protection for the (default) database, so that neither a stray command nor a
+# console click can delete the jobs. Skips the update when it is already on. To delete the
+# database on purpose, turn it off first (docs/cloud-run-setup.md).
+# Prints "(default) — delete protection enabled | already enabled".
+ensure_delete_protection() {
+  local state
+  state="$(gcloud firestore databases describe --database='(default)' --format='value(deleteProtectionState)')"
+  if [ "$state" = "DELETE_PROTECTION_ENABLED" ]; then
+    echo "  (default) — delete protection already enabled"
+  else
+    gcloud firestore databases update --database='(default)' --delete-protection >/dev/null
+    echo "  (default) — delete protection enabled"
+  fi
+}

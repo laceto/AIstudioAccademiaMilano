@@ -54,6 +54,16 @@ gcloud() {
         describe)      [ -f "$STORE/queue_$4" ] ;;
         create|update) : > "$STORE/queue_$4" ;;
       esac ;;
+    "firestore fields")
+      case "$4" in
+        list)   [ -f "$STORE/ttl_on" ] && echo "projects/p/databases/(default)/collectionGroups/jobs/fields/expire_at" ;;
+        update) : > "$STORE/ttl_on" ;;
+      esac ;;
+    "firestore databases")
+      case "$3" in
+        describe) if [ -f "$STORE/delete_protection" ]; then echo DELETE_PROTECTION_ENABLED; else echo DELETE_PROTECTION_DISABLED; fi ;;
+        update)   : > "$STORE/delete_protection" ;;
+      esac ;;
   esac
 }
 env_val() { eval "printf '%s' \"\${FAKE_ENV_$1:-}\""; }
@@ -240,3 +250,63 @@ def test_worker_env_vars_carry_settings_but_never_secrets(tmp_path):
     out = res.stdout
     assert "PIPELINE_PROVIDER=anthropic" in out and "NOTIFY_TELEGRAM_CHAT_IDS=5670736210" in out
     assert "should-not-appear" not in out  # secrets travel as Secret Manager references only
+
+
+# ── Firestore retention and delete protection ────────────────────────────────
+# Jobs hold what customers typed: they expire (TTL on expire_at) and the database cannot be
+# deleted by accident. Both functions look first and change nothing that is already set.
+
+
+def test_ttl_policy_is_enabled_on_expire_at_of_the_jobs_group(tmp_path):
+    res, log = _run(tmp_path, "ensure_firestore_ttl")
+    assert res.returncode == 0, res.stderr
+    assert "enabled" in res.stdout
+    assert "fields ttls update expire_at" in log and "--collection-group=jobs" in log and "--enable-ttl" in log
+    assert (tmp_path / "ttl_on").exists()
+
+
+def test_ttl_policy_already_set_is_left_alone(tmp_path):
+    (tmp_path / "ttl_on").write_text("")
+    res, log = _run(tmp_path, "ensure_firestore_ttl")
+    assert res.returncode == 0, res.stderr
+    assert "already" in res.stdout
+    assert "ttls update" not in log
+
+
+def test_ttl_policy_second_run_changes_nothing(tmp_path):
+    _run(tmp_path, "ensure_firestore_ttl")
+    res, log = _run(tmp_path, "ensure_firestore_ttl")
+    assert log.count("ttls update") == 1  # the log accumulates across runs
+
+
+def test_ttl_policy_follows_collection_and_field_arguments(tmp_path):
+    res, log = _run(tmp_path, "ensure_firestore_ttl my_jobs when")
+    assert "ttls update when" in log and "--collection-group=my_jobs" in log
+
+
+def test_delete_protection_is_turned_on(tmp_path):
+    res, log = _run(tmp_path, "ensure_delete_protection")
+    assert res.returncode == 0, res.stderr
+    assert "enabled" in res.stdout
+    assert "databases update" in log and "--delete-protection" in log and "--no-delete-protection" not in log
+    assert (tmp_path / "delete_protection").exists()
+
+
+def test_delete_protection_already_on_is_left_alone(tmp_path):
+    (tmp_path / "delete_protection").write_text("")
+    res, log = _run(tmp_path, "ensure_delete_protection")
+    assert res.returncode == 0, res.stderr
+    assert "already" in res.stdout and "databases update" not in log
+
+
+def test_delete_protection_second_run_changes_nothing(tmp_path):
+    _run(tmp_path, "ensure_delete_protection")
+    res, log = _run(tmp_path, "ensure_delete_protection")
+    assert log.count("databases update") == 1
+
+
+def test_the_deploy_script_wires_both_steps_after_the_database_exists():
+    deploy = (Path(LIB).parent / "deploy_cloudrun.sh").read_text(encoding="utf-8")
+    assert "ensure_firestore_ttl" in deploy and "ensure_delete_protection" in deploy
+    create = deploy.index("firestore databases create")
+    assert deploy.index("ensure_firestore_ttl") > create and deploy.index("ensure_delete_protection") > create
