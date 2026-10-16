@@ -11,6 +11,9 @@ COPY gateway/ ./gateway/
 COPY config/ ./config/
 COPY templates/ ./templates/
 COPY deliverables/2026-05-25_016_aistudio-langgraph/ ./deliverables/2026-05-25_016_aistudio-langgraph/
+# Pipeline v2 (PIPELINE_VERSION=v2) is loaded from file, and the weekly research digest runs the research team's code.
+COPY deliverables/2026-10-16_040_studio-pipeline-v2/ ./deliverables/2026-10-16_040_studio-pipeline-v2/
+COPY scripts/github_research/ ./scripts/github_research/
 
 ENV PYTHONUNBUFFERED=1
 

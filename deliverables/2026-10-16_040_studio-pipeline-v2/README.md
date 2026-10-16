@@ -32,10 +32,22 @@ Le note (`advisories`) e la bozza (`draft_post`) viaggiano nel risultato del job
 In `nodes.py`: `COST_PER_HOUR_EUR = 6.0` (costo di un'ora di lavoro dello studio, API comprese), `PRICING_ADEQUACY_MIN = 0.85`,
 `ARCHITECT_RISK_THRESHOLD = 2.5`. Vanno ricalibrati sui primi job reali.
 
+## Team ricerca → Gianni
+
+Il team ricerca non lavora per richiesta: una volta a settimana `POST /research/run` sul worker esegue Scout → Analyst → Curator
+(senza LLM) e salva i primi 10 repo in un digest (`gateway/research_digest.py`; Firestore `research/latest` su Cloud Run). In v2 Gianni
+legge i primi 5 (titolo, punteggio, una riga) in un blocco separato e dichiarato non fidato, solo per scegliere le librerie.
+Digest assente, più vecchio di 14 giorni o rovinato = Gianni lavora come in v1 (il trace dice `research=none` / `research=digest`).
+Il Reporter (Markdown) non serve qui: il digest è già la sintesi. Runbook: `process/runbook_research_digest.md`.
+
+Il worker ora copia anche questa cartella v2 e `scripts/github_research` (prima l'immagine di `Dockerfile.worker` non conteneva v2:
+con `PIPELINE_VERSION=v2` ogni job sarebbe fallito).
+
 ## Cosa NON c'è ancora
 
-- **Team ricerca** (Scout, Analyst, Curator, Reporter): non è per-richiesta. Il piano è un giro settimanale (Cloud Scheduler)
-  che scrive un digest letto da Gianni. Da fare.
+- **Job Cloud Scheduler del digest**: il codice c'è (vedi sotto) ma la risorsa cloud non è stata creata; il comando `gcloud`
+  è in `process/runbook_research_digest.md`. Finché non lo crei, o finché `/research/run` non viene chiamato a mano, non c'è
+  nessun digest e Gianni lavora senza.
 - **Pablo, Sofia, Carlos**: ruoli di costruzione del gateway, non agenti a runtime; nessun nodo.
 - Provato con un modello vero solo con OpenAI (gpt-4o-mini / gpt-4o), non con Anthropic. Vedi le misure qui sotto.
 
@@ -57,6 +69,7 @@ In `nodes.py`: `COST_PER_HOUR_EUR = 6.0` (costo di un'ora di lavoro dello studio
   - `ARCHITECT_RISK_THRESHOLD = 2.5` e `PRICING_ADEQUACY_MIN = 0.85`: non valutabili con 3 lavori (nessun rischio medio ha superato 2,0).
   - Il Devil's Advocate ha contestato il prezzo in entrambi i lavori con prezzo (1,90 € e 9,90 €): per un lavoro senza prezzo approvato quasi ogni richiesta andrebbe a Luigi.
 - Non misurato: Anthropic come provider; l'app Streamlit con v1 (la QA fallita viene da Chiara/QA di v1, non l'ho confrontata); il doppio messaggio `[RiskPanel]` nella traccia, che c'è anche in v1 (stream del riavvio dopo l'approvazione).
+- Le misure qui sotto sono senza digest di ricerca (non ne esisteva uno): con il digest il prompt di Gianni (modello "smart") è più lungo, quindi costo e tempo salgono un po'. La ricerca GitHub vera non è stata chiamata.
 
 ## Test
 

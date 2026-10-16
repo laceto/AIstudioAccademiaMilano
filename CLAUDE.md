@@ -184,7 +184,8 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `.env.example` | Template variabili d'ambiente — copia in `.env` e compila |
 | `scripts/learning_loop.py` | Auto-aggiorna settings dopo ogni request |
 | `scripts/git-hooks/pre-commit` | Blocca `.env` + pattern segreti noti |
-| `scripts/check_telegram.py` | Doctor canali Telegram: `getMe` + `getWebhookInfo` per bot, rileva conflitti webhook/polling |
+| `scripts/check_telegram.py` | Doctor canali Telegram: `getMe` + `getWebhookInfo` per bot, rileva conflitti webhook/polling e token duplicati (pipeline, RAG, admin) |
+| `deliverables/2026-10-16_041_admin-bot/` | Guida al bot admin separato (`TELEGRAM_ADMIN_BOT_TOKEN`): cosa cambia, come attivarlo, limiti |
 | `scripts/run_local_stack.py` | Avvia lo stack Telegram in locale (RAG API + 2 bot polling + worker) |
 | `process/runbook_local_telegram_stack.md` | Runbook: far girare i canali Telegram su laptop, senza URL pubblico |
 | `docs/cloud-run-setup.md` | Stato del setup Cloud Run (progetto `aistudio-milano`, regione `europe-west8`), cosa è fatto e cosa resta da fare |
@@ -207,6 +208,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `gateway/safety.py` | Rifiuto delle richieste chiaramente illegali: filtro a frasi che gira prima del modello; elenco da estendere con prudenza |
 | `gateway/review_request.py` | `RIESAMINA` dal cliente: avvisa Luigi senza creare un job |
 | `deliverables/2026-10-09_038_erasure-and-refusals/` | Guida a `/cancella`, ai rifiuti automatici e a RIESAMINA |
+| `gateway/research_digest.py`, `process/runbook_research_digest.md` | Digest settimanale GitHub AI per Gianni (pipeline v2): salvataggio, lettura difensiva, endpoint `/research/run` sul worker, comando Scheduler |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
@@ -383,7 +385,8 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 037 | 2026-10-09 | Retention dei dati, informativa privacy e recupero dei job bloccati — `expire_at` a 90 giorni con TTL Firestore e protezione dalla cancellazione, backfill, sweep dei job `running` (Cloud Scheduler ogni 10 min), `/start` e `/privacy` | 0.00 (internal) |
 | 038 | 2026-10-09 | Cancellazione su richiesta e rifiuto delle richieste fraudolente — `/cancella` con scheda di conferma e registro delle cancellazioni; rifiuto automatico (filtro a frasi + modello), RIESAMINA per il cliente e Riesamina per Luigi, conservazione 30 giorni per i rifiuti; `/privacy` in più messaggi; learning loop: hook solo se lo script esiste | 0.00 (internal) |
 | 039 | 2026-10-16 | Email to-do agent — scansione Gmail N volte al giorno, to-do e proposte di calendario con approvazione, architettura multi-account a provider (Hotmail/Outlook in lista), 16 test offline; non ancora provato su una casella reale | 0.00 (internal) |
-| 040 | 2026-10-16 | Pipeline v2 — tutti i ruoli nella pipeline: Lorenzo (scansione injection), Devil's Advocate + Financial Controller + IT Staff prima della build, 6 revisori in parallelo, Core Architect su trigger, Valentina (bozza), aggregatore con soglia critica; accanto a v1 con `PIPELINE_VERSION`; 22 test offline; non provato con un modello vero; manca il giro settimanale del team ricerca | 0.00 (internal) |
+| 040 | 2026-10-16 | Pipeline v2 — tutti i ruoli nella pipeline: Lorenzo (scansione injection), Devil's Advocate + Financial Controller + IT Staff prima della build, 6 revisori in parallelo, Core Architect su trigger, Valentina (bozza), aggregatore con soglia critica; accanto a v1 con `PIPELINE_VERSION`; digest settimanale del team ricerca letto da Gianni (`POST /research/run`, Firestore `research/latest`); 56 test offline; non provato con un modello vero né con GitHub; il job Cloud Scheduler del digest non è stato creato (comando in `process/runbook_research_digest.md`) | 0.00 (internal) |
+| 041 | 2026-10-16 | Bot admin separato — `TELEGRAM_ADMIN_BOT_TOKEN` opzionale: schede, comandi, avvisi e risultati da rivedere su un bot solo di Luigi (`/webhook/telegram-admin`), il bot clienti senza poteri admin; messaggi ai clienti sempre dal bot clienti; deploy e doctor aggiornati; non ancora deployato | 0.00 (internal) |
 
 ---
 
@@ -413,3 +416,4 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | ISS-025 | P1 | Valutare Lemon Squeezy vs Payhip come merchant-of-record (EU VAT) | OPEN |
 | ISS-026 | P3 | HF Spaces paid deployment lane per chatbot/agent/techa deliverable | OPEN |
 | ISS-027 | P3 | Gumroad secondary-channel publisher per PDF, planner, flashcard, journal | OPEN |
+| ISS-029 | P2 | Bot admin separato (041): creare il bot in @BotFather, `TELEGRAM_ADMIN_BOT_TOKEN` in `.env` + Start, deploy (`deploy_cloudrun.sh --dry-run` poi reale), provare la scheda su Telegram; poi pulizia git: togliere il commit 72569fb e l'audit `040_admin-bot` persi su `claude/mailagent-filing-rules`, rinumerare i due audit 040 su `downloads-agent` e `mailagent-filing-rules` | OPEN (codice mergiato in #222, non deployato) |

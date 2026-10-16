@@ -8,6 +8,7 @@ Endpoints:
   GET  /status/{id}         Poll job status
   POST /webhook/whatsapp    Twilio WhatsApp webhook (Carlos, HMAC-validated)
   POST /webhook/telegram    Telegram webhook (registered after Cloud Run deploy)
+  POST /webhook/telegram-admin  Luigi's admin bot (approvals, commands); only when TELEGRAM_ADMIN_BOT_TOKEN is set
   GET  /health              Liveness probe
 
 Run locally:
@@ -17,7 +18,8 @@ Environment variables:
   GATEWAY_QUEUE_DIR     Queue directory path (default: gateway/queue)
   ANTHROPIC_API_KEY     Claude API key for the queue worker
   OPENAI_API_KEY        OpenAI API key (fallback for queue worker)
-  TELEGRAM_BOT_TOKEN    Required for Telegram webhook mode
+  TELEGRAM_BOT_TOKEN    Required for Telegram webhook mode (the customer bot)
+  TELEGRAM_ADMIN_BOT_TOKEN  Optional second bot only for Luigi; when set, the customer bot has no admin powers
 """
 
 import asyncio
@@ -46,7 +48,7 @@ from pydantic import BaseModel, field_validator
 
 from config.brand import b
 from gateway.bot_whatsapp import router as whatsapp_router
-from gateway.admin_telegram import handle_admin_message, handle_callback, refuse_admin_command
+from gateway.admin_telegram import AdminBot, handle_admin_message, handle_callback, refuse_admin_command
 from gateway.convlog import log_message, silence_http_loggers
 from gateway.middleware import check_rate_limit
 from gateway.pipeline_adapter import PipelineAdapter
@@ -474,6 +476,46 @@ async def _reply(bot, chat_id, text: str, **kwargs) -> None:
     await bot.send_message(chat_id=chat_id, text=text, **kwargs)
 
 
+def _admin_bot_token() -> str:
+    """Token of Luigi's own bot; empty means the customer bot still carries the admin side."""
+    return os.environ.get("TELEGRAM_ADMIN_BOT_TOKEN", "").strip()
+
+
+@app.post("/webhook/telegram-admin")
+async def telegram_admin_webhook(request: Request):
+    """Updates for Luigi's admin bot: button presses, commands and price answers. Never creates a job."""
+    from telegram import Bot
+
+    admin_token = _admin_bot_token()
+    customer_token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    secret = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
+    if not (admin_token and customer_token and secret):  # fail closed: no secret, no admin actions
+        raise HTTPException(status_code=503, detail="admin bot not configured")
+    supplied = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+    if not hmac.compare_digest(supplied.encode(), secret.encode()):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": True}
+
+    # Luigi's cards and answers go out on the admin bot; anything for a customer, on the customer bot.
+    bot = AdminBot(Bot(token=admin_token), Bot(token=customer_token))
+    try:
+        callback = data.get("callback_query")
+        if callback:
+            await handle_callback(bot, _adapter.store, callback)
+        else:
+            message = data.get("message") or data.get("edited_message")
+            if message:
+                log_message("in", (message.get("chat") or {}).get("id"), message.get("text", ""))
+                await handle_admin_message(bot, _adapter.store, message)  # a stranger or plain text: ignored
+    except Exception as exc:  # always 200: Telegram retries anything else
+        logger.error("admin webhook failed: %s", type(exc).__name__)
+    return {"ok": True}
+
+
 @app.post("/webhook/telegram")
 async def telegram_webhook(request: Request):
     """Telegram update webhook — receives updates from Telegram servers."""
@@ -493,6 +535,9 @@ async def telegram_webhook(request: Request):
     authentic = bool(secret) and hmac.compare_digest(supplied.encode(), secret.encode())
     if secret and not authentic:
         raise HTTPException(status_code=403, detail="Forbidden")
+    # With a separate admin bot this one only talks to customers: Luigi's test requests are ordinary
+    # requests and his decisions come in on /webhook/telegram-admin.
+    admin_here = authentic and not _admin_bot_token()
 
     try:
         data = await request.json()
@@ -501,8 +546,8 @@ async def telegram_webhook(request: Request):
 
     callback = data.get("callback_query")
     if callback:
-        if not authentic:
-            logger.warning("callback_query ignored: TELEGRAM_WEBHOOK_SECRET is not configured")
+        if not admin_here:
+            logger.warning("callback_query ignored: TELEGRAM_WEBHOOK_SECRET is not configured or the admin bot is in use")
             return {"ok": True}
         # Luigi pressed a button on a review card. Always answer 200: Telegram retries anything else.
         try:
@@ -527,7 +572,7 @@ async def telegram_webhook(request: Request):
 
     # Luigi's commands and price answers; a stranger's /approve is swallowed, never queued as a job.
     try:
-        if authentic:
+        if admin_here:
             handled = await handle_admin_message(bot, _adapter.store, message)
         else:
             handled = await refuse_admin_command(bot, message)
