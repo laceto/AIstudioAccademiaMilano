@@ -415,3 +415,4 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | ISS-025 | P1 | Valutare Lemon Squeezy vs Payhip come merchant-of-record (EU VAT) | OPEN |
 | ISS-026 | P3 | HF Spaces paid deployment lane per chatbot/agent/techa deliverable | OPEN |
 | ISS-027 | P3 | Gumroad secondary-channel publisher per PDF, planner, flashcard, journal | OPEN |
+| ISS-029 | P2 | Bot admin separato (041): creare il bot in @BotFather, `TELEGRAM_ADMIN_BOT_TOKEN` in `.env` + Start, deploy (`deploy_cloudrun.sh --dry-run` poi reale), provare la scheda su Telegram; poi pulizia git: togliere il commit 72569fb e l'audit `040_admin-bot` persi su `claude/mailagent-filing-rules`, rinumerare i due audit 040 su `downloads-agent` e `mailagent-filing-rules` | OPEN (codice mergiato in #222, non deployato) |
