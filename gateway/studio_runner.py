@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import importlib.util
 import math
+import os
 import re
 import sys
 import types
@@ -31,13 +32,20 @@ from gateway.admin import MAX_PRICE
 
 ROOT = Path(__file__).resolve().parent.parent
 PIPELINE_DIR = ROOT / "deliverables" / "2026-05-25_016_aistudio-langgraph"
-_PKG = "studio_pipeline"
+PIPELINE_V2_DIR = ROOT / "deliverables" / "2026-10-16_040_studio-pipeline-v2"
+# version -> (folder, package name, modules in dependency order)
+_PIPELINES = {
+    "v1": (PIPELINE_DIR, "studio_pipeline", ("state", "llm_factory", "nodes", "graph")),
+    "v2": (PIPELINE_V2_DIR, "studio_pipeline_v2", ("state", "nodes", "graph")),
+}
+DEFAULT_VERSION = "v1"
 
 # A Firestore document holds 1 MiB; the deliverable shares it with the run trace.
 MAX_DELIVERABLE_BYTES = 400_000
 # The pipeline's own threshold (risk_aggregator passes when the average is below 3.5).
 HIGH_RISK_SCORE = 3.5
 _MAX_ERROR_CHARS = 300
+_MAX_NOTE_CHARS = 1500
 
 _SECRET_PATTERNS = [
     (re.compile(r"sk-[A-Za-z0-9_\-]{4,}"), "sk-***"),
@@ -47,41 +55,52 @@ _SECRET_PATTERNS = [
 ]
 
 
-def scrub(text: object) -> str:
+def scrub(text: object, limit: int = _MAX_ERROR_CHARS) -> str:
     """Hide API keys and bot tokens that provider errors like to echo back, and cap the length."""
     out = str(text)
     for pattern, replacement in _SECRET_PATTERNS:
         out = pattern.sub(replacement, out)
-    return out[:_MAX_ERROR_CHARS]
+    return out[:limit]
 
 
-def load_pipeline() -> SimpleNamespace:
-    """Import the pipeline package once and return its modules (state, llm_factory, nodes, graph)."""
-    graph_name = f"{_PKG}.graph"
+def _scrub_note(note: dict) -> dict:
+    return {k: scrub(v, _MAX_NOTE_CHARS) if isinstance(v, str) else v for k, v in dict(note).items()}
+
+
+def pipeline_version(env=None) -> str:
+    """PIPELINE_VERSION picks the graph; anything unknown falls back to v1, the proven one."""
+    value = (os.environ if env is None else env).get("PIPELINE_VERSION", DEFAULT_VERSION)
+    return value if value in _PIPELINES else DEFAULT_VERSION
+
+
+def load_pipeline(version: str = DEFAULT_VERSION) -> SimpleNamespace:
+    """Import one pipeline package once and return its modules (state, nodes, graph; v1 also llm_factory).
+
+    Their folder names have hyphens, so they are loaded from file. v2 builds on v1 and loads it first.
+    """
+    folder, pkg_name, modules = _PIPELINES[version]
+    graph_name = f"{pkg_name}.graph"
     if graph_name not in sys.modules:
-        pkg = types.ModuleType(_PKG)
-        pkg.__path__ = [str(PIPELINE_DIR)]
-        pkg.__package__ = _PKG
-        sys.modules[_PKG] = pkg
+        if version != DEFAULT_VERSION:
+            load_pipeline(DEFAULT_VERSION)
+        pkg = types.ModuleType(pkg_name)
+        pkg.__path__ = [str(folder)]
+        pkg.__package__ = pkg_name
+        sys.modules[pkg_name] = pkg
         if str(ROOT) not in sys.path:
             sys.path.insert(0, str(ROOT))  # for config.brand and friends
 
-        for name in ("state", "llm_factory", "nodes", "graph"):  # dependency order
-            fqn = f"{_PKG}.{name}"
+        for name in modules:  # dependency order
+            fqn = f"{pkg_name}.{name}"
             spec = importlib.util.spec_from_file_location(
-                fqn, PIPELINE_DIR / f"{name}.py", submodule_search_locations=[str(PIPELINE_DIR)]
+                fqn, folder / f"{name}.py", submodule_search_locations=[str(folder)]
             )
             module = importlib.util.module_from_spec(spec)
-            module.__package__ = _PKG
+            module.__package__ = pkg_name
             sys.modules[fqn] = module
             spec.loader.exec_module(module)
 
-    return SimpleNamespace(
-        state=sys.modules[f"{_PKG}.state"],
-        llm_factory=sys.modules[f"{_PKG}.llm_factory"],
-        nodes=sys.modules[f"{_PKG}.nodes"],
-        graph=sys.modules[graph_name],
-    )
+    return SimpleNamespace(**{name: sys.modules[f"{pkg_name}.{name}"] for name in modules})
 
 
 def headless_deliver(state: dict) -> dict:
@@ -116,6 +135,10 @@ class RunResult:
     high_risk: bool = False
     skills: list = field(default_factory=list)
     steps: list = field(default_factory=list)
+    # v2 only: notes from the roles that advise Luigi (Core Architect, IT Staff, Devil's Advocate)
+    # and Valentina's announcement draft. Nothing here is acted on or published by the pipeline.
+    advisories: list = field(default_factory=list)
+    draft_post: str | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -134,14 +157,17 @@ def _valid_price(price) -> bool:
     )
 
 
-def run_job(job: dict, *, provider: str = "openai") -> RunResult:
-    """Run one approved job through the pipeline. Never raises: failures come back as ok=False."""
+def run_job(job: dict, *, provider: str = "openai", version: str | None = None) -> RunResult:
+    """Run one approved job through the pipeline. Never raises: failures come back as ok=False.
+
+    `version` defaults to PIPELINE_VERSION (v1 when unset).
+    """
     price = job.get("price")
     if not _valid_price(price):
         return _failure("Prezzo approvato mancante o non valido: la pipeline non e' stata avviata.")
 
     try:
-        pipe = load_pipeline()
+        pipe = load_pipeline(version or pipeline_version())
         # A fresh graph (and MemorySaver) per run, so nothing is shared between jobs.
         graph = pipe.graph.build_studio_graph(deliver=headless_deliver)
         steps, final = pipe.graph.run_pipeline(
@@ -166,6 +192,7 @@ def run_job(job: dict, *, provider: str = "openai") -> RunResult:
         risk_score=risk,
         high_risk=risk >= HIGH_RISK_SCORE,
         steps=trace,
+        advisories=[_scrub_note(n) for n in (final.get("advisory_notes") or [])],
     )
 
     if not (final.get("finished") and delivery.get("status") == "ready" and content.strip()):
@@ -186,5 +213,6 @@ def run_job(job: dict, *, provider: str = "openai") -> RunResult:
         price=float(price),
         invoice_id=final.get("invoice_id"),
         skills=list(final.get("skills_used") or []),
+        draft_post=scrub(final["draft_post"], _MAX_NOTE_CHARS) if final.get("draft_post") else None,
         **common,
     )
