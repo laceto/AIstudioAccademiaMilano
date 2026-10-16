@@ -184,7 +184,8 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `.env.example` | Template variabili d'ambiente — copia in `.env` e compila |
 | `scripts/learning_loop.py` | Auto-aggiorna settings dopo ogni request |
 | `scripts/git-hooks/pre-commit` | Blocca `.env` + pattern segreti noti |
-| `scripts/check_telegram.py` | Doctor canali Telegram: `getMe` + `getWebhookInfo` per bot, rileva conflitti webhook/polling |
+| `scripts/check_telegram.py` | Doctor canali Telegram: `getMe` + `getWebhookInfo` per bot, rileva conflitti webhook/polling e token duplicati (pipeline, RAG, admin) |
+| `deliverables/2026-10-16_041_admin-bot/` | Guida al bot admin separato (`TELEGRAM_ADMIN_BOT_TOKEN`): cosa cambia, come attivarlo, limiti |
 | `scripts/run_local_stack.py` | Avvia lo stack Telegram in locale (RAG API + 2 bot polling + worker) |
 | `process/runbook_local_telegram_stack.md` | Runbook: far girare i canali Telegram su laptop, senza URL pubblico |
 | `docs/cloud-run-setup.md` | Stato del setup Cloud Run (progetto `aistudio-milano`, regione `europe-west8`), cosa è fatto e cosa resta da fare |
@@ -385,6 +386,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 038 | 2026-10-09 | Cancellazione su richiesta e rifiuto delle richieste fraudolente — `/cancella` con scheda di conferma e registro delle cancellazioni; rifiuto automatico (filtro a frasi + modello), RIESAMINA per il cliente e Riesamina per Luigi, conservazione 30 giorni per i rifiuti; `/privacy` in più messaggi; learning loop: hook solo se lo script esiste | 0.00 (internal) |
 | 039 | 2026-10-16 | Email to-do agent — scansione Gmail N volte al giorno, to-do e proposte di calendario con approvazione, architettura multi-account a provider (Hotmail/Outlook in lista), 16 test offline; non ancora provato su una casella reale | 0.00 (internal) |
 | 040 | 2026-10-16 | Pipeline v2 — tutti i ruoli nella pipeline: Lorenzo (scansione injection), Devil's Advocate + Financial Controller + IT Staff prima della build, 6 revisori in parallelo, Core Architect su trigger, Valentina (bozza), aggregatore con soglia critica; accanto a v1 con `PIPELINE_VERSION`; digest settimanale del team ricerca letto da Gianni (`POST /research/run`, Firestore `research/latest`); 56 test offline; non provato con un modello vero né con GitHub; il job Cloud Scheduler del digest non è stato creato (comando in `process/runbook_research_digest.md`) | 0.00 (internal) |
+| 041 | 2026-10-16 | Bot admin separato — `TELEGRAM_ADMIN_BOT_TOKEN` opzionale: schede, comandi, avvisi e risultati da rivedere su un bot solo di Luigi (`/webhook/telegram-admin`), il bot clienti senza poteri admin; messaggi ai clienti sempre dal bot clienti; deploy e doctor aggiornati; non ancora deployato | 0.00 (internal) |
 
 ---
 
