@@ -27,12 +27,14 @@ import re
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
 
 from gateway.convlog import silence_http_loggers
 from gateway.jobstore import make_store
 from gateway.notify import notify_result
 from gateway.recovery import finish_run, sweep_and_notify
+from gateway.research_digest import ResearchError, make_digest_store, run_weekly
 from gateway.studio_runner import RunResult, run_job, scrub
 
 logger = logging.getLogger(__name__)
@@ -77,6 +79,24 @@ async def sweep():
     store = make_store(os.environ.get("GATEWAY_QUEUE_DIR", "gateway/queue"))
     swept = await sweep_and_notify(store, notify_result)
     return {"swept": [job["job_id"] for job in swept]}
+
+
+@app.post("/research/run")
+async def research_run():
+    """Weekly GitHub AI research digest for Gianni (gateway/research_digest.py). Cloud Scheduler calls it
+    once a week as the same service account as /run. No LLM, so no cost beyond the GitHub API. A failed
+    run answers 502 (the scheduler shows it) and leaves the previous digest in place."""
+    token = os.environ.get("RESEARCH_GITHUB_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    try:
+        digest = await asyncio.to_thread(run_weekly, store=make_digest_store(), token=token)
+    except ResearchError as exc:
+        logger.warning("[research] %s", scrub(exc))
+        return JSONResponse({"error": "research run failed"}, status_code=502)
+    except Exception as exc:  # e.g. the store: keep the details in the log, not in the response
+        logger.warning("[research] run failed: %s", type(exc).__name__)
+        return JSONResponse({"error": "research run failed"}, status_code=502)
+    logger.info("[research] digest saved with %d repos", len(digest["repos"]))
+    return {"saved": len(digest["repos"]), "generated_at": digest["generated_at"]}
 
 
 @app.post("/run")
