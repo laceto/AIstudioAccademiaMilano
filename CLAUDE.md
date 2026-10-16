@@ -30,6 +30,7 @@ If the intent is not in the table → `unknown_product: null` → **block, escal
 | family archivist | `family_archivist` | 14.90 | — |
 | meal planner, ricette | `mediterranean_meal_planner` | 14.90 | — |
 | niccolò chronicles, time capsule | `niccolo_chronicles` | 14.90 | — |
+| estratto conto, analisi conto, movimenti bancari | `bank_statement_analyst` | 14.90 | — |
 | qualsiasi altro | `unknown_product` | **null** | **BLOCK** |
 
 ---
@@ -164,6 +165,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
   "family_archivist":          "14.90",
   "mediterranean_meal_planner":"14.90",
   "niccolo_chronicles":        "14.90",
+  "bank_statement_analyst":    "14.90",
   "unknown_product":           null
 }
 ```
@@ -212,6 +214,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `mailagent/server.py`, `mailagent/classifier.py`, `scripts/deploy_mailagent.sh` | Gmail tidy su Cloud Run (042): classificatore a header, `POST /process`, deploy con Secret Manager + Scheduler; runbook `process/runbook_mailagent_cloudrun.md` |
 | `gateway/research_digest.py`, `process/runbook_research_digest.md` | Digest settimanale GitHub AI per Gianni (pipeline v2): salvataggio, lettura difensiva, endpoint `/research/run` sul worker, comando Scheduler |
 | `driverouter/` | Drive Semantic Router (043): `classifier.py` (MiniLM + ChromaDB), `main.py` (FastAPI, Drive, scheduler), `Dockerfile`, `deploy_azure.sh` (F1 + Key Vault); guida in `deliverables/2026-10-16_043_drive-semantic-router/` |
+| `bankanalyst/` | Analista estratti conto (045): PDF Credem/ING → movimenti → categorie (`rules.yaml`) → Excel per trimestre con quadratura saldi; guida in `deliverables/2026-10-16_045_bank-statement-analyst/` |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
@@ -396,6 +399,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 042 | 2026-10-16 | Gmail tidy su Cloud Run — `mailagent tidy`: newsletter/notifiche/promozioni da header (`List-Unsubscribe`, `Precedence`, `no-reply@`, categoria Promozioni) → etichetta + archivio in `batchModify`, lista `protect`, mai stellate né mail < 60 min; retry 429/5xx, log JSON, FastAPI `/process` privato, Dockerfile, `deploy_mailagent.sh` (Secret Manager + Scheduler orario), dry run di default; 22 test offline; non deployato, non provato sulla casella reale | 0.00 (internal) |
 | 043 | 2026-10-16 | Drive Semantic Router — FastAPI + sentence-transformers (MiniLM, CPU) + ChromaDB: smista `05_In_Arrivo_Da_Smistare` nelle cartelle di categoria e rinomina `YYYY-MM-DD_Categoria_Descrizione.ext`; OCR via Drive, APScheduler, log JSON, Dockerfile, deploy Azure App Service F1 + Key Vault; `DRY_RUN` di default; 27 test offline; non provato con il modello vero, Drive reale né Azure | null (pending Luigi — proposta 29.90) |
 | 044 | 2026-10-16 | Lezioni apprese nel learning loop (idea da Harness², google-research/harness2) — `learning_flags.lessons` (cue/lesson/evidence/confidence) negli audit, unite in `global_settings.json` senza duplicati, digest `process/lessons_learned.md` letto da Gianni e Chiara; 13 test offline; demo Harness² non eseguita (permessi) | 0.00 (internal) |
+| 045 | 2026-10-16 | Analista estratti conto — `bankanalyst`: PDF Credem e ING → movimenti (colonne Dare/Avere lette dalla posizione), quadratura saldo iniziale + movimenti = saldo finale, classificazione a regole YAML (18 categorie, override, giroconti tra conti esclusi dai totali), doppioni tra estratti sovrapposti tolti, Excel per trimestre (Riepilogo, Per categoria, Movimenti, Da classificare, Controlli); 24 test offline su PDF sintetici; layout reali Credem/ING non ancora visti: da provare sui PDF di Luigi | 14.90 |
 
 ---
 

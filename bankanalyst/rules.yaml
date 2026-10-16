@@ -1,0 +1,80 @@
+# Regole di classificazione (delivery 045). Vince la prima categoria che corrisponde, dall'alto.
+# patterns: espressioni regolari, maiuscole/minuscole indifferenti, cercate nella descrizione.
+# direction: in (solo entrate), out (solo uscite), any (default).
+# transfer: true → spostamenti tra i propri conti, esclusi dai totali entrate/uscite.
+# overrides: frammento di descrizione → categoria; vince su tutto. Mettici i casi che le regole sbagliano.
+# Copia questo file, modificalo e passalo con --rules.
+
+overrides: {}
+
+categories:
+  - name: Giroconti tra conti
+    transfer: true
+    patterns: ['giroconto', 'giro ?conto', 'trasferimento (fondi|tra conti)', 'bonifico da ing', 'bonifico (a|verso) credem',
+               'conto credem', 'conto arancio']
+
+  - name: Stipendio e redditi
+    direction: in
+    patterns: ['stipendio', 'emolument', 'retribuzion', 'pensione', 'cedolino', 'competenze']
+
+  - name: Rimborsi e altre entrate
+    direction: in
+    patterns: ['rimborso', 'storno', 'cashback', 'interessi creditori', 'bonifico (a vostro favore|da)', 'accredito']
+
+  - name: Affitto e mutuo
+    patterns: ['affitto', 'canone locazione', 'mutuo', 'rata (mutuo|finanziamento|prestito)']
+
+  - name: Casa e utenze
+    patterns: ['enel', 'a2a', '\bhera\b', 'iren', 'edison', 'eni plenitude', 'sorgenia', 'acea', 'metropolitana milanese',
+               'tim\b', 'telecom', 'vodafone', 'windtre', 'wind tre', 'iliad', 'fastweb', 'condominio', 'tari\b',
+               'bolletta', 'ikea', 'leroy merlin', 'brico']
+
+  - name: Spesa alimentare
+    patterns: ['esselunga', 'coop', 'conad', 'carrefour', 'lidl', 'eurospin', '\bpam\b', 'unes', 'iper\b', 'il gigante',
+               'bennet', 'penny', 'aldi', 'md spa', 'tigros', 'crai', 'despar', 'naturasi', 'supermerc', 'alimentari']
+
+  - name: Ristoranti e bar
+    patterns: ['ristorant', 'trattoria', 'osteria', 'pizzeri', '\bbar\b', 'caff', 'pasticceri', 'gelateri',
+               'mcdonald', 'burger king', 'deliveroo', 'glovo', 'just ?eat', 'uber ?eats', 'sushi']
+
+  - name: Trasporti e carburante
+    patterns: ['\beni\b', 'eni station', '\bq8\b', '\bip\b', 'tamoil', 'esso', 'agip', 'carburant', 'telepass',
+               'autostrad', '\batm\b milano', 'trenitalia', 'italo', 'trenord', 'uber', 'free ?now', 'parcheggi',
+               'easypark', 'ryanair', 'easyjet', 'ita airways', 'rca', 'bollo auto']
+
+  - name: Salute
+    patterns: ['farmaci', 'parafarm', 'ospedal', 'ticket', 'medic', 'dentist', 'ottic', 'analisi', 'poliambulator',
+               'clinica', 'cup ']
+
+  - name: Abbonamenti e digitale
+    patterns: ['netflix', 'spotify', 'amazon prime', 'disney', 'dazn', 'sky ', 'now tv', 'apple\.com', 'itunes',
+               'google', 'microsoft', 'openai', 'anthropic', 'claude\.ai', 'github', 'icloud', 'youtube', 'palestra',
+               'abbonamento']
+
+  - name: Shopping
+    patterns: ['amazon', 'zalando', 'decathlon', 'h&m', 'zara', 'mediaworld', 'unieuro', 'euronics', 'ebay', 'paypal',
+               'shein', 'temu', 'oviesse', 'coin\b', 'rinascente']
+
+  - name: Famiglia e istruzione
+    patterns: ['scuola', 'asilo', 'nido', 'mensa', 'retta', 'universit', 'libreria', 'giocattol', 'toys', 'prenatal']
+
+  - name: Tasse e F24
+    patterns: ['\bf24\b', 'agenzia (delle )?entrate', 'imposta', 'tribut', 'pagopa', 'inps', 'multa', 'contravvenzion']
+
+  - name: Assicurazioni
+    patterns: ['assicuraz', 'unipol', 'generali', 'allianz', 'axa', 'zurich', 'reale mutua', 'polizza']
+
+  - name: Investimenti e risparmio
+    patterns: ['titoli', 'fondo', '\betf\b', 'dossier', 'pac\b', 'conto deposito', 'compravendita', 'cedol', 'directa',
+               'fineco', 'degiro', 'trade republic', 'scalable']
+
+  - name: Commissioni e costi bancari
+    patterns: ['commission', 'canone', 'spese (tenuta|di gestione|conto)', 'imposta di bollo', 'bollo', 'competenze di chiusura',
+               'interessi debitori']
+
+  - name: Prelievi contanti
+    patterns: ['prelievo', 'prelevamento', 'bancomat atm', '\batm\b']
+
+  - name: Bonifici in uscita
+    direction: out
+    patterns: ['bonifico', 'satispay', 'ricarica']

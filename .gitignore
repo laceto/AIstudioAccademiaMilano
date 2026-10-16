@@ -77,3 +77,7 @@ gateway/erasures/
 # mailagent: scanned mail metadata and OAuth tokens never get committed
 data/mailagent/
 credentials/mailagent_*_token.json
+
+# Estratti conto bancari e analisi (045): dati personali, mai nel repo
+estratti_conto/
+analisi_estratti_conto*.xlsx
