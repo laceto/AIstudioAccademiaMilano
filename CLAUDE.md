@@ -382,6 +382,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 036 | 2026-10-09 | Approvazione da Telegram + worker asincrono della pipeline — avvisi a Luigi (Telegram/email), job su Firestore, Approva/Gratis/Imposta prezzo/Rifiuta (solo il suo ID, una volta sola), esecuzione LangGraph su worker privato via Cloud Tasks, revisione e invio al cliente | 0.00 (internal) |
 | 037 | 2026-10-09 | Retention dei dati, informativa privacy e recupero dei job bloccati — `expire_at` a 90 giorni con TTL Firestore e protezione dalla cancellazione, backfill, sweep dei job `running` (Cloud Scheduler ogni 10 min), `/start` e `/privacy` | 0.00 (internal) |
 | 038 | 2026-10-09 | Cancellazione su richiesta e rifiuto delle richieste fraudolente — `/cancella` con scheda di conferma e registro delle cancellazioni; rifiuto automatico (filtro a frasi + modello), RIESAMINA per il cliente e Riesamina per Luigi, conservazione 30 giorni per i rifiuti; `/privacy` in più messaggi; learning loop: hook solo se lo script esiste | 0.00 (internal) |
+| 039 | 2026-10-16 | Email to-do agent — scansione Gmail N volte al giorno, to-do e proposte di calendario con approvazione, architettura multi-account a provider (Hotmail/Outlook in lista), 16 test offline; non ancora provato su una casella reale | 0.00 (internal) |
 
 ---
 

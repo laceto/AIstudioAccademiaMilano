@@ -1,0 +1,16 @@
+# Mailboxes the email agent scans. Adding an account = adding a block (no code) when its
+# provider type already exists in mailagent/providers/. Secrets stay out of this file:
+# options name the env var or token file, never hold the token.
+accounts:
+  - id: gmail-luigi
+    provider: gmail            # mail + calendar both via Google
+    scans_per_day: 4
+    options:
+      token_env: MAILAGENT_GMAIL_LUIGI_TOKEN        # Cloud Run: secret with the token JSON
+      token_file: credentials/mailagent_gmail-luigi_token.json   # local: made by `python -m mailagent auth gmail-luigi`
+      credentials_file: credentials/google_credentials.json
+
+  # Hotmail/Outlook: provider type not built yet, see docs/plans/mailagent-hotmail-todo.md.
+  # - id: hotmail-luigi
+  #   provider: outlook
+  #   enabled: false
