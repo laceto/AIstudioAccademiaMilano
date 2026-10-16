@@ -3,10 +3,10 @@
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
     "last_updated": "2026-10-16",
-    "last_request_id": "042",
-    "total_requests_processed": 32,
+    "last_request_id": "045",
+    "total_requests_processed": 33,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "042"
+    "last_processed_audit_log": "045"
   },
   "skills": {
     "html_tailwind_css": {
@@ -732,7 +732,7 @@
       ],
       "agent": "Chiara",
       "first_seen": "2026-10-16",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -743,7 +743,7 @@
       ],
       "agent": "Chiara",
       "first_seen": "2026-10-16",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -754,7 +754,7 @@
       ],
       "agent": "Chiara",
       "first_seen": "2026-10-16",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     },
@@ -765,7 +765,7 @@
       ],
       "agent": "Chiara",
       "first_seen": "2026-10-16",
-      "times_used": 1,
+      "times_used": 2,
       "success_rate": 1.0,
       "avg_duration_sec": 0
     }
@@ -1193,6 +1193,11 @@
           "count": 1,
           "avg_sec": 25.0,
           "success_rate": 0.0
+        },
+        "bank_statement_analyst": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1259,6 +1264,11 @@
           "count": 1,
           "avg_sec": 900.0,
           "success_rate": 0.0
+        },
+        "bank_statement_analyst": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1320,6 +1330,11 @@
           "count": 1,
           "avg_sec": 4.0,
           "success_rate": 0.0
+        },
+        "bank_statement_analyst": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1381,6 +1396,11 @@
           "count": 1,
           "avg_sec": 3.0,
           "success_rate": 0.0
+        },
+        "bank_statement_analyst": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1442,6 +1462,11 @@
           "count": 1,
           "avg_sec": 60.0,
           "success_rate": 0.0
+        },
+        "bank_statement_analyst": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1485,6 +1510,11 @@
           "count": 1,
           "avg_sec": 120.0,
           "success_rate": 0.0
+        },
+        "bank_statement_analyst": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1642,7 +1672,11 @@
     "python_packaging_hatchling": 1,
     "breakdown": 6,
     "agentic-router": 2,
-    "langgraph-fundamentals": 1
+    "langgraph-fundamentals": 1,
+    "pdf_table_extraction": 1,
+    "italian_amount_parsing": 1,
+    "rule_based_transaction_classification": 1,
+    "excel_report_generation": 1
   },
   "github_activity_counters": {
     "commit": 0,
@@ -1716,6 +1750,56 @@
         "calendar_integration"
       ],
       "status": "pending"
+    },
+    "pdf_table_extraction": {
+      "flagged_date": "2026-10-16",
+      "times_used": 2,
+      "intent_mappings": [
+        "bank_statement_analyst"
+      ],
+      "status": "pending"
+    },
+    "italian_amount_parsing": {
+      "flagged_date": "2026-10-16",
+      "times_used": 2,
+      "intent_mappings": [
+        "bank_statement_analyst"
+      ],
+      "status": "pending"
+    },
+    "rule_based_transaction_classification": {
+      "flagged_date": "2026-10-16",
+      "times_used": 2,
+      "intent_mappings": [
+        "bank_statement_analyst"
+      ],
+      "status": "pending"
+    },
+    "excel_report_generation": {
+      "flagged_date": "2026-10-16",
+      "times_used": 2,
+      "intent_mappings": [
+        "bank_statement_analyst"
+      ],
+      "status": "pending"
     }
-  }
+  },
+  "lessons": [
+    {
+      "agent": "Chiara",
+      "cue": "When parsing tabular amounts out of a PDF (bank statements, invoices)",
+      "lesson": "Take the sign from the column position under the header, and check the parse against the document's own totals (opening + movements = closing).",
+      "confidence": "medium",
+      "evidence": [
+        "045: the reconciliation check caught a wrong expected closing balance in the first test run."
+      ],
+      "requests": [
+        "045"
+      ],
+      "intents": [
+        "bank_statement_analyst"
+      ],
+      "seen": 1
+    }
+  ]
 }

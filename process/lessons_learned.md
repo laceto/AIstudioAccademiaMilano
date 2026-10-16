@@ -5,10 +5,5 @@ Do not edit by hand: add a lesson to the audit log of the delivery that taught i
 
 ## Chiara
 
-- **When a deliverable needs ML model or wheel downloads (pytorch index, Hugging Face)** → Test against a fake embedder offline and state in the audit that the real model was not run; the build container's network blocks those hosts.
-  _confidence high, seen 1× (requests 044)_. Evidence: 043: pytorch index and Hugging Face blocked by the build container network; 27 tests ran on a fake embedder.
-
-## studio
-
-- **When asked to evaluate an external GitHub repository** → Read its entrypoint source and explain what it does; running cloned code needs Luigi's explicit permission in the session first.
-  _confidence high, seen 1× (requests 044)_. Evidence: 044: harness2-demo install and run was denied by auto mode (external code); reading cli/demo.py and demo.py was enough to explain the demo.
+- **When parsing tabular amounts out of a PDF (bank statements, invoices)** → Take the sign from the column position under the header, and check the parse against the document's own totals (opening + movements = closing).
+  _confidence medium, seen 1× (requests 045)_. Evidence: 045: the reconciliation check caught a wrong expected closing balance in the first test run.
