@@ -232,7 +232,8 @@ def test_no_prompt_has_stray_template_variables(pipe):
 
     from langchain_core.prompts import ChatPromptTemplate
 
-    allowed = {"request", "intent", "product_type", "spec", "stack", "content"}
+    allowed = {"request", "intent", "product_type", "spec", "stack", "content",
+               "intents", "products"}  # Stacy's catalogue-derived lists
     src = inspect.getsource(pipe.nodes)
     found = 0
     for block in re.findall(r"ChatPromptTemplate\.from_messages\(\[(.*?)\]\)", src, re.S):

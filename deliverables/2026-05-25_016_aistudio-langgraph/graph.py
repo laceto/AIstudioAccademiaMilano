@@ -48,8 +48,30 @@ from .state import StudioState
 
 # ── Routing functions ──────────────────────────────────────────────────────────
 
-def route_after_classify(state: StudioState) -> Literal["luigi_escalate", "gianni_scope"]:
+def route_after_classify(state: StudioState) -> str:
+    if state.get("error"):
+        return END          # Stacy failed: nothing to escalate or scope
     return "luigi_escalate" if state.get("escalate_to_luigi") else "gianni_scope"
+
+
+def route_after_gianni(state: StudioState) -> str:
+    return END if state.get("error") else "chiara_implement"
+
+
+def route_after_chiara(state: StudioState):
+    """END on a Chiara failure, otherwise the risk-panel fan-out (dispatch_risk_agents)."""
+    if state.get("error"):
+        return END
+    return dispatch_risk_agents(state)
+
+
+def route_after_marco(state: StudioState) -> str:
+    """Francesca only delivers a priced job. Marco blocked (no price) or an error ends the run."""
+    if state.get("error"):
+        return END
+    if state.get("product_price") is None:
+        return END
+    return "francesca_deliver"
 
 
 def dispatch_risk_agents(state: StudioState) -> list[Send]:
@@ -114,10 +136,10 @@ def build_studio_graph(deliver=francesca_deliver, checkpointer=None, interrupt_b
     g.add_conditional_edges("stacy_classify", route_after_classify)
 
     # Gianni → Chiara
-    g.add_edge("gianni_scope", "chiara_implement")
+    g.add_conditional_edges("gianni_scope", route_after_gianni)
 
     # Chiara → parallel risk fan-out via Send
-    g.add_conditional_edges("chiara_implement", dispatch_risk_agents)
+    g.add_conditional_edges("chiara_implement", route_after_chiara)
 
     # Risk agents → aggregator (all three converge here)
     g.add_edge("technical_auditor",   "risk_aggregator")
@@ -131,7 +153,7 @@ def build_studio_graph(deliver=francesca_deliver, checkpointer=None, interrupt_b
     g.add_conditional_edges("stacy_qa", route_after_qa)
 
     # Marco → Francesca → END
-    g.add_edge("marco_invoice",    "francesca_deliver")
+    g.add_conditional_edges("marco_invoice", route_after_marco)
     g.add_edge("francesca_deliver", END)
 
     # Luigi → Gianni (approved) | END (rejected)

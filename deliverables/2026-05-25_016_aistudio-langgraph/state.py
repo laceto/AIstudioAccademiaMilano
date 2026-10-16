@@ -55,6 +55,16 @@ def _load_pricing() -> dict[str, Optional[str]]:
 PRICING_TABLE: dict[str, Optional[str]] = _load_pricing()
 
 
+def catalogue_products() -> list[str]:
+    """Every priced product, in table order. PRICING_TABLE is the single source of truth."""
+    return [k for k, v in PRICING_TABLE.items() if v is not None]
+
+
+def intent_enum() -> str:
+    """Pipe-separated intent names for Stacy's prompt: one per catalogue product, plus 'other'."""
+    return "|".join(catalogue_products() + ["other"])
+
+
 class StudioState(TypedDict):
     # ── Input ────────────────────────────────────────────────────────────
     request: str
