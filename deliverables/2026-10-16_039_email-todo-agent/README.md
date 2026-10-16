@@ -27,3 +27,6 @@ Built and tested offline: core, Gmail, Google Calendar, CLI. **Not yet run again
 Firestore store, no Telegram digest, not deployed. See the to-do list for the order.
 
 Auth: where tokens and keys live, scopes, first sign-in: `docs/mailagent-auth.md`.
+
+## Filing rules
+Per account in `config/mailagent_accounts.yaml`: `rules: [{subject_contains|sender_contains, label, archive}]`. A matching mail gets the Gmail label, leaves the inbox (unless `archive: false`) and never reaches the model. `scan --dry-run` only reports what it would file.

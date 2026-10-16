@@ -198,6 +198,99 @@ def test_ignore_rules_skip_before_the_model_and_count_as_processed():
     assert {"m9", "m8"} <= set(store.get_state("a1")["processed"])
 
 
+class FilingMail(FakeMail):
+    def __init__(self, emails, fail=False):
+        super().__init__(emails)
+        self.filed, self.fail = [], fail
+
+    def file_message(self, email_id, label, archive):
+        if self.fail:
+            raise RuntimeError("gmail 500")
+        self.filed.append((email_id, label, archive))
+
+
+def _studio(i=9):
+    return Email("a1", f"m{i}", f"t{i}", "me@x.it", "[AI Studio] Richiesta da rivedere - job 1", NOW.isoformat(), "b")
+
+
+RULE = {"subject_contains": "[AI Studio]", "label": "AI Studio"}
+
+
+def test_rule_files_message_with_label_and_archives_by_default():
+    mail, store = FilingMail([_studio(), _email(1)]), JsonStore(None)
+    rep = scan_account(_cfg(rules=[RULE]), mail, FakeExtractor(), store, now=NOW)
+    assert mail.filed == [("m9", "AI Studio", True)]
+    assert (rep.filed, rep.seen, rep.new_todos) == (1, 1, 1)  # filed mail never reaches the model
+    assert "m9" in store.get_state("a1")["processed"]
+
+
+def test_rule_archive_false_and_sender_match():
+    rule = {"sender_contains": "ME@X.IT", "label": "Mine", "archive": False}
+    mail = FilingMail([_studio()])
+    scan_account(_cfg(rules=[rule]), mail, FakeExtractor(), JsonStore(None), now=NOW)
+    assert mail.filed == [("m9", "Mine", False)]
+
+
+def test_dry_run_reports_but_does_not_touch_the_mailbox():
+    mail = FilingMail([_studio()])
+    rep = scan_account(_cfg(rules=[RULE]), mail, FakeExtractor(), JsonStore(None), now=NOW, dry_run=True)
+    assert mail.filed == [] and rep.filed == 1
+
+
+def test_filing_failure_is_an_error_and_retried_next_scan():
+    store = JsonStore(None)
+    rep = scan_account(_cfg(rules=[RULE]), FilingMail([_studio()], fail=True), FakeExtractor(), store, now=NOW)
+    assert rep.filed == 0 and len(rep.errors) == 1
+    assert "m9" not in store.get_state("a1")["processed"]
+
+
+def test_rule_on_provider_without_filing_is_skipped_not_crashed():
+    rep = scan_account(_cfg(rules=[RULE]), FakeMail([_studio()]), FakeExtractor(), JsonStore(None), now=NOW)
+    assert rep.filed == 0 and rep.skipped == 1 and rep.errors == []
+
+
+def test_load_accounts_reads_rules(tmp_path):
+    p = tmp_path / "a.yaml"
+    p.write_text("accounts:\n  - id: a\n    provider: gmail\n    rules:\n      - {subject_contains: X, label: L}\n", encoding="utf-8")
+    assert load_accounts(p)[0].rules == [{"subject_contains": "X", "label": "L"}]
+
+
+def test_gmail_file_message_creates_label_once_and_removes_inbox():
+    from mailagent.providers.gmail import GmailProvider
+
+    class Svc:
+        def __init__(self):
+            self.created, self.modified = [], []
+
+        def users(self):
+            return self
+
+        def labels(self):
+            return self
+
+        def messages(self):
+            return self
+
+        def list(self, userId):
+            return _Call({"labels": [{"id": "L1", "name": "Other"}]})
+
+        def create(self, userId, body):
+            self.created.append(body["name"])
+            return _Call({"id": "L2"})
+
+        def modify(self, userId, id, body):
+            self.modified.append((id, body))
+            return _Call({})
+
+    svc = Svc()
+    gp = GmailProvider("g", service=svc)
+    gp.file_message("m1", "AI Studio", True)
+    gp.file_message("m2", "AI Studio", False)
+    assert svc.created == ["AI Studio"]
+    assert svc.modified[0] == ("m1", {"addLabelIds": ["L2"], "removeLabelIds": ["INBOX"]})
+    assert svc.modified[1][1] == {"addLabelIds": ["L2"], "removeLabelIds": []}
+
+
 def test_prompt_forbids_inventing_due_dates():
     from mailagent.extractor import SYSTEM
     assert "never use the email's own date" in SYSTEM.lower()
@@ -284,3 +377,19 @@ def test_gmail_provider_maps_message_to_email():
     assert svc.query.startswith("after:") and "in:inbox" in svc.query
     assert out[0].subject == "Hello" and out[0].body == "plain body" and out[0].sender == "Bob <bob@x.it>"
     assert out[0].account_id == "g" and out[0].received_at.startswith("2025-10-16")
+
+
+# ── auth: scopes recorded in the token, not the ones we ask for ────────────
+
+def test_token_missing_required_scope_is_rejected_before_use(tmp_path):
+    from mailagent.providers import google_auth
+
+    tok = tmp_path / "t.json"
+    tok.write_text(json.dumps({"token": "x", "refresh_token": "r", "client_id": "c", "client_secret": "s",
+                               "scopes": ["https://www.googleapis.com/auth/gmail.readonly",
+                                          "https://www.googleapis.com/auth/calendar.events",
+                                          "https://www.googleapis.com/auth/calendar.readonly"]}), encoding="utf-8")
+    cfg = AccountConfig(id="g", provider="gmail", options={"token_file": str(tok)})
+    with pytest.raises(google_auth.AuthError, match="re-run"):
+        google_auth.load_credentials(cfg)
+    assert google_auth.missing_scopes({"scopes": google_auth.SCOPES}) == []

@@ -20,6 +20,7 @@ class ScanReport:
     new_todos: int = 0
     new_proposals: int = 0
     skipped: int = 0
+    filed: int = 0
     errors: list[str] = field(default_factory=list)
 
 
@@ -29,7 +30,15 @@ def _ignored(cfg: AccountConfig, em) -> bool:
     )
 
 
-def scan_account(cfg: AccountConfig, mail, extractor: Extractor, store: JsonStore, now: datetime | None = None) -> ScanReport:
+def _matching_rule(cfg: AccountConfig, em) -> dict | None:
+    for rule in cfg.rules:
+        s, f = rule.get("subject_contains"), rule.get("sender_contains")
+        if (s and s.lower() in em.subject.lower()) or (f and f.lower() in em.sender.lower()):
+            return rule
+    return None
+
+
+def scan_account(cfg: AccountConfig, mail, extractor: Extractor, store: JsonStore, now: datetime | None = None, dry_run: bool = False) -> ScanReport:
     now = now or datetime.now(timezone.utc)
     state = store.get_state(cfg.id)
     since = datetime.fromisoformat(state["cursor"]) if state.get("cursor") else now - timedelta(hours=cfg.lookback_hours)
@@ -38,7 +47,18 @@ def scan_account(cfg: AccountConfig, mail, extractor: Extractor, store: JsonStor
     for em in mail.list_new(since, cfg.max_emails):
         if em.id in processed:
             continue
-        if _ignored(cfg, em):
+        rule = _matching_rule(cfg, em)
+        if rule and hasattr(mail, "file_message"):
+            try:
+                if not dry_run:  # a dry run reports what it would do and touches nothing
+                    mail.file_message(em.id, rule["label"], rule.get("archive", True))
+            except Exception as exc:  # stays unprocessed: filed again on the next scan
+                rep.errors.append(f"{em.id}: could not file ({exc})")
+                continue
+            rep.filed += 1
+            processed.append(em.id)
+            continue
+        if rule or _ignored(cfg, em):
             rep.skipped += 1
             processed.append(em.id)
             continue
@@ -63,11 +83,11 @@ def scan_account(cfg: AccountConfig, mail, extractor: Extractor, store: JsonStor
     return rep
 
 
-def scan_all(accounts: list[AccountConfig], build_mail: Callable, extractor: Extractor, store: JsonStore, now: datetime | None = None) -> list[ScanReport]:
+def scan_all(accounts: list[AccountConfig], build_mail: Callable, extractor: Extractor, store: JsonStore, now: datetime | None = None, dry_run: bool = False) -> list[ScanReport]:
     reports = []
     for cfg in accounts:
         try:
-            reports.append(scan_account(cfg, build_mail(cfg), extractor, store, now))
+            reports.append(scan_account(cfg, build_mail(cfg), extractor, store, now, dry_run))
         except Exception as exc:  # account-level failure (revoked token, outage): report, go on
             reports.append(ScanReport(cfg.id, errors=[f"{type(exc).__name__}: {exc}"]))
     return reports

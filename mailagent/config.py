@@ -20,6 +20,9 @@ class AccountConfig:
     timezone: str = "Europe/Rome"
     ignore_senders: list = field(default_factory=list)  # case-insensitive substrings; skipped before the model
     ignore_subjects: list = field(default_factory=list)
+    # filing rules: {subject_contains|sender_contains: str, label: str, archive: bool=True}; a match files the
+    # mail (label, leave inbox) and keeps it away from the model. Needs a provider with file_message().
+    rules: list = field(default_factory=list)
     options: dict = field(default_factory=dict)  # provider-specific: token_env, token_file, ...
 
 
