@@ -3,10 +3,10 @@
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
     "last_updated": "2026-10-16",
-    "last_request_id": "039",
-    "total_requests_processed": 30,
+    "last_request_id": "040",
+    "total_requests_processed": 31,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "039"
+    "last_processed_audit_log": "040"
   },
   "skills": {
     "html_tailwind_css": {
@@ -1468,7 +1468,7 @@
           "success_rate": 0.0
         },
         "internal_tooling": {
-          "count": 1,
+          "count": 2,
           "avg_sec": 0.0,
           "success_rate": 1.0
         }
@@ -1589,15 +1589,17 @@
     "deep-agents-core": 3,
     "deep-agents-orchestration": 1,
     "langgraph-subagents": 1,
-    "langgraph-persistence": 2,
+    "langgraph-persistence": 3,
     "langchain-fundamentals": 1,
     "deepagents_package_authoring": 1,
     "google_calendar_api_v3": 1,
     "langgraph_human_in_the_loop": 1,
     "python_packaging_hatchling": 1,
-    "breakdown": 5,
-    "agentic-router": 2,
-    "langgraph-fundamentals": 1
+    "breakdown": 6,
+    "agentic-router": 3,
+    "langgraph-fundamentals": 2,
+    "framework-selection": 1,
+    "langgraph-human-in-the-loop": 1
   },
   "github_activity_counters": {
     "commit": 0,
