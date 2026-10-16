@@ -3,10 +3,10 @@
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
     "last_updated": "2026-10-16",
-    "last_request_id": "042",
-    "total_requests_processed": 32,
+    "last_request_id": "044",
+    "total_requests_processed": 34,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "042"
+    "last_processed_audit_log": "044"
   },
   "skills": {
     "html_tailwind_css": {
@@ -1148,6 +1148,16 @@
           "count": 1,
           "avg_sec": 25.0,
           "success_rate": 0.0
+        },
+        "drive_semantic_router": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
+        },
+        "internal_tooling": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1214,6 +1224,16 @@
           "count": 1,
           "avg_sec": 900.0,
           "success_rate": 0.0
+        },
+        "drive_semantic_router": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
+        },
+        "internal_tooling": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1275,6 +1295,16 @@
           "count": 1,
           "avg_sec": 4.0,
           "success_rate": 0.0
+        },
+        "drive_semantic_router": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
+        },
+        "internal_tooling": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1336,6 +1366,16 @@
           "count": 1,
           "avg_sec": 3.0,
           "success_rate": 0.0
+        },
+        "drive_semantic_router": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 0.0
+        },
+        "internal_tooling": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1440,6 +1480,16 @@
           "count": 1,
           "avg_sec": 120.0,
           "success_rate": 0.0
+        },
+        "drive_semantic_router": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
+        },
+        "internal_tooling": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1672,5 +1722,39 @@
       ],
       "status": "pending"
     }
-  }
+  },
+  "lessons": [
+    {
+      "agent": "Chiara",
+      "cue": "When a deliverable needs ML model or wheel downloads (pytorch index, Hugging Face)",
+      "lesson": "Test against a fake embedder offline and state in the audit that the real model was not run; the build container's network blocks those hosts.",
+      "confidence": "high",
+      "evidence": [
+        "043: pytorch index and Hugging Face blocked by the build container network; 27 tests ran on a fake embedder."
+      ],
+      "requests": [
+        "044"
+      ],
+      "intents": [
+        "internal_tooling"
+      ],
+      "seen": 1
+    },
+    {
+      "agent": "studio",
+      "cue": "When asked to evaluate an external GitHub repository",
+      "lesson": "Read its entrypoint source and explain what it does; running cloned code needs Luigi's explicit permission in the session first.",
+      "confidence": "high",
+      "evidence": [
+        "044: harness2-demo install and run was denied by auto mode (external code); reading cli/demo.py and demo.py was enough to explain the demo."
+      ],
+      "requests": [
+        "044"
+      ],
+      "intents": [
+        "internal_tooling"
+      ],
+      "seen": 1
+    }
+  ]
 }
