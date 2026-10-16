@@ -1,0 +1,20 @@
+# Drive semantic router (delivery 042) — CPU-only, sized for Azure App Service F1 / Container Apps.
+# PyTorch comes from the CPU wheel index: no CUDA libraries (~2.5 GB saved in the image).
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1+cpu
+sentence-transformers==6.1.0
+
+chromadb==1.5.9
+
+fastapi==0.143.3
+uvicorn[standard]==0.54.0
+APScheduler==3.11.3
+
+google-api-python-client==2.201.0
+google-auth==2.62.0
+pypdf==6.21.0
+
+# Key Vault fallback (App Service resolves Key Vault references on its own) + Application Insights
+azure-identity==1.26.0
+azure-keyvault-secrets==4.11.3
+azure-monitor-opentelemetry==1.8.11
