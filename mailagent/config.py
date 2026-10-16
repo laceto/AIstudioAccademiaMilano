@@ -23,6 +23,9 @@ class AccountConfig:
     # filing rules: {subject_contains|sender_contains: str, label: str, archive: bool=True}; a match files the
     # mail (label, leave inbox) and keeps it away from the model. Needs a provider with file_message().
     rules: list = field(default_factory=list)
+    # tidy: header heuristics (newsletter / notifications / promotions) -> label + archive; see mailagent/classifier.py
+    tidy: dict = field(default_factory=dict)
+    protect: list = field(default_factory=list)  # sender substrings ("@banca.it") tidy never touches
     options: dict = field(default_factory=dict)  # provider-specific: token_env, token_file, ...
 
 

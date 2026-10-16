@@ -1,4 +1,4 @@
-"""Gmail mail provider (read + label/archive; no send, no delete). The API service is injectable for tests."""
+"""Gmail mail provider (read + label/archive/mark read; no send, no delete). The API service is injectable for tests."""
 
 from __future__ import annotations
 
@@ -11,6 +11,15 @@ from typing import Any
 from ..config import AccountConfig
 from ..models import Email
 from . import register_calendar, register_mail
+
+# googleapiclient retries 429, 5xx and rate-limit 403s itself, with exponential backoff, when told how often.
+NUM_RETRIES = 5
+TIDY_HEADERS = ["From", "Subject", "List-Unsubscribe", "List-Id", "Precedence", "Auto-Submitted"]
+
+
+def _exec(request: Any) -> dict:
+    return request.execute(num_retries=NUM_RETRIES)
+
 
 # Inbox only, no promotion/social tabs: those almost never hold something to act on.
 QUERY = "after:{ts} in:inbox -category:promotions -category:social"
@@ -53,26 +62,26 @@ class GmailProvider:
 
     def _label_id(self, name: str) -> str:
         if not hasattr(self, "_labels"):
-            labels = self.service.users().labels().list(userId="me").execute().get("labels", [])
+            labels = _exec(self.service.users().labels().list(userId="me")).get("labels", [])
             self._labels = {l["name"]: l["id"] for l in labels}
         if name not in self._labels:
-            made = self.service.users().labels().create(userId="me", body={"name": name}).execute()
+            made = _exec(self.service.users().labels().create(userId="me", body={"name": name}))
             self._labels[name] = made["id"]
         return self._labels[name]
 
     def file_message(self, email_id: str, label: str, archive: bool = True) -> None:
         """Add `label` and (by default) take the mail out of the inbox. Never deletes or sends."""
         body = {"addLabelIds": [self._label_id(label)], "removeLabelIds": ["INBOX"] if archive else []}
-        self.service.users().messages().modify(userId="me", id=email_id, body=body).execute()
+        _exec(self.service.users().messages().modify(userId="me", id=email_id, body=body))
 
     def inbox_candidates(self, rule: dict) -> list[dict]:
         """Shortlist of inbox mail that may match a rule: [{id, subject, sender}], all pages."""
         term = (f'subject:"{rule["subject_contains"]}"' if rule.get("subject_contains") else f'from:"{rule["sender_contains"]}"')
         msgs, token, out = self.service.users().messages(), None, []
         while True:
-            page = msgs.list(userId="me", q=f"in:inbox {term}", maxResults=500, pageToken=token).execute()
+            page = _exec(msgs.list(userId="me", q=f"in:inbox {term}", maxResults=500, pageToken=token))
             for ref in page.get("messages", []):
-                m = msgs.get(userId="me", id=ref["id"], format="metadata", metadataHeaders=["Subject", "From"]).execute()
+                m = _exec(msgs.get(userId="me", id=ref["id"], format="metadata", metadataHeaders=["Subject", "From"]))
                 h = {x["name"].lower(): x["value"] for x in m["payload"].get("headers", [])}
                 out.append({"id": m["id"], "subject": h.get("subject", ""), "sender": h.get("from", "")})
             token = page.get("nextPageToken")
@@ -80,17 +89,36 @@ class GmailProvider:
                 return out
 
     def file_many(self, ids: list[str], label: str, archive: bool = True) -> None:
+        self.modify_many(ids, label, archive=archive)
+
+    def modify_many(self, ids: list[str], label: str, archive: bool = True, mark_read: bool = False) -> None:
+        """Label `ids`, optionally archive and mark read, in batchModify calls of at most 1000 ids."""
         label_id = self._label_id(label)
-        for i in range(0, len(ids), 1000):  # batchModify takes at most 1000 ids
-            self.service.users().messages().batchModify(userId="me", body={
-                "ids": ids[i:i + 1000], "addLabelIds": [label_id], "removeLabelIds": ["INBOX"] if archive else []}).execute()
+        remove = (["INBOX"] if archive else []) + (["UNREAD"] if mark_read else [])
+        for i in range(0, len(ids), 1000):
+            _exec(self.service.users().messages().batchModify(userId="me", body={
+                "ids": ids[i:i + 1000], "addLabelIds": [label_id], "removeLabelIds": remove}))
+
+    def tidy_candidates(self, query: str, max_messages: int) -> list[dict]:
+        """Up to `max_messages` mail matching `query`, headers only: [{id, headers, labels, internal_date}]."""
+        msgs, token, out = self.service.users().messages(), None, []
+        while len(out) < max_messages:
+            page = _exec(msgs.list(userId="me", q=query, maxResults=min(500, max_messages - len(out)), pageToken=token))
+            for ref in page.get("messages", [])[: max_messages - len(out)]:
+                m = _exec(msgs.get(userId="me", id=ref["id"], format="metadata", metadataHeaders=TIDY_HEADERS))
+                out.append({"id": m["id"], "labels": m.get("labelIds", []), "internal_date": int(m.get("internalDate", 0)),
+                            "headers": {h["name"].lower(): h["value"] for h in m["payload"].get("headers", [])}})
+            token = page.get("nextPageToken")
+            if not token:
+                break
+        return out
 
     def list_new(self, since: datetime, max_results: int) -> list[Email]:
         msgs = self.service.users().messages()
-        listing = msgs.list(userId="me", q=QUERY.format(ts=int(since.timestamp())), maxResults=max_results).execute()
+        listing = _exec(msgs.list(userId="me", q=QUERY.format(ts=int(since.timestamp())), maxResults=max_results))
         out = []
         for ref in listing.get("messages", []):
-            m = msgs.get(userId="me", id=ref["id"], format="full").execute()
+            m = _exec(msgs.get(userId="me", id=ref["id"], format="full"))
             headers = {h["name"].lower(): h["value"] for h in m["payload"].get("headers", [])}
             received = datetime.fromtimestamp(int(m["internalDate"]) / 1000, tz=timezone.utc).isoformat()
             out.append(Email(

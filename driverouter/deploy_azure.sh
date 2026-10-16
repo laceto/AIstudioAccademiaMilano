@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy the Drive semantic router (delivery 042) to Azure App Service Linux, Free tier (F1),
+# Deploy the Drive semantic router (delivery 043) to Azure App Service Linux, Free tier (F1),
 # with the Google OAuth secrets in Azure Key Vault (resolved by App Service Key Vault references).
 #
 # Prerequisites: az CLI logged in (`az login`), run from the repo root.

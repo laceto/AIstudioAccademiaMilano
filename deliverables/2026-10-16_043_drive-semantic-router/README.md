@@ -1,4 +1,4 @@
-# Drive Semantic Router (delivery 042)
+# Drive Semantic Router (delivery 043)
 
 Smista da solo i file che arrivano nella cartella Google Drive `05_In_Arrivo_Da_Smistare`: estrae il testo,
 lo trasforma in un vettore con `all-MiniLM-L6-v2` (in locale, CPU), cerca in ChromaDB la categoria più
