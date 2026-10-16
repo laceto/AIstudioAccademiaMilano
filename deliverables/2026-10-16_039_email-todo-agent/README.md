@@ -25,3 +25,5 @@ is one module with `@register_mail("kind")` / `@register_calendar("kind")`.
 ## State
 Built and tested offline: core, Gmail, Google Calendar, CLI. **Not yet run against a real mailbox**, no
 Firestore store, no Telegram digest, not deployed. See the to-do list for the order.
+
+Auth: where tokens and keys live, scopes, first sign-in: `docs/mailagent-auth.md`.

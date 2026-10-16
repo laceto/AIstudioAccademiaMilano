@@ -30,10 +30,10 @@ for adding Hotmail and for the remaining gaps. Tick items as they land.
 Notes: the same refresh-token expiry rules apply (personal-account refresh tokens last ~90 days of inactivity; a scan 4x/day keeps it alive). Mail content is untrusted input: the extractor already treats it as data.
 
 ## Remaining work on the Gmail/core side
-- [ ] G1. **Live check on Gmail**: run `auth gmail-luigi` (needs `credentials/google_credentials.json` from Google Cloud Console, Desktop OAuth client, Gmail API + Calendar API enabled), then `scan --dry-run`; tune the extractor prompt on real mail.
+- [x] G1. (2026-10-16, done: 36 emails read, 0 errors; added ignore rules and a no-invented-due-dates prompt. Event proposals not yet seen live: no email with a date/time in the sample.) **Live check on Gmail**: run `auth gmail-luigi` (needs `credentials/google_credentials.json` from Google Cloud Console, Desktop OAuth client, Gmail API + Calendar API enabled), then `scan --dry-run`; tune the extractor prompt on real mail.
 - [ ] G2. `FirestoreStore` with the same methods as `JsonStore` (Cloud Run disk is ephemeral; reuse the `FIRESTORE_*` conventions in `gateway/jobstore.py`). Select with `MAILAGENT_STORE=file|firestore`.
 - [ ] G3. Digest + approval over Telegram: after each scan send Luigi new to-dos and the pending event proposals with Approve/Reject buttons (pattern: `gateway/notify.py`, `gateway/admin_telegram.py`, his ID only). Until then approval is `python -m mailagent approve <id>`.
 - [ ] G4. Conflict check before proposing (`find_conflicts`) and show it on the proposal card.
 - [ ] G5. Cloud Run **job** (not service) + Cloud Scheduler: one cron per `scan_hours()` slot (`python -m mailagent schedule` prints them), tokens in Secret Manager, `Dockerfile.mailagent`, cloudbuild yaml, runbook.
 - [ ] G6. Retention for stored to-dos (email subjects/senders are personal data): reuse `gateway/retention.py` idea, add expiry on done/rejected items.
-- [ ] G7. Mark a to-do done / snooze (`python -m mailagent done <id>`), and a way to dismiss senders that are always noise.
+- [ ] G7. Mark a to-do done / snooze (`python -m mailagent done <id>`). (Noise senders: `ignore_senders` / `ignore_subjects` per account already exist.)

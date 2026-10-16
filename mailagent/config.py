@@ -18,6 +18,8 @@ class AccountConfig:
     lookback_hours: int = 24  # first scan only; later scans resume from the stored cursor
     max_emails: int = 50
     timezone: str = "Europe/Rome"
+    ignore_senders: list = field(default_factory=list)  # case-insensitive substrings; skipped before the model
+    ignore_subjects: list = field(default_factory=list)
     options: dict = field(default_factory=dict)  # provider-specific: token_env, token_file, ...
 
 

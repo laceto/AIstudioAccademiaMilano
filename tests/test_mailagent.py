@@ -181,6 +181,28 @@ def test_json_store_persists_to_disk(tmp_path):
     assert len(s2.list_todos()) == 1 and s2.get_state("a1")["processed"] == ["m1"]
 
 
+def test_ignore_rules_skip_before_the_model_and_count_as_processed():
+    class Counting(FakeExtractor):
+        calls = 0
+
+        def extract(self, email, today):
+            Counting.calls += 1
+            return super().extract(email, today)
+
+    noisy = Email("a1", "m9", "t9", "Luigi <me@x.it>", "[AI Studio] Richiesta da rivedere - job 1", NOW.isoformat(), "b")
+    spam = Email("a1", "m8", "t8", "Promo <news@shop.it>", "hi", NOW.isoformat(), "b")
+    cfg = _cfg(ignore_subjects=["[ai studio]"], ignore_senders=["news@shop"])
+    store = JsonStore(None)
+    rep = scan_account(cfg, FakeMail([noisy, spam, _email(1)]), Counting(), store, now=NOW)
+    assert Counting.calls == 1 and rep.skipped == 2 and rep.seen == 1
+    assert {"m9", "m8"} <= set(store.get_state("a1")["processed"])
+
+
+def test_prompt_forbids_inventing_due_dates():
+    from mailagent.extractor import SYSTEM
+    assert "never use the email's own date" in SYSTEM.lower()
+
+
 # ── extractor ──────────────────────────────────────────────────────────────
 
 def test_llm_extractor_parses_filters_low_confidence_and_fences():
