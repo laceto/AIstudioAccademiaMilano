@@ -65,6 +65,26 @@ class GmailProvider:
         body = {"addLabelIds": [self._label_id(label)], "removeLabelIds": ["INBOX"] if archive else []}
         self.service.users().messages().modify(userId="me", id=email_id, body=body).execute()
 
+    def inbox_candidates(self, rule: dict) -> list[dict]:
+        """Shortlist of inbox mail that may match a rule: [{id, subject, sender}], all pages."""
+        term = (f'subject:"{rule["subject_contains"]}"' if rule.get("subject_contains") else f'from:"{rule["sender_contains"]}"')
+        msgs, token, out = self.service.users().messages(), None, []
+        while True:
+            page = msgs.list(userId="me", q=f"in:inbox {term}", maxResults=500, pageToken=token).execute()
+            for ref in page.get("messages", []):
+                m = msgs.get(userId="me", id=ref["id"], format="metadata", metadataHeaders=["Subject", "From"]).execute()
+                h = {x["name"].lower(): x["value"] for x in m["payload"].get("headers", [])}
+                out.append({"id": m["id"], "subject": h.get("subject", ""), "sender": h.get("from", "")})
+            token = page.get("nextPageToken")
+            if not token:
+                return out
+
+    def file_many(self, ids: list[str], label: str, archive: bool = True) -> None:
+        label_id = self._label_id(label)
+        for i in range(0, len(ids), 1000):  # batchModify takes at most 1000 ids
+            self.service.users().messages().batchModify(userId="me", body={
+                "ids": ids[i:i + 1000], "addLabelIds": [label_id], "removeLabelIds": ["INBOX"] if archive else []}).execute()
+
     def list_new(self, since: datetime, max_results: int) -> list[Email]:
         msgs = self.service.users().messages()
         listing = msgs.list(userId="me", q=QUERY.format(ts=int(since.timestamp())), maxResults=max_results).execute()

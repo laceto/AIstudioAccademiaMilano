@@ -30,3 +30,5 @@ Auth: where tokens and keys live, scopes, first sign-in: `docs/mailagent-auth.md
 
 ## Filing rules
 Per account in `config/mailagent_accounts.yaml`: `rules: [{subject_contains|sender_contains, label, archive}]`. A matching mail gets the Gmail label, leaves the inbox (unless `archive: false`) and never reaches the model. `scan --dry-run` only reports what it would file.
+
+One-time sweep of mail already in the inbox: `python -m mailagent sweep --dry-run`, then `python -m mailagent sweep` (uses the same rules; every candidate is re-checked against the rule before filing).
