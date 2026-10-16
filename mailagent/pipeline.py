@@ -30,12 +30,30 @@ def _ignored(cfg: AccountConfig, em) -> bool:
     )
 
 
+def _rule_matches(rule: dict, subject: str, sender: str) -> bool:
+    s, f = rule.get("subject_contains"), rule.get("sender_contains")
+    return bool((s and s.lower() in subject.lower()) or (f and f.lower() in sender.lower()))
+
+
 def _matching_rule(cfg: AccountConfig, em) -> dict | None:
+    return next((r for r in cfg.rules if _rule_matches(r, em.subject, em.sender)), None)
+
+
+def sweep_account(cfg: AccountConfig, mail, dry_run: bool = False) -> dict[str, int]:
+    """One-time: apply the account's filing rules to mail already in the inbox. Returns {label: count}.
+
+    The provider's search is only a shortlist (Gmail's subject: matches words, not exact text), so every
+    candidate is re-checked against the rule before it is filed.
+    """
+    done: dict[str, int] = {}
+    if not (hasattr(mail, "inbox_candidates") and hasattr(mail, "file_many")):
+        return done
     for rule in cfg.rules:
-        s, f = rule.get("subject_contains"), rule.get("sender_contains")
-        if (s and s.lower() in em.subject.lower()) or (f and f.lower() in em.sender.lower()):
-            return rule
-    return None
+        ids = [c["id"] for c in mail.inbox_candidates(rule) if _rule_matches(rule, c["subject"], c["sender"])]
+        if ids and not dry_run:
+            mail.file_many(ids, rule["label"], rule.get("archive", True))
+        done[rule["label"]] = done.get(rule["label"], 0) + len(ids)
+    return done
 
 
 def scan_account(cfg: AccountConfig, mail, extractor: Extractor, store: JsonStore, now: datetime | None = None, dry_run: bool = False) -> ScanReport:

@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from .config import load_accounts
 from .extractor import LLMExtractor, openai_complete
-from .pipeline import approve_proposal, reject_proposal, scan_all
+from .pipeline import approve_proposal, reject_proposal, scan_all, sweep_account
 from .providers import build_calendar, build_mail
 from .schedule import scan_hours
 from .store import JsonStore
@@ -26,6 +26,9 @@ def main(argv: list[str] | None = None) -> int:
     sc = sub.add_parser("scan")
     sc.add_argument("--account", help="one account id (default: all enabled)")
     sc.add_argument("--dry-run", action="store_true", help="extract and print; write nothing")
+    sw = sub.add_parser("sweep", help="one-time: apply filing rules to mail already in the inbox")
+    sw.add_argument("--account", help="one account id (default: all enabled)")
+    sw.add_argument("--dry-run", action="store_true")
     sub.add_parser("todos")
     sub.add_parser("proposals")
     for name in ("approve", "reject", "auth"):
@@ -50,6 +53,11 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  todo   {t['id']}: {t['title']} (due {t['due']})")
             for p in store.list_proposals():
                 print(f"  event? {p['id']}: {p['title']} @ {p['start']}")
+    elif args.cmd == "sweep":
+        for a in [by_id[args.account]] if args.account else accounts:
+            counts = sweep_account(a, build_mail(a), dry_run=args.dry_run)
+            verb = "would file" if args.dry_run else "filed"
+            print(f"[{a.id}] " + (", ".join(f"{verb} {n} -> {lbl}" for lbl, n in counts.items()) or "nothing to do"))
     elif args.cmd == "todos":
         for t in store.list_todos("open"):
             print(f"{t['id']}  {t['title']}  due={t['due']}  [{t['source_subject']}]")

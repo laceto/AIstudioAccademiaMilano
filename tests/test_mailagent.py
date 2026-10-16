@@ -393,3 +393,84 @@ def test_token_missing_required_scope_is_rejected_before_use(tmp_path):
     with pytest.raises(google_auth.AuthError, match="re-run"):
         google_auth.load_credentials(cfg)
     assert google_auth.missing_scopes({"scopes": google_auth.SCOPES}) == []
+
+
+# ── one-time sweep of the existing inbox ───────────────────────────────────
+
+class SweepMail:
+    def __init__(self, cands):
+        self.cands, self.batches = cands, []
+
+    def inbox_candidates(self, rule):
+        return self.cands
+
+    def file_many(self, ids, label, archive):
+        self.batches.append((list(ids), label, archive))
+
+
+def _cand(i, subject, sender="me@x.it"):
+    return {"id": f"c{i}", "subject": subject, "sender": sender}
+
+
+def test_sweep_rechecks_each_candidate_against_the_rule():
+    from mailagent.pipeline import sweep_account
+
+    # Gmail's subject: search is word-based, so a near-miss can come back
+    mail = SweepMail([_cand(1, "[AI Studio] Richiesta da rivedere"), _cand(2, "AI studio newsletter")])
+    out = sweep_account(_cfg(rules=[RULE]), mail)
+    assert out == {"AI Studio": 1} and mail.batches == [(["c1"], "AI Studio", True)]
+
+
+def test_sweep_dry_run_counts_without_modifying():
+    from mailagent.pipeline import sweep_account
+
+    mail = SweepMail([_cand(1, "[AI Studio] x")])
+    assert sweep_account(_cfg(rules=[RULE]), mail, dry_run=True) == {"AI Studio": 1}
+    assert mail.batches == []
+
+
+def test_sweep_on_provider_without_support_returns_empty():
+    from mailagent.pipeline import sweep_account
+
+    assert sweep_account(_cfg(rules=[RULE]), FakeMail([])) == {}
+
+
+def test_gmail_inbox_candidates_paginate_and_file_many_chunks():
+    from mailagent.providers.gmail import GmailProvider
+
+    class Svc:
+        def __init__(self):
+            self.queries, self.modified = [], []
+
+        def users(self):
+            return self
+
+        def messages(self):
+            return self
+
+        def labels(self):
+            return self
+
+        def list(self, userId, q=None, maxResults=None, pageToken=None):
+            if q is None:
+                return _Call({"labels": [{"id": "L1", "name": "AI Studio"}]})
+            self.queries.append((q, pageToken))
+            if pageToken is None:
+                return _Call({"messages": [{"id": "a"}], "nextPageToken": "p2"})
+            return _Call({"messages": [{"id": "b"}]})
+
+        def get(self, userId, id, format, metadataHeaders=None):
+            return _Call({"id": id, "payload": {"headers": [
+                {"name": "Subject", "value": f"[AI Studio] {id}"}, {"name": "From", "value": "me@x.it"}]}})
+
+        def batchModify(self, userId, body):
+            self.modified.append(body)
+            return _Call({})
+
+    svc = Svc()
+    gp = GmailProvider("g", service=svc)
+    cands = gp.inbox_candidates({"subject_contains": "[AI Studio]", "label": "AI Studio"})
+    assert [c["id"] for c in cands] == ["a", "b"] and svc.queries[0][0].startswith("in:inbox subject:")
+    gp.file_many([str(i) for i in range(1001)], "AI Studio", True)
+    assert [len(b["ids"]) for b in svc.modified] == [1000, 1]
+    assert svc.modified[0]["removeLabelIds"] == ["INBOX"] and svc.modified[0]["addLabelIds"] == ["L1"]
