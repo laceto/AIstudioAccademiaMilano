@@ -32,12 +32,24 @@ Le note (`advisories`) e la bozza (`draft_post`) viaggiano nel risultato del job
 In `nodes.py`: `COST_PER_HOUR_EUR = 6.0` (costo di un'ora di lavoro dello studio, API comprese), `PRICING_ADEQUACY_MIN = 0.85`,
 `ARCHITECT_RISK_THRESHOLD = 2.5`. Vanno ricalibrati sui primi job reali.
 
+## Team ricerca → Gianni
+
+Il team ricerca non lavora per richiesta: una volta a settimana `POST /research/run` sul worker esegue Scout → Analyst → Curator
+(senza LLM) e salva i primi 10 repo in un digest (`gateway/research_digest.py`; Firestore `research/latest` su Cloud Run). In v2 Gianni
+legge i primi 5 (titolo, punteggio, una riga) in un blocco separato e dichiarato non fidato, solo per scegliere le librerie.
+Digest assente, più vecchio di 14 giorni o rovinato = Gianni lavora come in v1 (il trace dice `research=none` / `research=digest`).
+Il Reporter (Markdown) non serve qui: il digest è già la sintesi. Runbook: `process/runbook_research_digest.md`.
+
+Il worker ora copia anche questa cartella v2 e `scripts/github_research` (prima l'immagine di `Dockerfile.worker` non conteneva v2:
+con `PIPELINE_VERSION=v2` ogni job sarebbe fallito).
+
 ## Cosa NON c'è ancora
 
-- **Team ricerca** (Scout, Analyst, Curator, Reporter): non è per-richiesta. Il piano è un giro settimanale (Cloud Scheduler)
-  che scrive un digest letto da Gianni. Da fare.
+- **Job Cloud Scheduler del digest**: il codice c'è (vedi sotto) ma la risorsa cloud non è stata creata; il comando `gcloud`
+  è in `process/runbook_research_digest.md`. Finché non lo crei, o finché `/research/run` non viene chiamato a mano, non c'è
+  nessun digest e Gianni lavora senza.
 - **Pablo, Sofia, Carlos**: ruoli di costruzione del gateway, non agenti a runtime; nessun nodo.
-- Non provato con un modello vero: i test usano un modello finto che risponde per ruolo (22 test).
+- Non provato con un modello vero: i test usano un modello finto che risponde per ruolo (56 test v2 + digest). Anche la ricerca GitHub vera non è stata chiamata.
 - Più revisori = più chiamate: ~7 chiamate veloci per job invece di ~3 (in parallelo: la durata cambia poco, il costo sì).
 - Il limite di tempo del worker (`_run_timeout`) non è stato rivisto per v2.
 
