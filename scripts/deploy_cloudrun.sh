@@ -92,6 +92,12 @@ gcloud auth list --filter=status:ACTIVE --format='value(account)' | grep -q . \
 
 PIPELINE_TOKEN="$(env_val TELEGRAM_BOT_TOKEN)"
 RAG_TOKEN="$(env_val TELEGRAM_RAG_BOT_TOKEN)"
+# Optional: Luigi's own bot. With it, approvals and alerts leave the customer chat; without it the
+# pipeline bot carries both sides, as before.
+ADMIN_TOKEN="$(env_val TELEGRAM_ADMIN_BOT_TOKEN)"
+if [ -n "$ADMIN_TOKEN" ] && [[ "${ADMIN_TOKEN,,}" =~ (^your-|your_key_here|your-key-here|-your-) ]]; then
+  ADMIN_TOKEN=""   # still the .env.example placeholder
+fi
 
 [ -n "$PIPELINE_TOKEN" ] || die "TELEGRAM_BOT_TOKEN missing from .env"
 [ -n "$RAG_TOKEN" ]      || die "TELEGRAM_RAG_BOT_TOKEN missing from .env"
@@ -99,6 +105,12 @@ RAG_TOKEN="$(env_val TELEGRAM_RAG_BOT_TOKEN)"
   "TELEGRAM_BOT_TOKEN and TELEGRAM_RAG_BOT_TOKEN are the same token.
        One bot cannot serve both services — whichever registers its webhook last
        silently wins and the other goes dead. Create a second bot via @BotFather."
+
+if [ -n "$ADMIN_TOKEN" ]; then
+  [ "$ADMIN_TOKEN" != "$PIPELINE_TOKEN" ] && [ "$ADMIN_TOKEN" != "$RAG_TOKEN" ] || die \
+    "TELEGRAM_ADMIN_BOT_TOKEN is the same token as another bot. The admin bot must be its own bot —
+       create a third one via @BotFather."
+fi
 
 IMAGE_BASE="$REGION-docker.pkg.dev/$PROJECT/$AR_REPO"
 
@@ -126,6 +138,7 @@ fi
 
 say "Secrets from .env"
 SECRETS=(TELEGRAM_BOT_TOKEN TELEGRAM_RAG_BOT_TOKEN OPENAI_API_KEY ANTHROPIC_API_KEY SMTP_PASSWORD)
+[ -n "$ADMIN_TOKEN" ] && SECRETS+=(TELEGRAM_ADMIN_BOT_TOKEN)
 PRESENT_SECRETS=()
 
 for S in "${SECRETS[@]}"; do
@@ -270,7 +283,7 @@ run gcloud run deploy pipeline-worker \
   --image "$IMAGE_BASE/pipeline-worker" --region "$REGION" \
   --no-allow-unauthenticated --memory 1Gi --cpu 1 --timeout 900 --concurrency 1 --max-instances 2 \
   --set-env-vars "$(worker_env_vars)" \
-  --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN OPENAI_API_KEY ANTHROPIC_API_KEY)" \
+  --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN TELEGRAM_ADMIN_BOT_TOKEN OPENAI_API_KEY ANTHROPIC_API_KEY)" \
   --quiet
 
 if $DRY_RUN; then
@@ -304,7 +317,7 @@ run gcloud run deploy gateway \
   --image "$IMAGE_BASE/gateway" --region "$REGION" \
   --allow-unauthenticated --memory 512Mi --timeout 120 \
   --set-env-vars "$(gateway_env_vars "PIPELINE_QUEUE=$QUEUE_NAME" "PIPELINE_WORKER_URL=$WORKER_URL" "TASKS_LOCATION=$TASKS_LOCATION" "TASKS_INVOKER_SA=$TASKS_SA" "PIPELINE_PROJECT=$PROJECT")" \
-  --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN ANTHROPIC_API_KEY OPENAI_API_KEY SMTP_PASSWORD TELEGRAM_WEBHOOK_SECRET)" \
+  --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN TELEGRAM_ADMIN_BOT_TOKEN ANTHROPIC_API_KEY OPENAI_API_KEY SMTP_PASSWORD TELEGRAM_WEBHOOK_SECRET)" \
   --quiet
 
 if $DRY_RUN; then
@@ -323,14 +336,14 @@ gcloud run services update gateway --region "$REGION" \
 # ── Webhooks ─────────────────────────────────────────────────────────────────
 
 say "Registering Telegram webhooks"
-register() {  # $1 = token, $2 = base url, $3 = label, $4 = optional secret_token
-  local code extra=()
+register() {  # $1 = token, $2 = base url, $3 = label, $4 = optional secret_token, $5 = path (default /webhook/telegram)
+  local code extra=() path="${5:-/webhook/telegram}"
   [ -n "${4:-}" ] && extra=(-d "secret_token=$4")
   code="$(curl -sS -o /tmp/tg_hook.$$ -w '%{http_code}' \
     "https://api.telegram.org/bot$1/setWebhook" \
-    -d "url=$2/webhook/telegram" -d "drop_pending_updates=true" "${extra[@]}")"
+    -d "url=$2$path" -d "drop_pending_updates=true" "${extra[@]}")"
   if [ "$code" = "200" ] && grep -q '"ok":true' /tmp/tg_hook.$$; then
-    echo "  $3 -> $2/webhook/telegram"
+    echo "  $3 -> $2$path"
   else
     warn "$3 webhook registration failed (HTTP $code): $(cat /tmp/tg_hook.$$)"
   fi
@@ -338,6 +351,10 @@ register() {  # $1 = token, $2 = base url, $3 = label, $4 = optional secret_toke
 }
 register "$PIPELINE_TOKEN" "$GW_URL"  "pipeline bot" "$WEBHOOK_SECRET"
 register "$RAG_TOKEN"      "$RAG_URL" "RAG bot"
+if [ -n "$ADMIN_TOKEN" ]; then
+  register "$ADMIN_TOKEN" "$GW_URL" "admin bot" "$WEBHOOK_SECRET" "/webhook/telegram-admin"
+  echo "  Open the admin bot in Telegram and press Start once: a bot cannot write to someone who never started it."
+fi
 
 # ── Verify ───────────────────────────────────────────────────────────────────
 
