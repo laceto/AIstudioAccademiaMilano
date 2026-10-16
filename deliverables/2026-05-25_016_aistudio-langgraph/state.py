@@ -78,11 +78,17 @@ class StudioState(TypedDict):
     deliverable_path: Optional[str]
     skills_used: Optional[List[str]]
     qa_iteration: int
+    # Binary deliverables (e.g. a PDF): base64 text, so state stays JSON-serialisable and checkpointable.
+    # When set, deliverable_path carries the real filename (ends in .pdf) and deliverable_content stays a short text summary.
+    deliverable_b64: Optional[str]
 
     # ── Risk Panel (parallel fan-out via Send) ────────────────────────────
     risk_reports: Annotated[List[dict], operator.add]   # accumulated by all 3 agents
     risk_passed: bool
     aggregate_risk_score: float
+
+    # Written by the financial_controller node, read by Marco: {"cost_eur", "price_eur", "margin_eur", "margin_pct", "underpriced"}
+    cost_report: Optional[dict]
 
     # ── Stacy QA ─────────────────────────────────────────────────────────
     qa_result: Optional[dict]
