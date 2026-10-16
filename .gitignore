@@ -73,3 +73,7 @@ project_state.md
 
 # Erasure records (file backend, local runs)
 gateway/erasures/
+
+# mailagent: scanned mail metadata and OAuth tokens never get committed
+data/mailagent/
+credentials/mailagent_*_token.json

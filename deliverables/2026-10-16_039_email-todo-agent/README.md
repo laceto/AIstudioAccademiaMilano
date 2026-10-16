@@ -1,0 +1,27 @@
+# Email to-do agent (delivery 039)
+
+Scans each configured mailbox N times a day, turns emails into to-dos, and turns emails that state a
+date/time into **calendar proposals**. Nothing is written to a calendar until you approve it.
+
+Code: `mailagent/` · Tests: `tests/test_mailagent.py` · Accounts: `config/mailagent_accounts.yaml`
+Plan and Hotmail to-do list: `docs/plans/mailagent-hotmail-todo.md`
+
+## Use
+
+```
+python -m mailagent auth gmail-luigi          # once per account (opens a browser)
+python -m mailagent scan --dry-run            # extract and print, write nothing
+python -m mailagent scan                      # real scan, all enabled accounts
+python -m mailagent todos                     # open to-dos
+python -m mailagent proposals                 # pending calendar proposals
+python -m mailagent approve gmail-luigi:<msg>:e   # create the event
+python -m mailagent schedule                  # which hours to fire each account
+```
+
+## Add an account
+Add a block to `config/mailagent_accounts.yaml` (no code for a known provider type). A new provider type
+is one module with `@register_mail("kind")` / `@register_calendar("kind")`.
+
+## State
+Built and tested offline: core, Gmail, Google Calendar, CLI. **Not yet run against a real mailbox**, no
+Firestore store, no Telegram digest, not deployed. See the to-do list for the order.
