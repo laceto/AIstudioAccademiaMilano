@@ -1,4 +1,4 @@
-"""Gmail mail provider (read-only scope). The API service is injectable for tests."""
+"""Gmail mail provider (read + label/archive; no send, no delete). The API service is injectable for tests."""
 
 from __future__ import annotations
 
@@ -50,6 +50,20 @@ class GmailProvider:
 
             self._service = build_service(self._cfg, "gmail", "v1")
         return self._service
+
+    def _label_id(self, name: str) -> str:
+        if not hasattr(self, "_labels"):
+            labels = self.service.users().labels().list(userId="me").execute().get("labels", [])
+            self._labels = {l["name"]: l["id"] for l in labels}
+        if name not in self._labels:
+            made = self.service.users().labels().create(userId="me", body={"name": name}).execute()
+            self._labels[name] = made["id"]
+        return self._labels[name]
+
+    def file_message(self, email_id: str, label: str, archive: bool = True) -> None:
+        """Add `label` and (by default) take the mail out of the inbox. Never deletes or sends."""
+        body = {"addLabelIds": [self._label_id(label)], "removeLabelIds": ["INBOX"] if archive else []}
+        self.service.users().messages().modify(userId="me", id=email_id, body=body).execute()
 
     def list_new(self, since: datetime, max_results: int) -> list[Email]:
         msgs = self.service.users().messages()
