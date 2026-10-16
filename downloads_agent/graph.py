@@ -5,16 +5,18 @@ from pathlib import Path
 
 from langgraph.graph import END, START, StateGraph
 
-from .nodes import execute_node, plan_node, route_after_plan
+from .nodes import execute_node, plan_node, route_after_plan, summarize_node
 from .state import DownloadsState
 
 
 def build_graph(checkpointer):
     g = StateGraph(DownloadsState)
     g.add_node("plan", plan_node)
+    g.add_node("summarize", summarize_node)
     g.add_node("execute", execute_node)
     g.add_edge(START, "plan")
-    g.add_conditional_edges("plan", route_after_plan, {"execute": "execute", "__end__": END})
+    g.add_edge("plan", "summarize")
+    g.add_conditional_edges("summarize", route_after_plan, {"execute": "execute", "__end__": END})
     g.add_edge("execute", END)
     return g.compile(checkpointer=checkpointer, interrupt_before=["execute"])
 

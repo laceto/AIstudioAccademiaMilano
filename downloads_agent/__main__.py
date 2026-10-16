@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -17,12 +18,14 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 
 from .graph import build_graph, undo_last_run
 from .nodes import DEFAULT_MIN_AGE_MIN, DEFAULT_ROOT, default_state_dir
+from .summarize import DEFAULT_MODEL
 
 
 def _print_plan(values: dict) -> None:
     plan = values.get("plan", [])
     for item in plan:
-        print(f"  {Path(item['src']).name}  ->  {item['category']}/")
+        line = f"  {Path(item['src']).name}  ->  {item['category']}/"
+        print(f"{line}\n      {item['summary']}" if item.get("summary") else line)
     for s in values.get("skipped", []):
         print(f"  (skip) {s['name']}: {s['reason']}")
     print(f"{len(plan)} file(s) to move.")
@@ -35,7 +38,15 @@ def main(argv=None) -> int:
     ap.add_argument("--root", default=str(DEFAULT_ROOT))
     ap.add_argument("--state-dir", default=str(default_state_dir()))
     ap.add_argument("--min-age-minutes", type=int, default=DEFAULT_MIN_AGE_MIN)
+    ap.add_argument("--no-summary", action="store_true", help="skip the per-document summaries")
+    ap.add_argument("--model", default=DEFAULT_MODEL, help="local Ollama model used for summaries")
+    ap.add_argument("--max-summaries", type=int, default=None,
+                    help="at most N new model calls per run (the rest are filled in on the next run)")
     args = ap.parse_args(argv)
+    # Summaries are model text; never let a character the console can't show crash the run.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
 
     sd = Path(args.state_dir)
     sd.mkdir(parents=True, exist_ok=True)
@@ -52,7 +63,9 @@ def main(argv=None) -> int:
             thread_id = f"run-{int(time.time())}"
             cfg = {"configurable": {"thread_id": thread_id, "root": args.root,
                                     "state_dir": str(sd),
-                                    "min_age_minutes": args.min_age_minutes}}
+                                    "min_age_minutes": args.min_age_minutes,
+                                    "summarize": not args.no_summary, "model": args.model,
+                                    "max_summaries": args.max_summaries}}
             graph.invoke({}, cfg)  # a new plan replaces any older pending one
             values = graph.get_state(cfg).values
             if graph.get_state(cfg).next:
@@ -60,6 +73,8 @@ def main(argv=None) -> int:
             else:
                 pending_file.unlink(missing_ok=True)
             _print_plan(values)
+            if (sd / "summary.html").exists() and cfg["configurable"]["summarize"]:
+                print(f"Report: {sd / 'summary.html'}")
             return 0
 
         if not pending_file.exists():
