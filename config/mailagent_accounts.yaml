@@ -5,7 +5,10 @@ accounts:
   - id: gmail-luigi
     provider: gmail            # mail + calendar both via Google
     scans_per_day: 4
-    ignore_subjects: ["[AI Studio]"]   # the studio's own approval mails (handled by Telegram)
+    rules:                     # studio notifications -> Gmail label "AI Studio", out of the inbox, never sent to the model
+      - subject_contains: "[AI Studio]"
+        label: "AI Studio"
+        archive: true
     options:
       token_env: MAILAGENT_GMAIL_LUIGI_TOKEN        # Cloud Run: secret with the token JSON
       # Local files live outside the repo, with the other Google credentials (see docs/mailagent-auth.md)

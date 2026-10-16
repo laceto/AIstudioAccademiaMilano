@@ -41,8 +41,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "scan":
         picked = [by_id[args.account]] if args.account else accounts
         extractor = LLMExtractor(openai_complete())
-        for r in scan_all(picked, build_mail, extractor, store):
-            print(f"[{r.account_id}] seen={r.seen} todos={r.new_todos} proposals={r.new_proposals} skipped={r.skipped} errors={len(r.errors)}")
+        for r in scan_all(picked, build_mail, extractor, store, dry_run=args.dry_run):
+            print(f"[{r.account_id}] seen={r.seen} todos={r.new_todos} proposals={r.new_proposals} filed={r.filed} skipped={r.skipped} errors={len(r.errors)}")
             for e in r.errors:
                 print(f"   ! {e}")
         if args.dry_run:
