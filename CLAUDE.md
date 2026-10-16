@@ -208,6 +208,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `gateway/safety.py` | Rifiuto delle richieste chiaramente illegali: filtro a frasi che gira prima del modello; elenco da estendere con prudenza |
 | `gateway/review_request.py` | `RIESAMINA` dal cliente: avvisa Luigi senza creare un job |
 | `deliverables/2026-10-09_038_erasure-and-refusals/` | Guida a `/cancella`, ai rifiuti automatici e a RIESAMINA |
+| `mailagent/server.py`, `mailagent/classifier.py`, `scripts/deploy_mailagent.sh` | Gmail tidy su Cloud Run (042): classificatore a header, `POST /process`, deploy con Secret Manager + Scheduler; runbook `process/runbook_mailagent_cloudrun.md` |
 | `gateway/research_digest.py`, `process/runbook_research_digest.md` | Digest settimanale GitHub AI per Gianni (pipeline v2): salvataggio, lettura difensiva, endpoint `/research/run` sul worker, comando Scheduler |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
@@ -387,6 +388,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 039 | 2026-10-16 | Email to-do agent — scansione Gmail N volte al giorno, to-do e proposte di calendario con approvazione, architettura multi-account a provider (Hotmail/Outlook in lista), 16 test offline; non ancora provato su una casella reale | 0.00 (internal) |
 | 040 | 2026-10-16 | Pipeline v2 — tutti i ruoli nella pipeline: Lorenzo (scansione injection), Devil's Advocate + Financial Controller + IT Staff prima della build, 6 revisori in parallelo, Core Architect su trigger, Valentina (bozza), aggregatore con soglia critica; accanto a v1 con `PIPELINE_VERSION`; digest settimanale del team ricerca letto da Gianni (`POST /research/run`, Firestore `research/latest`); 56 test offline; non provato con un modello vero né con GitHub; il job Cloud Scheduler del digest non è stato creato (comando in `process/runbook_research_digest.md`) | 0.00 (internal) |
 | 041 | 2026-10-16 | Bot admin separato — `TELEGRAM_ADMIN_BOT_TOKEN` opzionale: schede, comandi, avvisi e risultati da rivedere su un bot solo di Luigi (`/webhook/telegram-admin`), il bot clienti senza poteri admin; messaggi ai clienti sempre dal bot clienti; deploy e doctor aggiornati; non ancora deployato | 0.00 (internal) |
+| 042 | 2026-10-16 | Gmail tidy su Cloud Run — `mailagent tidy`: newsletter/notifiche/promozioni da header (`List-Unsubscribe`, `Precedence`, `no-reply@`, categoria Promozioni) → etichetta + archivio in `batchModify`, lista `protect`, mai stellate né mail < 60 min; retry 429/5xx, log JSON, FastAPI `/process` privato, Dockerfile, `deploy_mailagent.sh` (Secret Manager + Scheduler orario), dry run di default; 22 test offline; non deployato, non provato sulla casella reale | 0.00 (internal) |
 
 ---
 
