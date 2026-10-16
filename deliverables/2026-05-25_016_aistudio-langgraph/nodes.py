@@ -19,7 +19,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 
 from .llm_factory import get_llm
-from .state import PRICING_TABLE, StudioState
+from .state import PRICING_TABLE, StudioState, catalogue_products, intent_enum
 
 _ROOT = Path(__file__).resolve().parent.parent.parent
 
@@ -29,34 +29,50 @@ def _provider(config: RunnableConfig) -> str:
 
 
 # ── Stacy Step 1: Intent Classifier ───────────────────────────────────────────
+_UNKNOWN = "unknown_product"
+
+
 def stacy_classify(state: StudioState, config: RunnableConfig) -> dict:
     try:
         llm = get_llm(_provider(config), "fast", max_tokens=1024, temperature=0)
 
+        # Product list and intent enum come from PRICING_TABLE (passed as variables, so
+        # braces in them can never be read as template placeholders).
         prompt = ChatPromptTemplate.from_messages([
             ("system", """You are Stacy, Input-Orchestrator for AI Studio Accademia Milano.
 Classify the user request and return ONLY valid JSON:
 {{
-  "intent": "website_creation|pdf_creation|invoice_generation|chatbot_app|rag_knowledge_base|strategic_report|calendar_integration|weather_dashboard|agent_deploy_streamlit|other",
-  "product_type": "one of: static_landing_page, premium_landing_page, commercial_landing_page, pdf_document, invoice_pdf, strategic_report, chatbot_app, email_delivery, rag_knowledge_base, calendar_integration, weather_dashboard, agent_deploy_streamlit — OR unknown_product",
+  "intent": "{intents}",
+  "product_type": "one of: {products} - OR unknown_product",
   "dependencies_ok": true,
   "input_type": "text"
 }}"""),
             ("human", "{request}"),
         ])
 
-        result: dict = (prompt | llm | JsonOutputParser()).invoke({"request": state["request"]})
+        result: dict = (prompt | llm | JsonOutputParser()).invoke({
+            "request":  state["request"],
+            "intents":  intent_enum(),
+            "products": ", ".join(catalogue_products()),
+        })
 
-        product_type = result.get("product_type", "unknown_product")
+        raw_product = result.get("product_type", _UNKNOWN)
+        if isinstance(raw_product, str) and PRICING_TABLE.get(raw_product) is not None:
+            product_type = raw_product
+        else:
+            product_type = _UNKNOWN
         price = PRICING_TABLE.get(product_type)
         escalate = price is None
+        reason = None
+        if escalate:
+            reason = f"Unknown product: {raw_product}" if raw_product != _UNKNOWN else "Unknown product"
 
         return {
             "intent":            result.get("intent", "unknown"),
             "product_type":      product_type,
             "dependencies_ok":   result.get("dependencies_ok", True),
             "escalate_to_luigi": escalate,
-            "escalation_reason": f"Unknown product: {product_type}" if escalate else None,
+            "escalation_reason": reason,
             "messages": [AIMessage(content=(
                 f"[Stacy] intent={result.get('intent')} | product={product_type} | "
                 f"price={'€' + price if price else 'UNKNOWN → escalate to Luigi'}"
@@ -64,12 +80,36 @@ Classify the user request and return ONLY valid JSON:
         }
     except Exception as exc:
         return {
-            "error": str(exc),
+            "error":    f"[Stacy] {exc}",
+            "finished": True,
             "messages": [AIMessage(content=f"[Stacy] ERROR: {exc}")],
         }
 
 
 # ── Gianni: Technical Scoper ───────────────────────────────────────────────────
+def _validate_scope(result) -> None:
+    """Raise ValueError unless Gianni's JSON has every key Chiara and the review card rely on."""
+    if not isinstance(result, dict):
+        raise ValueError("scope is not a JSON object")
+    spec = result.get("technical_spec")
+    if not isinstance(spec, dict):
+        raise ValueError("technical_spec missing or not an object")
+    if not isinstance(spec.get("overview"), str) or not spec["overview"].strip():
+        raise ValueError("technical_spec.overview missing or empty")
+    if not isinstance(spec.get("components"), list):
+        raise ValueError("technical_spec.components missing or not a list")
+    if not isinstance(result.get("stack"), list):
+        raise ValueError("stack missing or not a list")
+    target = result.get("deployment_target")
+    if not isinstance(target, str) or not target.strip():
+        raise ValueError("deployment_target missing or empty")
+    hours = result.get("estimated_hours")
+    if isinstance(hours, bool) or not isinstance(hours, (int, float)):
+        raise ValueError("estimated_hours missing or not a number")
+    if not isinstance(result.get("blockers"), list):
+        raise ValueError("blockers missing or not a list")
+
+
 def gianni_scope(state: StudioState, config: RunnableConfig) -> dict:
     try:
         llm = get_llm(_provider(config), "smart", max_tokens=4096, temperature=0.2)
@@ -97,23 +137,25 @@ Decompose the request into a full technical spec. Return ONLY valid JSON:
             "intent":       state.get("intent", ""),
             "product_type": state.get("product_type", ""),
         })
+        _validate_scope(result)
 
         return {
-            "technical_spec":    result.get("technical_spec", {}),
-            "stack":             result.get("stack", []),
-            "deployment_target": result.get("deployment_target", "local"),
-            "estimated_hours":   result.get("estimated_hours", 1.0),
-            "blockers":          result.get("blockers", []),
+            "technical_spec":    result["technical_spec"],
+            "stack":             result["stack"],
+            "deployment_target": result["deployment_target"],
+            "estimated_hours":   result["estimated_hours"],
+            "blockers":          result["blockers"],
             "messages": [AIMessage(content=(
-                f"[Gianni] stack={result.get('stack')} | "
-                f"deploy={result.get('deployment_target')} | "
-                f"eta={result.get('estimated_hours')}h | "
-                f"blockers={result.get('blockers', [])}"
+                f"[Gianni] stack={result['stack']} | "
+                f"deploy={result['deployment_target']} | "
+                f"eta={result['estimated_hours']}h | "
+                f"blockers={result['blockers']}"
             ))],
         }
     except Exception as exc:
         return {
-            "error": str(exc),
+            "error":    f"[Gianni] {exc}",
+            "finished": True,
             "messages": [AIMessage(content=f"[Gianni] ERROR: {exc}")],
         }
 
