@@ -138,3 +138,57 @@ def test_ensure_utf8_stdout_survives_cp1252_console(capsys):
     legacy = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
     ct._ensure_utf8(legacy)
     print("── pipeline bot", file=legacy, flush=True)
+
+
+class TestAdminBot:
+    """Luigi's own bot (TELEGRAM_ADMIN_BOT_TOKEN): optional, webhook-only, never the same token as another bot."""
+
+    def test_not_configured_is_fine(self, token_env, monkeypatch):
+        monkeypatch.delenv("TELEGRAM_ADMIN_BOT_TOKEN", raising=False)
+        monkeypatch.setattr(ct, "_call", _stub())
+        errors, warnings = [], []
+        ct.check("admin", set(), errors, warnings)
+        assert errors == []
+
+    def test_with_its_webhook_it_is_healthy(self, token_env, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_ADMIN_BOT_TOKEN", "333:admin")
+        monkeypatch.setattr(ct, "_call", _stub(webhook_url="https://gw.example/webhook/telegram-admin"))
+        errors, warnings = [], []
+        ct.check("admin", set(), errors, warnings)
+        assert errors == []
+
+    def test_without_a_webhook_it_is_an_error(self, token_env, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_ADMIN_BOT_TOKEN", "333:admin")
+        monkeypatch.setattr(ct, "_call", _stub())
+        errors, warnings = [], []
+        ct.check("admin", set(), errors, warnings)
+        assert any("no webhook" in e for e in errors)
+
+    def test_a_placeholder_token_counts_as_not_configured(self, token_env, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_ADMIN_BOT_TOKEN", "your-admin-bot-token-here")
+        monkeypatch.setattr(ct, "_call", _stub())
+        errors, warnings = [], []
+        ct.check("admin", set(), errors, warnings)
+        assert errors == []
+
+
+class TestDuplicateTokens:
+    def test_distinct_tokens_are_fine(self, token_env, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_ADMIN_BOT_TOKEN", "333:admin")
+        assert ct.duplicate_token_errors() == []
+
+    def test_admin_equal_to_the_customer_bot_is_an_error(self, token_env, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_ADMIN_BOT_TOKEN", "111:pipeline")
+        errors = ct.duplicate_token_errors()
+        assert len(errors) == 1 and "TELEGRAM_ADMIN_BOT_TOKEN" in errors[0] and "TELEGRAM_BOT_TOKEN" in errors[0]
+
+    def test_pipeline_equal_to_rag_is_still_an_error(self, token_env, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_RAG_BOT_TOKEN", "111:pipeline")
+        monkeypatch.delenv("TELEGRAM_ADMIN_BOT_TOKEN", raising=False)
+        assert len(ct.duplicate_token_errors()) == 1
+
+    def test_an_unset_admin_token_is_never_a_duplicate(self, token_env, monkeypatch):
+        monkeypatch.delenv("TELEGRAM_ADMIN_BOT_TOKEN", raising=False)
+        monkeypatch.delenv("TELEGRAM_RAG_BOT_TOKEN", raising=False)
+        monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+        assert ct.duplicate_token_errors() == []
