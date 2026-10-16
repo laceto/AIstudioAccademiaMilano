@@ -15,6 +15,7 @@ can echo credentials.
 Config (env):
     NOTIFY_EMAILS             comma separated list of addresses
     NOTIFY_TELEGRAM_CHAT_IDS  comma separated numeric ids (not @usernames)
+    TELEGRAM_ADMIN_BOT_TOKEN  bot that talks to Luigi (optional; without it TELEGRAM_BOT_TOKEN is used)
     TELEGRAM_BOT_TOKEN        reused from the gateway
     SMTP_HOST / SMTP_PORT     default smtp.gmail.com / 587 (STARTTLS)
     SMTP_USER / SMTP_PASSWORD Gmail app password, from Secret Manager
@@ -109,12 +110,17 @@ def build_message(job: dict) -> tuple[str, str]:
     return subject, body
 
 
+def admin_token() -> str:
+    """Token of the bot that talks to Luigi: the admin bot if set, else the customer bot (old behaviour)."""
+    return os.environ.get("TELEGRAM_ADMIN_BOT_TOKEN", "").strip() or os.environ.get("TELEGRAM_BOT_TOKEN", "")
+
+
 async def _send_telegram(chat_ids: list[str], text: str, buttons: list[list[dict]] | None = None) -> None:
     """Send plain text (no parse_mode: the text contains user input) to each chat id.
 
     `buttons` is an inline keyboard (rows of {"text", "callback_data"}); see gateway/admin.py.
     """
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    token = admin_token()
     if not token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN not configured")
     failed = 0
@@ -247,7 +253,7 @@ def _failure_text(job: dict, result: dict) -> str:
 
 async def _send_document(chat_ids: list[str], caption: str, filename: str, content: bytes, buttons) -> None:
     """Send a file (multipart) with an inline keyboard to each chat id."""
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    token = admin_token()
     if not token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN not configured")
     failed = 0

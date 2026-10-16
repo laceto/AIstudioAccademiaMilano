@@ -205,6 +205,15 @@ gcloud run services logs read gateway --region $REGION --limit 50
 
 ---
 
+## Optional: a separate admin bot
+
+By default Luigi's approvals use the same bot as customers, so his own test requests and the approval cards
+share one chat. To split them, create a third bot in @BotFather, put its token in `.env` as
+`TELEGRAM_ADMIN_BOT_TOKEN`, press **Start** on it once, and re-run `bash scripts/deploy_cloudrun.sh`.
+The script stores the token as a secret, gives it to the gateway and the pipeline worker, and registers
+`/webhook/telegram-admin` with the same `TELEGRAM_WEBHOOK_SECRET`. Check with `python scripts/check_telegram.py`.
+Without the token nothing changes. Details: `deliverables/2026-10-16_040_admin-bot/README.md`.
+
 ## Known trade-offs
 
 **Cold starts.** After idle, the first message pays container startup. The gateway is
