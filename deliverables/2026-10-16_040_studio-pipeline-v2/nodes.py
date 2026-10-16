@@ -17,7 +17,6 @@ from langgraph.types import Send
 from studio_pipeline.llm_factory import get_llm
 from studio_pipeline.nodes import (  # noqa: F401  (re-exported for the v2 graph)
     _provider,
-    chiara_implement,
     compliance_agent,
     francesca_deliver,
     gianni_scope,
@@ -28,9 +27,10 @@ from studio_pipeline.nodes import (  # noqa: F401  (re-exported for the v2 graph
     stacy_qa,
     technical_auditor,
 )
+from studio_pipeline.nodes import chiara_implement as _v1_chiara
 from studio_pipeline.state import PRICING_TABLE
 
-from .state import StudioStateV2
+from .state import REPORTS_RESET, StudioStateV2
 
 # ── Thresholds (assumptions: calibrate them from real runs) ──────────────────
 
@@ -65,6 +65,13 @@ def _score(report: dict) -> float:
         return min(5.0, max(1.0, float(report.get("risk_score", 1))))
     except (TypeError, ValueError):
         return 1.0
+
+
+def chiara_implement(state: StudioStateV2, config: RunnableConfig) -> dict:
+    """v1's Chiara, plus a fresh risk panel: whatever the reviewers said about an earlier build is void."""
+    out = dict(_v1_chiara(state, config))
+    out["risk_reports"] = [REPORTS_RESET]
+    return out
 
 
 # ── Lorenzo: first stop for untrusted text ───────────────────────────────────

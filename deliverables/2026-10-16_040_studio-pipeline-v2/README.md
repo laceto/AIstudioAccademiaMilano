@@ -37,9 +37,26 @@ In `nodes.py`: `COST_PER_HOUR_EUR = 6.0` (costo di un'ora di lavoro dello studio
 - **Team ricerca** (Scout, Analyst, Curator, Reporter): non è per-richiesta. Il piano è un giro settimanale (Cloud Scheduler)
   che scrive un digest letto da Gianni. Da fare.
 - **Pablo, Sofia, Carlos**: ruoli di costruzione del gateway, non agenti a runtime; nessun nodo.
-- Non provato con un modello vero: i test usano un modello finto che risponde per ruolo (22 test).
-- Più revisori = più chiamate: ~7 chiamate veloci per job invece di ~3 (in parallelo: la durata cambia poco, il costo sì).
-- Il limite di tempo del worker (`_run_timeout`) non è stato rivisto per v2.
+- Provato con un modello vero solo con OpenAI (gpt-4o-mini / gpt-4o), non con Anthropic. Vedi le misure qui sotto.
+
+## Misurato con un modello vero (2026-10-16, `scripts/run_v2_smoke.py --live --probe-lorenzo`)
+
+| Lavoro | Versione | Esito | Tempo | Chiamate | Costo ~ |
+|--------|----------|-------|-------|----------|---------|
+| Report PDF (pulito) | v2 | ok | 12–14 s | 13 | $0.010 |
+| Report PDF (pulito) | v1 | ok | 7–11 s | 7 | $0.009 |
+| Injection evidente | v2 | fermato da Lorenzo | 0.7–1.0 s | 1 | ~$0 |
+| App Streamlit + deploy remoto | v2 | **QA fallita 3 volte** (chiave API scritta nel codice, senza disclaimer) | 21–28 s | 25–27 | $0.02 |
+
+- **Costo**: v2 costa quanto v1 (+4 %), perché la spesa sta nelle chiamate "smart" (Gianni, Chiara); i revisori in più usano il modello piccolo. Le chiamate raddoppiano (7 → 13) e il tempo cresce del 15–80 %.
+- **Lorenzo**: 8 prove (4 injection, 4 richieste normali ma "a rischio" come "ignora i messaggi duplicati" o "chiavi API in un vault"): 0 errori. Poche prove: non è una garanzia.
+- **Timeout**: il peggiore misurato (3 tentativi di build) è 28 s; il worker aspetta 600 s (`PIPELINE_RUN_TIMEOUT`) e Cloud Tasks 900 s. Margine ampio.
+- **Bug trovato e corretto**: dopo un nuovo tentativo di Chiara il pannello di rischio conservava i punteggi della build scartata (6 → 12 → 18 punteggi), quindi un solo 5 vecchio rimandava a Luigi ogni rifacimento. Ora ogni build parte con un pannello nuovo.
+- **Soglie, dati alla mano**:
+  - `COST_PER_HOUR_EUR = 6.0` è sbagliato per come lo si usa: Gianni stima 2,5 h sia per un PDF da una pagina sia per un'app Streamlit, quindi qualunque prodotto sotto 12,75 € risulta "sottoprezzato" (PDF 1,90 € → 0,13; meteo 9,90 € → 0,66) e il Core Architect (modello "smart") viene chiamato quasi sempre. Il costo vero di un job misurato è 1–2 centesimi. Il valore giusto dipende da cosa significa "costo": decide Luigi; non l'ho cambiato.
+  - `ARCHITECT_RISK_THRESHOLD = 2.5` e `PRICING_ADEQUACY_MIN = 0.85`: non valutabili con 3 lavori (nessun rischio medio ha superato 2,0).
+  - Il Devil's Advocate ha contestato il prezzo in entrambi i lavori con prezzo (1,90 € e 9,90 €): per un lavoro senza prezzo approvato quasi ogni richiesta andrebbe a Luigi.
+- Non misurato: Anthropic come provider; l'app Streamlit con v1 (la QA fallita viene da Chiara/QA di v1, non l'ho confrontata); il doppio messaggio `[RiskPanel]` nella traccia, che c'è anche in v1 (stream del riavvio dopo l'approvazione).
 
 ## Test
 

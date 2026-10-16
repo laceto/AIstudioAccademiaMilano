@@ -25,7 +25,9 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
-from studio_pipeline.graph import route_after_classify, route_after_qa, run_pipeline  # noqa: F401
+from studio_pipeline.graph import route_after_classify as _v1_route_after_classify
+from studio_pipeline.graph import route_after_qa as _v1_route_after_qa
+from studio_pipeline.graph import run_pipeline  # noqa: F401  (v1's runner drives any compiled graph)
 
 from .nodes import (
     api_product_designer,
@@ -61,6 +63,16 @@ _REVIEWERS = (
 
 
 # ── Routing functions ──────────────────────────────────────────────────────────
+
+# v1's routers are annotated with v1's state type, which LangGraph would read as a second, clashing schema:
+# the same logic, annotated with v2's.
+def route_after_classify(state: StudioStateV2):
+    return _v1_route_after_classify(state)
+
+
+def route_after_qa(state: StudioStateV2):
+    return _v1_route_after_qa(state)
+
 
 def route_after_lorenzo(state: StudioStateV2) -> Literal["stacy_classify", "__end__"]:
     return END if state.get("error") or state.get("finished") else "stacy_classify"
@@ -102,27 +114,32 @@ def build_studio_graph(deliver=francesca_deliver, checkpointer=None, interrupt_b
     """Assemble v2. `deliver` replaces Francesca exactly as in v1 (the gateway swaps in a side-effect-free one)."""
     g = StateGraph(StudioStateV2)
 
-    g.add_node("lorenzo_scan",              lorenzo_scan)
-    g.add_node("stacy_classify",            stacy_classify)
-    g.add_node("gianni_scope",              gianni_scope)
-    g.add_node("devils_advocate",           devils_advocate)
-    g.add_node("financial_controller",      financial_controller)
-    g.add_node("it_staff_advise",           it_staff_advise)
-    g.add_node("pricing_gate",              pricing_gate)
-    g.add_node("chiara_implement",          chiara_implement)
-    g.add_node("technical_auditor",         technical_auditor)
-    g.add_node("compliance_agent",          compliance_agent)
-    g.add_node("reputation_guardian",       reputation_guardian)
-    g.add_node("quality_reliability_lead",  quality_reliability_lead)
-    g.add_node("api_product_designer",      api_product_designer)
-    g.add_node("operational_monitor",       operational_monitor)
-    g.add_node("risk_aggregator",           risk_aggregator)
-    g.add_node("core_architect",            core_architect)
-    g.add_node("stacy_qa",                  stacy_qa)
-    g.add_node("marco_invoice",             marco_invoice)
-    g.add_node("francesca_deliver",         deliver)
-    g.add_node("valentina_draft",           valentina_draft)
-    g.add_node("luigi_escalate",            luigi_escalate)
+    def add(name, fn):
+        # v1's nodes are annotated with v1's StudioState, whose risk_reports reducer differs from v2's;
+        # without an explicit input schema LangGraph reads that hint and rejects the clash.
+        g.add_node(name, fn, input_schema=StudioStateV2)
+
+    add("lorenzo_scan", lorenzo_scan)
+    add("stacy_classify", stacy_classify)
+    add("gianni_scope", gianni_scope)
+    add("devils_advocate", devils_advocate)
+    add("financial_controller", financial_controller)
+    add("it_staff_advise", it_staff_advise)
+    add("pricing_gate", pricing_gate)
+    add("chiara_implement", chiara_implement)
+    add("technical_auditor", technical_auditor)
+    add("compliance_agent", compliance_agent)
+    add("reputation_guardian", reputation_guardian)
+    add("quality_reliability_lead", quality_reliability_lead)
+    add("api_product_designer", api_product_designer)
+    add("operational_monitor", operational_monitor)
+    add("risk_aggregator", risk_aggregator)
+    add("core_architect", core_architect)
+    add("stacy_qa", stacy_qa)
+    add("marco_invoice", marco_invoice)
+    add("francesca_deliver", deliver)
+    add("valentina_draft", valentina_draft)
+    add("luigi_escalate", luigi_escalate)
 
     g.add_edge(START, "lorenzo_scan")
     g.add_conditional_edges("lorenzo_scan", route_after_lorenzo)

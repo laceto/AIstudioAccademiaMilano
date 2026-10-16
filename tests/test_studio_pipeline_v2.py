@@ -46,6 +46,8 @@ class Script:
         self.deployment = "local"
         self.hours = 1.0
         self.asked = []
+        self.qa_seq = []      # successive QA verdicts; falls back to qa_passes
+        self.ta_seq = []      # successive Technical Auditor scores; falls back to risk
 
     def answer(self, value) -> AIMessage:
         text = _text(value)
@@ -67,7 +69,8 @@ class Script:
         if "You are Valentina" in text:
             return AIMessage(content="Nuova consegna dello studio: un piccolo servizio pronto all'uso.")
         if "Stacy in QA mode" in text:
-            return AIMessage(content=json.dumps({"qa_passed": self.qa_passes, "checks": {}, "issues": [] if self.qa_passes else ["x"]}))
+            passed = self.qa_seq.pop(0) if self.qa_seq else self.qa_passes
+            return AIMessage(content=json.dumps({"qa_passed": passed, "checks": {}, "issues": [] if passed else ["x"]}))
         if "Stacy, Input-Orchestrator" in text:
             return AIMessage(content=json.dumps({"intent": "other", "product_type": self.product, "dependencies_ok": True, "input_type": "text"}))
         if "Gianni, Request-Analyzer" in text:
@@ -78,6 +81,8 @@ class Script:
         if "Chiara, Product-Generator" in text:
             return AIMessage(content="SKILLS: python\nFILE: svc.py\n\nprint('ok')")
         if '"risk_score"' in text:
+            if self.ta_seq and "Technical Auditor" in text:
+                return AIMessage(content=json.dumps({"risk_score": self.ta_seq.pop(0), "findings": []}))
             for agent, score in self.risk_by_agent.items():
                 if agent in text:
                     return AIMessage(content=json.dumps({"risk_score": score, "findings": []}))
@@ -274,3 +279,30 @@ def test_default_run_is_still_v1(script, v1):
     assert res.ok, res.error
     assert res.advisories == [] and res.draft_post is None
     assert script.asked.count("Lorenzo") == 0
+
+
+# ── a retry judges the new build, not the old one ────────────────────────────
+
+
+def test_risk_reports_start_over_on_every_build(v2):
+    reset = v2.state.REPORTS_RESET
+    assert v2.state.accumulate_reports([{"agent": "a"}], [{"agent": "b"}]) == [{"agent": "a"}, {"agent": "b"}]
+    assert v2.state.accumulate_reports([{"agent": "a"}], [reset]) == []
+    assert v2.state.accumulate_reports([{"agent": "a"}], [reset, {"agent": "b"}]) == [{"agent": "b"}]
+    assert v2.state.accumulate_reports(None, None) == []
+
+
+def test_chiara_v2_clears_the_panel(v2, monkeypatch):
+    monkeypatch.setattr(v2.nodes, "_v1_chiara", lambda state, config: {"deliverable_content": "x", "risk_reports": []})
+    out = v2.nodes.chiara_implement({}, {})
+    assert out["deliverable_content"] == "x" and v2.state.REPORTS_RESET in out["risk_reports"]
+
+
+def test_a_critical_score_from_a_rejected_build_does_not_haunt_the_retry(script):
+    script.ta_seq = [5, 1]          # first build: critical finding; the rebuild is clean
+    script.qa_seq = [False, True]   # QA sends the first build back
+    res = sr.run_job(_job(), version="v2")
+    assert res.ok, res.error
+    panels = [s for s in res.steps if s.startswith("[RiskPanel] scores=")]
+    assert panels and all(s.split("]")[1].count(",") + 1 <= 6 for s in panels), panels
+    assert panels[-1].endswith("PASS")
