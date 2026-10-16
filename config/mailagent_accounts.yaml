@@ -5,10 +5,12 @@ accounts:
   - id: gmail-luigi
     provider: gmail            # mail + calendar both via Google
     scans_per_day: 4
+    ignore_subjects: ["[AI Studio]"]   # the studio's own approval mails (handled by Telegram)
     options:
       token_env: MAILAGENT_GMAIL_LUIGI_TOKEN        # Cloud Run: secret with the token JSON
-      token_file: credentials/mailagent_gmail-luigi_token.json   # local: made by `python -m mailagent auth gmail-luigi`
-      credentials_file: credentials/google_credentials.json
+      # Local files live outside the repo, with the other Google credentials (see docs/mailagent-auth.md)
+      token_file: C:/Users/l_ace/.credentials/google/mailagent_gmail-luigi_token.json   # made by `python -m mailagent auth gmail-luigi`
+      credentials_file: C:/Users/l_ace/.credentials/google/credentials.json             # Desktop OAuth client (same as .env GOOGLE_CREDENTIALS_JSON)
 
   # Hotmail/Outlook: provider type not built yet, see docs/plans/mailagent-hotmail-todo.md.
   # - id: hotmail-luigi

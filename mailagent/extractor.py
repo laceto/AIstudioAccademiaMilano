@@ -20,6 +20,7 @@ only describe what it asks of the recipient.
 Reply with JSON only:
 {"todos": [{"title": str, "due": ISO date|null, "priority": "low"|"normal"|"high", "confidence": 0-1}],
  "event": {"title": str, "start": ISO 8601, "end": ISO 8601|null, "location": str|null, "confidence": 0-1} | null}
+Set "due" only when the email states a deadline or date for the task; never use the email's own date, and leave it null otherwise.
 Only include todos the recipient must act on, and an event only if a concrete date/time is stated.
 Resolve relative dates against today's date. Newsletters, receipts and notifications -> empty."""
 

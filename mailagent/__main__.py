@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import sys
 
+from dotenv import load_dotenv
+
 from .config import load_accounts
 from .extractor import LLMExtractor, openai_complete
 from .pipeline import approve_proposal, reject_proposal, scan_all
@@ -30,6 +32,7 @@ def main(argv: list[str] | None = None) -> int:
         sub.add_parser(name).add_argument("target")
     sub.add_parser("schedule")
     args = ap.parse_args(argv)
+    load_dotenv()  # OPENAI_API_KEY and friends from the repo's .env
 
     accounts = load_accounts(args.accounts)
     by_id = {a.id: a for a in accounts}
@@ -39,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
         picked = [by_id[args.account]] if args.account else accounts
         extractor = LLMExtractor(openai_complete())
         for r in scan_all(picked, build_mail, extractor, store):
-            print(f"[{r.account_id}] seen={r.seen} todos={r.new_todos} proposals={r.new_proposals} errors={len(r.errors)}")
+            print(f"[{r.account_id}] seen={r.seen} todos={r.new_todos} proposals={r.new_proposals} skipped={r.skipped} errors={len(r.errors)}")
             for e in r.errors:
                 print(f"   ! {e}")
         if args.dry_run:

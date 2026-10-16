@@ -19,7 +19,14 @@ class ScanReport:
     seen: int = 0
     new_todos: int = 0
     new_proposals: int = 0
+    skipped: int = 0
     errors: list[str] = field(default_factory=list)
+
+
+def _ignored(cfg: AccountConfig, em) -> bool:
+    return any(s.lower() in em.sender.lower() for s in cfg.ignore_senders) or any(
+        s.lower() in em.subject.lower() for s in cfg.ignore_subjects
+    )
 
 
 def scan_account(cfg: AccountConfig, mail, extractor: Extractor, store: JsonStore, now: datetime | None = None) -> ScanReport:
@@ -30,6 +37,10 @@ def scan_account(cfg: AccountConfig, mail, extractor: Extractor, store: JsonStor
     rep = ScanReport(cfg.id)
     for em in mail.list_new(since, cfg.max_emails):
         if em.id in processed:
+            continue
+        if _ignored(cfg, em):
+            rep.skipped += 1
+            processed.append(em.id)
             continue
         rep.seen += 1
         try:
