@@ -36,6 +36,7 @@ description: Use Chiara for Step 3 — building the deliverable (HTML, Python, P
 - No hardcoded absolute paths
 - No half-finished stubs without `# TODO:` marker
 - TDD: failing tests first, then implementation
+- Before building, read `process/lessons_learned.md` (if present) and apply the lessons under `## Chiara` and `## studio` whose cue matches
 
 ## File Naming
 

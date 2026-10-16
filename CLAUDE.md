@@ -183,6 +183,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `credentials/registry.md` | Guida step-by-step per tutte le credenziali |
 | `.env.example` | Template variabili d'ambiente — copia in `.env` e compila |
 | `scripts/learning_loop.py` | Auto-aggiorna settings dopo ogni request |
+| `process/lessons_learned.md` | Lezioni apprese dalle consegne (044), generato dal learning loop: Gianni e Chiara lo leggono prima di iniziare |
 | `scripts/git-hooks/pre-commit` | Blocca `.env` + pattern segreti noti |
 | `scripts/check_telegram.py` | Doctor canali Telegram: `getMe` + `getWebhookInfo` per bot, rileva conflitti webhook/polling e token duplicati (pipeline, RAG, admin) |
 | `deliverables/2026-10-16_041_admin-bot/` | Guida al bot admin separato (`TELEGRAM_ADMIN_BOT_TOKEN`): cosa cambia, come attivarlo, limiti |
@@ -257,7 +258,10 @@ learning_flags:
   new_skills: [list]
   new_mcp: [list]
   risk_score: 1-5
+  lessons: [{agent, cue, lesson, evidence, confidence}]  # opzionale, vedi sotto
 ```
+
+**Lezioni (044, idea da Harness²).** Se una consegna ha insegnato qualcosa, scrivilo in `learning_flags.lessons`: `cue` (quando vale), `lesson` (cosa fare), `evidence` (cosa si è osservato, obbligatoria), `confidence` (high/medium/low), `agent` (chi la applica). Il learning loop le unisce in `config/global_settings.json` (`lessons`) e rigenera `process/lessons_learned.md`, che Gianni e Chiara leggono prima di iniziare. Niente lezioni generiche: solo ciò che è successo davvero.
 
 ---
 
@@ -391,6 +395,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 041 | 2026-10-16 | Bot admin separato — `TELEGRAM_ADMIN_BOT_TOKEN` opzionale: schede, comandi, avvisi e risultati da rivedere su un bot solo di Luigi (`/webhook/telegram-admin`), il bot clienti senza poteri admin; messaggi ai clienti sempre dal bot clienti; deploy e doctor aggiornati; non ancora deployato | 0.00 (internal) |
 | 042 | 2026-10-16 | Gmail tidy su Cloud Run — `mailagent tidy`: newsletter/notifiche/promozioni da header (`List-Unsubscribe`, `Precedence`, `no-reply@`, categoria Promozioni) → etichetta + archivio in `batchModify`, lista `protect`, mai stellate né mail < 60 min; retry 429/5xx, log JSON, FastAPI `/process` privato, Dockerfile, `deploy_mailagent.sh` (Secret Manager + Scheduler orario), dry run di default; 22 test offline; non deployato, non provato sulla casella reale | 0.00 (internal) |
 | 043 | 2026-10-16 | Drive Semantic Router — FastAPI + sentence-transformers (MiniLM, CPU) + ChromaDB: smista `05_In_Arrivo_Da_Smistare` nelle cartelle di categoria e rinomina `YYYY-MM-DD_Categoria_Descrizione.ext`; OCR via Drive, APScheduler, log JSON, Dockerfile, deploy Azure App Service F1 + Key Vault; `DRY_RUN` di default; 27 test offline; non provato con il modello vero, Drive reale né Azure | null (pending Luigi — proposta 29.90) |
+| 044 | 2026-10-16 | Lezioni apprese nel learning loop (idea da Harness², google-research/harness2) — `learning_flags.lessons` (cue/lesson/evidence/confidence) negli audit, unite in `global_settings.json` senza duplicati, digest `process/lessons_learned.md` letto da Gianni e Chiara; 13 test offline; demo Harness² non eseguita (permessi) | 0.00 (internal) |
 
 ---
 

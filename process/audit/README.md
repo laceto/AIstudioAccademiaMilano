@@ -65,6 +65,12 @@ learning_flags:     # what the learning loop should extract
   new_mcp:          # MCP tools seen for the first time
   pattern_match:    # known pattern matched (or "none")
   risk_score:       # 1-5
+  lessons:          # optional (044): what this delivery taught, carried to the next ones
+    - agent: Gianni       # who should apply it; omit = whole studio
+      cue: "When ..."     # the situation where it applies
+      lesson: "Do ..."    # the concrete change in behaviour
+      evidence: "NNN: observed ..."   # what actually happened (required: no evidence, no lesson)
+      confidence: high    # high | medium | low
 ```
 
 ---
