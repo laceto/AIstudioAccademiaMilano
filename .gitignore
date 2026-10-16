@@ -76,4 +76,7 @@ gateway/erasures/
 
 # mailagent: scanned mail metadata and OAuth tokens never get committed
 data/mailagent/
+
+# downloads_agent works on personal files (tax returns, bank statements, medical data, credentials)
+data/Download/
 credentials/mailagent_*_token.json

@@ -11,7 +11,8 @@ from langchain_core.runnables import RunnableConfig
 from .categories import IGNORED_NAMES, PARTIAL_EXTS, classify
 from .state import DownloadsState
 
-DEFAULT_ROOT = Path.home() / "Downloads"
+# The folder the agent looks after: <repo>/data/Download (not the Windows ~/Downloads).
+DEFAULT_ROOT = Path(__file__).resolve().parent.parent / "data" / "Download"
 DEFAULT_MIN_AGE_MIN = 10
 
 

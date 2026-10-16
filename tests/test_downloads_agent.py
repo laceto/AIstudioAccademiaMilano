@@ -81,3 +81,8 @@ def test_undo_restores(tmp_path):
     g.invoke(None, cfg)
     assert undo_last_run(str(tmp_path / "_state")) == 1
     assert (tmp_path / "a.pdf").exists()
+
+
+def test_default_root_is_repo_data_download():
+    from downloads_agent.nodes import DEFAULT_ROOT
+    assert DEFAULT_ROOT.parts[-2:] == ("data", "Download")

@@ -1,12 +1,13 @@
 # Downloads agent (D040)
 
-LangGraph agent that keeps the Windows `Downloads` folder tidy. It never deletes anything.
+LangGraph agent that keeps the `data/Download` folder of this repo tidy. It never deletes anything.
+The folder holds personal files, so `data/Download/` is git-ignored; change it with `--root`.
 
 ```
 START -> plan -> (nothing to move? END) -> [pause: human approval] -> execute -> END
 ```
 
-- **plan** scans the top level of Downloads only (subfolders are never touched) and groups files by
+- **plan** scans the top level of `data/Download` only (subfolders are never touched) and groups files by
   extension into `Documents`, `Images`, `Video`, `Audio`, `Archives`, `Installers`.
   It skips partial downloads (`.crdownload`, `.part`, ...), files modified in the last 10 minutes,
   unknown extensions and `desktop.ini`.
@@ -43,4 +44,4 @@ Remove with `schtasks /Delete /TN DownloadsAgentPlan /F`. Read `plan.log` or run
 
 - No notification when a plan is waiting (the log file is the only signal).
 - Empty category folders stay after `undo`.
-- Tested on temp folders only; not yet run on the real Downloads folder.
+- Nothing has been approved on `data/Download` yet; only a plan was built (read-only).
