@@ -724,6 +724,50 @@
       "times_used": 1,
       "success_rate": 1.0,
       "avg_duration_sec": 0
+    },
+    "pdf_table_extraction": {
+      "description": "Auto-discovered from request 045",
+      "intent_mappings": [
+        "bank_statement_analyst"
+      ],
+      "agent": "Chiara",
+      "first_seen": "2026-10-16",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "italian_amount_parsing": {
+      "description": "Auto-discovered from request 045",
+      "intent_mappings": [
+        "bank_statement_analyst"
+      ],
+      "agent": "Chiara",
+      "first_seen": "2026-10-16",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "rule_based_transaction_classification": {
+      "description": "Auto-discovered from request 045",
+      "intent_mappings": [
+        "bank_statement_analyst"
+      ],
+      "agent": "Chiara",
+      "first_seen": "2026-10-16",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
+    },
+    "excel_report_generation": {
+      "description": "Auto-discovered from request 045",
+      "intent_mappings": [
+        "bank_statement_analyst"
+      ],
+      "agent": "Chiara",
+      "first_seen": "2026-10-16",
+      "times_used": 1,
+      "success_rate": 1.0,
+      "avg_duration_sec": 0
     }
   },
   "intent_to_skill_map": {
@@ -849,6 +893,7 @@
     "family_archivist": "€14.90",
     "mediterranean_meal_planner": "€14.90",
     "niccolo_chronicles": "€14.90",
+    "bank_statement_analyst": "€14.90",
     "unknown_product": null
   },
   "hooks": [
