@@ -1,4 +1,4 @@
-"""CLI:  python -m mailagent <scan|todos|proposals|approve|reject|auth|schedule> [...]"""
+"""CLI:  python -m mailagent <scan|sweep|tidy|todos|proposals|approve|reject|auth|schedule> [...]"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from .config import load_accounts
 from .extractor import LLMExtractor, openai_complete
-from .pipeline import approve_proposal, reject_proposal, scan_all, sweep_account
+from .pipeline import approve_proposal, reject_proposal, scan_all, sweep_account, tidy_account
 from .providers import build_calendar, build_mail
 from .schedule import scan_hours
 from .store import JsonStore
@@ -29,6 +29,9 @@ def main(argv: list[str] | None = None) -> int:
     sw = sub.add_parser("sweep", help="one-time: apply filing rules to mail already in the inbox")
     sw.add_argument("--account", help="one account id (default: all enabled)")
     sw.add_argument("--dry-run", action="store_true")
+    td = sub.add_parser("tidy", help="file newsletters / notifications / promotions by header (accounts with tidy.enabled)")
+    td.add_argument("--account", help="one account id (default: all tidy-enabled)")
+    td.add_argument("--dry-run", action="store_true", help="print every decision and its reason; change nothing")
     sub.add_parser("todos")
     sub.add_parser("proposals")
     for name in ("approve", "reject", "auth"):
@@ -58,6 +61,15 @@ def main(argv: list[str] | None = None) -> int:
             counts = sweep_account(a, build_mail(a), dry_run=args.dry_run)
             verb = "would file" if args.dry_run else "filed"
             print(f"[{a.id}] " + (", ".join(f"{verb} {n} -> {lbl}" for lbl, n in counts.items()) or "nothing to do"))
+    elif args.cmd == "tidy":
+        for a in [by_id[args.account]] if args.account else [a for a in accounts if a.tidy.get("enabled")]:
+            r = tidy_account(a, build_mail(a), dry_run=args.dry_run)
+            verb = "would file" if args.dry_run else "filed"
+            print(f"[{a.id}] examined={r.examined} kept={r.kept} {verb}: " + (", ".join(f"{n} -> {l}" for l, n in r.filed.items()) or "nothing"))
+            for d in r.decisions if args.dry_run else []:
+                print(f"  {d['label']:<12} {d['reason']:<28} {d['sender'][:40]:<40} {d['subject'][:60]}")
+            for e in r.errors:
+                print(f"   ! {e}")
     elif args.cmd == "todos":
         for t in store.list_todos("open"):
             print(f"{t['id']}  {t['title']}  due={t['due']}  [{t['source_subject']}]")

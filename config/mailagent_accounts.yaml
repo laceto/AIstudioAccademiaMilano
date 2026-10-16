@@ -9,6 +9,20 @@ accounts:
       - subject_contains: "[AI Studio]"
         label: "AI Studio"
         archive: true
+    tidy:                      # header heuristics, no model: python -m mailagent tidy --dry-run / Cloud Run POST /process
+      enabled: true
+      archive: true            # out of the inbox, into the label
+      mark_read: false
+      min_age_minutes: 60      # leave fresh mail alone (2FA codes, reset links)
+      # categories: [promotions, newsletter, notifications]
+      # labels: {newsletter: Newsletter, notifications: Notifiche, promotions: Promozioni}
+      # query: "in:inbox newer_than:7d -is:starred"
+    protect:                   # sender substrings tidy never touches, whatever their headers say
+      - "@inps.it"
+      - "@agenziaentrate.gov.it"
+      - "@pec."
+      # - "@<la tua banca>.it"
+      # - "commercialista@"
     options:
       token_env: MAILAGENT_GMAIL_LUIGI_TOKEN        # Cloud Run: secret with the token JSON
       # Local files live outside the repo, with the other Google credentials (see docs/mailagent-auth.md)

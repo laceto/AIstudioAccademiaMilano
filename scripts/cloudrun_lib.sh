@@ -163,11 +163,11 @@ ensure_delete_protection() {
   fi
 }
 
-# ensure_scheduler_job NAME LOCATION URI SERVICE_ACCOUNT_EMAIL AUDIENCE SCHEDULE
+# ensure_scheduler_job NAME LOCATION URI SERVICE_ACCOUNT_EMAIL AUDIENCE SCHEDULE [DESCRIPTION]
 #
 # Create the Cloud Scheduler HTTP job, or reset an existing one to the same settings. It POSTs to URI
 # with an OIDC token minted for SERVICE_ACCOUNT_EMAIL (audience = the private service's URL), so the
-# call is authorised exactly like Cloud Tasks'. Used for the stuck-job sweep (pipeline-worker /sweep).
+# call is authorised exactly like Cloud Tasks'. Used for the stuck-job sweep (pipeline-worker /sweep) and mailagent /process.
 # Prints "NAME — created | updated".
 ensure_scheduler_job() {
   local name="$1" location="$2" uri="$3" sa="$4" audience="$5" schedule="$6"
@@ -175,7 +175,7 @@ ensure_scheduler_job() {
     --location="$location" --schedule="$schedule" --uri="$uri" --http-method=POST
     --oidc-service-account-email="$sa" --oidc-token-audience="$audience"
     --time-zone=Etc/UTC --attempt-deadline=120s
-    --description="Fail pipeline jobs stuck in running (POST /sweep)"
+    --description="${7:-Fail pipeline jobs stuck in running (POST /sweep)}"
   )
   if gcloud scheduler jobs describe "$name" --location="$location" >/dev/null 2>&1; then
     gcloud scheduler jobs update http "$name" "${flags[@]}" >/dev/null || return 1
