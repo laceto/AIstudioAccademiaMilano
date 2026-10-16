@@ -210,6 +210,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `deliverables/2026-10-09_038_erasure-and-refusals/` | Guida a `/cancella`, ai rifiuti automatici e a RIESAMINA |
 | `mailagent/server.py`, `mailagent/classifier.py`, `scripts/deploy_mailagent.sh` | Gmail tidy su Cloud Run (042): classificatore a header, `POST /process`, deploy con Secret Manager + Scheduler; runbook `process/runbook_mailagent_cloudrun.md` |
 | `gateway/research_digest.py`, `process/runbook_research_digest.md` | Digest settimanale GitHub AI per Gianni (pipeline v2): salvataggio, lettura difensiva, endpoint `/research/run` sul worker, comando Scheduler |
+| `driverouter/` | Drive Semantic Router (043): `classifier.py` (MiniLM + ChromaDB), `main.py` (FastAPI, Drive, scheduler), `Dockerfile`, `deploy_azure.sh` (F1 + Key Vault); guida in `deliverables/2026-10-16_043_drive-semantic-router/` |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
@@ -389,6 +390,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 040 | 2026-10-16 | Pipeline v2 — tutti i ruoli nella pipeline: Lorenzo (scansione injection), Devil's Advocate + Financial Controller + IT Staff prima della build, 6 revisori in parallelo, Core Architect su trigger, Valentina (bozza), aggregatore con soglia critica; accanto a v1 con `PIPELINE_VERSION`; digest settimanale del team ricerca letto da Gianni (`POST /research/run`, Firestore `research/latest`); 56 test offline; non provato con un modello vero né con GitHub; il job Cloud Scheduler del digest non è stato creato (comando in `process/runbook_research_digest.md`) | 0.00 (internal) |
 | 041 | 2026-10-16 | Bot admin separato — `TELEGRAM_ADMIN_BOT_TOKEN` opzionale: schede, comandi, avvisi e risultati da rivedere su un bot solo di Luigi (`/webhook/telegram-admin`), il bot clienti senza poteri admin; messaggi ai clienti sempre dal bot clienti; deploy e doctor aggiornati; non ancora deployato | 0.00 (internal) |
 | 042 | 2026-10-16 | Gmail tidy su Cloud Run — `mailagent tidy`: newsletter/notifiche/promozioni da header (`List-Unsubscribe`, `Precedence`, `no-reply@`, categoria Promozioni) → etichetta + archivio in `batchModify`, lista `protect`, mai stellate né mail < 60 min; retry 429/5xx, log JSON, FastAPI `/process` privato, Dockerfile, `deploy_mailagent.sh` (Secret Manager + Scheduler orario), dry run di default; 22 test offline; non deployato, non provato sulla casella reale | 0.00 (internal) |
+| 043 | 2026-10-16 | Drive Semantic Router — FastAPI + sentence-transformers (MiniLM, CPU) + ChromaDB: smista `05_In_Arrivo_Da_Smistare` nelle cartelle di categoria e rinomina `YYYY-MM-DD_Categoria_Descrizione.ext`; OCR via Drive, APScheduler, log JSON, Dockerfile, deploy Azure App Service F1 + Key Vault; `DRY_RUN` di default; 27 test offline; non provato con il modello vero, Drive reale né Azure | null (pending Luigi — proposta 29.90) |
 
 ---
 
@@ -419,3 +421,4 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | ISS-026 | P3 | HF Spaces paid deployment lane per chatbot/agent/techa deliverable | OPEN |
 | ISS-027 | P3 | Gumroad secondary-channel publisher per PDF, planner, flashcard, journal | OPEN |
 | ISS-029 | P2 | Bot admin separato (041): creare il bot in @BotFather, `TELEGRAM_ADMIN_BOT_TOKEN` in `.env` + Start, deploy (`deploy_cloudrun.sh --dry-run` poi reale), provare la scheda su Telegram; poi pulizia git: togliere il commit 72569fb e l'audit `040_admin-bot` persi su `claude/mailagent-filing-rules`, rinumerare i due audit 040 su `downloads-agent` e `mailagent-filing-rules` | OPEN (codice mergiato in #222, non deployato) |
+| ISS-030 | P2 | Drive Semantic Router (043): prezzo, client OAuth Google + refresh token, build immagine, `deploy_azure.sh --dry-run` poi reale, giro `DRY_RUN` sulla cartella vera per tarare `MIN_SIMILARITY`, cron esterno (F1 si addormenta) | OPEN |
