@@ -28,6 +28,7 @@ Last updated: 2026-11-05
 | 044 | 2026-10-16 | Lessons learned in the learning loop (idea from Harness²) — `learning_flags.lessons` (cue/lesson/evidence/confidence) merged into global settings, digest `process/lessons_learned.md` read by Gianni and Chiara | Python, PyYAML | €0.00 (internal) | `deliverables/2026-10-16_044_harness-lessons/` |
 | 046 | 2026-11-05 | Gateway smoke test (GitHub Action) — simulated project request to `/submit`: `local` job (gateway in the runner, worker on → `needs_review`) on every push/PR touching `gateway/**`, `deployed` job (Cloud Run: health, submit, status) on manual dispatch | GitHub Actions, FastAPI, Python stdlib | €0.00 (internal) | `deliverables/2026-11-05_046_gateway-smoke-action/` |
 | 047 | 2026-11-05 | Gateway protected with an API key — `POST /submit` and `GET /status` need `X-API-Key` (fail closed with 503 when no key is set), showcase order buttons link to the Telegram bot, deploy keeps the key in Secret Manager | FastAPI, Cloud Run, Secret Manager | €0.00 (internal) | `deliverables/2026-11-05_047_protect-gateway/` |
+| 048 | 2026-11-05 | Smoke test all the way to a deliverable — `scripts/gateway_deliver.py` approves the smoke job as Luigi would and runs it through the real pipeline worker in the runner; deliverable, `result.json` and `steps.txt` as the artifact `deliverable` and in the run Summary (opt-in `run_pipeline`) | GitHub Actions, LangGraph, FastAPI | €0.00 (internal) | `deliverables/2026-11-05_048_smoke-deliverable/` |
 ## Revenue Summary
 
 | Status | Amount |
