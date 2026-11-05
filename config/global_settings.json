@@ -2,11 +2,11 @@
   "_meta": {
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
-    "last_updated": "2026-10-16",
-    "last_request_id": "042",
-    "total_requests_processed": 32,
+    "last_updated": "2026-11-05",
+    "last_request_id": "046",
+    "total_requests_processed": 33,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "042"
+    "last_processed_audit_log": "046"
   },
   "skills": {
     "html_tailwind_css": {
@@ -1193,6 +1193,11 @@
           "count": 1,
           "avg_sec": 25.0,
           "success_rate": 0.0
+        },
+        "internal_tooling": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1259,6 +1264,11 @@
           "count": 1,
           "avg_sec": 900.0,
           "success_rate": 0.0
+        },
+        "internal_tooling": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1320,6 +1330,11 @@
           "count": 1,
           "avg_sec": 4.0,
           "success_rate": 0.0
+        },
+        "internal_tooling": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1381,6 +1396,11 @@
           "count": 1,
           "avg_sec": 3.0,
           "success_rate": 0.0
+        },
+        "internal_tooling": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1485,6 +1505,11 @@
           "count": 1,
           "avg_sec": 120.0,
           "success_rate": 0.0
+        },
+        "internal_tooling": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1717,5 +1742,23 @@
       ],
       "status": "pending"
     }
-  }
+  },
+  "lessons": [
+    {
+      "agent": "Gianni",
+      "cue": "When testing the deployed gateway through POST /submit",
+      "lesson": "Do not wait for classification: on Cloud Run (GATEWAY_SYNC_REPLY=1) only the Telegram webhook classifies inline; /submit jobs stay queued. Test classification on a gateway run inside the runner.",
+      "confidence": "high",
+      "evidence": [
+        "046: gateway/api.py lifespan skips the QueueWorker when GATEWAY_SYNC_REPLY is set; /submit only calls PipelineAdapter.submit."
+      ],
+      "requests": [
+        "046"
+      ],
+      "intents": [
+        "internal_tooling"
+      ],
+      "seen": 1
+    }
+  ]
 }
