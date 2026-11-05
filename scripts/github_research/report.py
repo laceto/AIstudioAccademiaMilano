@@ -69,6 +69,23 @@ def generate_report(
         )
     lines.append("")
 
+    hot = sorted((rs for rs in all_repos if getattr(rs.repo, "trending_stars", 0)),
+                 key=lambda x: x.repo.trending_stars, reverse=True)[:10]
+    if hot:
+        lines += [
+            "## Trending on GitHub",
+            "",
+            "| Repo | Stars gained | Stars | Tier | Score |",
+            "|------|--------------|-------|------|-------|",
+        ]
+        for rs in hot:
+            period = {"daily": "today", "monthly": "this month"}.get(rs.repo.trending_since, "this week")
+            lines.append(
+                f"| [{rs.repo.full_name}]({rs.repo.url}) | +{rs.repo.trending_stars:,} stars {period}"
+                f" | {rs.repo.stars:,} | {rs.tier} | {rs.score} |"
+            )
+        lines.append("")
+
     for cat, scores in categorised.items():
         lines += [f"## {cat}", ""]
         for rs in scores[:5]:

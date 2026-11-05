@@ -45,7 +45,8 @@ def test_build_digest_keeps_the_top_repos_by_score_with_their_category():
 
 def test_build_digest_stores_only_plain_fields():
     digest = rd.build_digest({"X": [_rs("a/b", 70)]}, now=NOW)
-    assert set(digest["repos"][0]) == {"full_name", "url", "stars", "language", "tier", "score", "category", "description"}
+    assert set(digest["repos"][0]) == {"full_name", "url", "stars", "language", "tier", "score", "category", "description",
+                                         "trending_stars", "trending_since"}
     json.dumps(digest)  # must serialise as is
 
 

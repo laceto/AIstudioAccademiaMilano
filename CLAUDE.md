@@ -225,7 +225,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `scripts/rag/retrieve_repo.py` | Retrieval ibrido BM25+FAISS |
 | `scripts/rag/inject_context.py` | Hook UserPromptSubmit — inietta top-5 chunk prima di ogni risposta |
 | `scripts/rag/synthesize.py` | Sintesi async via kitai.batch (50% più economico, output Pydantic) |
-| `scripts/github_research/main.py` | GitHub AI Research CLI (Scout→Analyst→Curator→Reporter) |
+| `scripts/github_research/main.py` | GitHub AI Research CLI (Scout→Analyst→Curator→Reporter); lo Scout legge anche github.com/trending (`trending.py`, 049) |
 | `process/intent_registry.yaml` | Tutti gli intent noti → skills → opzioni di delivery |
 | `process/audit/` | Un file Markdown con YAML frontmatter per ogni request completata |
 | `agents/README.md` | Definizioni dei ruoli agente + spec attuariali |
@@ -407,6 +407,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 046 | 2026-11-05 | Gateway smoke test (GitHub Action) — `gateway-smoke.yml` + `scripts/gateway_smoke.py`: richiesta di progetto simulata su `/submit`; job `local` (gateway nel runner, worker acceso → `needs_review`) a ogni push/PR su `gateway/**`, job `deployed` (Cloud Run: health, submit, status) solo a mano; riepilogo nella Summary; 7 test offline; il job deployed non è ancora stato provato | 0.00 (internal) |
 | 047 | 2026-11-05 | Gateway protetto — `POST /submit` e `GET /status` vogliono `X-API-Key` (`GATEWAY_API_KEY`, ≥ 32 caratteri, fail-closed 503 se manca, apertura solo locale con `GATEWAY_ALLOW_OPEN_SUBMIT=1`), rate limit prima della chiave; catalogo `/` senza ordini dal browser, bottoni → bot Telegram (`TELEGRAM_BOT_USERNAME`); deploy genera la chiave in Secret Manager; smoke test con la chiave; 24 test nuovi; non ancora deployato | 0.00 (internal) |
 | 048 | 2026-11-05 | Smoke test fino al deliverable — `scripts/gateway_deliver.py`: nel runner approva il job come Luigi (`admin.decide`, prezzo 0) e lo fa girare nel worker vero (`/run`); deliverable + `result.json` + `steps.txt` come artifact `deliverable` e nella Summary; opzione `run_pipeline` (solo a mano, costa LLM); 6 test offline; non provato con una chiave LLM vera | 0.00 (internal) |
+| 049 | 2026-11-05 | Ricerca GitHub anche in trending — `scripts/github_research/trending.py`: legge github.com/trending (default settimanale, `--trending daily/monthly/off`, `--trending-language`), tiene i repo AI (filtro a parole intere), li descrive via REST `/repos`; bucket `trending` in `search_all_topics` (CLI, digest di Gianni, alert giornaliero), growth = max(storico, ritmo nel periodo), sezione "Trending on GitHub" nel report, `(trending +N this week)` nel digest; best effort, mai bloccante; 22 test offline; pagina vera non provata (403 dal container) | 0.00 (internal) |
 
 ---
 

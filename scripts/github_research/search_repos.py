@@ -41,6 +41,8 @@ class Repo:
     created_at: str
     updated_at: str
     pushed_at: str
+    trending_stars: int = 0   # stars gained in the trending period (0 = not on github.com/trending)
+    trending_since: str = ""  # "daily" | "weekly" | "monthly" when trending
 
 
 def _headers(token: Optional[str] = None) -> dict:
@@ -93,7 +95,12 @@ def search_all_topics(
     max_per_topic: int = 10,
     token: Optional[str] = None,
     delay: float = 1.2,
+    trending: Optional[str] = "weekly",
+    trending_language: Optional[str] = None,
 ) -> dict:
+    """{topic: [Repo]} from the topic search, plus a "trending" bucket with the AI repos on
+    github.com/trending for the period (trending=None switches it off). Topic hits that are also
+    trending carry the trending mark too, so the mark survives the Curator's deduplication."""
     if topics is None:
         topics = AI_TOPICS
     results = {}
@@ -106,4 +113,23 @@ def search_all_topics(
             print(f"  [Scout] Error on topic '{topic}': {e}")
             results[topic] = []
         time.sleep(delay)
+    if not trending:
+        return results
+
+    import trending as trending_page  # lazy: trending imports this module
+
+    try:
+        hot = trending_page.fetch_trending(trending, language=trending_language, token=token)
+    except Exception as e:
+        print(f"  [Scout] Error on trending: {e}")
+        hot = []
+    results["trending"] = hot
+    gained = {r.full_name: r for r in hot}
+    for topic, repos in results.items():
+        if topic == "trending":
+            continue
+        for repo in repos:
+            if repo.full_name in gained:
+                repo.trending_stars = gained[repo.full_name].trending_stars
+                repo.trending_since = gained[repo.full_name].trending_since
     return results
