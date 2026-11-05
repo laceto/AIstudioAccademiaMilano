@@ -218,6 +218,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `bankanalyst/` | Analista estratti conto (045): PDF Credem/ING → movimenti → categorie (`rules.yaml`) → Excel per trimestre con quadratura saldi; guida in `deliverables/2026-10-16_045_bank-statement-analyst/` |
 | `scripts/gateway_smoke.py`, `.github/workflows/gateway-smoke.yml` | Smoke test del gateway (046): richiesta simulata → `/submit` → `/status`; locale nel runner a ogni push su `gateway/**`, su Cloud Run solo a mano |
 | `gateway/auth.py` | Chiave del gateway (047): `X-API-Key` su `/submit` e `/status`, fail-closed; guida in `deliverables/2026-11-05_047_protect-gateway/` |
+| `scripts/gateway_deliver.py` | Smoke test fino al deliverable (048): approva + worker nel runner, output nell'artifact `deliverable`; guida in `deliverables/2026-11-05_048_smoke-deliverable/` |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
@@ -405,6 +406,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 045 | 2026-10-16 | Analista estratti conto — `bankanalyst`: PDF Credem e ING → movimenti (colonne Dare/Avere lette dalla posizione), quadratura saldo iniziale + movimenti = saldo finale, classificazione a regole YAML (18 categorie, override, giroconti tra conti esclusi dai totali), doppioni tra estratti sovrapposti tolti, Excel per trimestre (Riepilogo, Per categoria, Movimenti, Da classificare, Controlli); 24 test offline su PDF sintetici; layout reali Credem/ING non ancora visti: da provare sui PDF di Luigi | 14.90 |
 | 046 | 2026-11-05 | Gateway smoke test (GitHub Action) — `gateway-smoke.yml` + `scripts/gateway_smoke.py`: richiesta di progetto simulata su `/submit`; job `local` (gateway nel runner, worker acceso → `needs_review`) a ogni push/PR su `gateway/**`, job `deployed` (Cloud Run: health, submit, status) solo a mano; riepilogo nella Summary; 7 test offline; il job deployed non è ancora stato provato | 0.00 (internal) |
 | 047 | 2026-11-05 | Gateway protetto — `POST /submit` e `GET /status` vogliono `X-API-Key` (`GATEWAY_API_KEY`, ≥ 32 caratteri, fail-closed 503 se manca, apertura solo locale con `GATEWAY_ALLOW_OPEN_SUBMIT=1`), rate limit prima della chiave; catalogo `/` senza ordini dal browser, bottoni → bot Telegram (`TELEGRAM_BOT_USERNAME`); deploy genera la chiave in Secret Manager; smoke test con la chiave; 24 test nuovi; non ancora deployato | 0.00 (internal) |
+| 048 | 2026-11-05 | Smoke test fino al deliverable — `scripts/gateway_deliver.py`: nel runner approva il job come Luigi (`admin.decide`, prezzo 0) e lo fa girare nel worker vero (`/run`); deliverable + `result.json` + `steps.txt` come artifact `deliverable` e nella Summary; opzione `run_pipeline` (solo a mano, costa LLM); 6 test offline; non provato con una chiave LLM vera | 0.00 (internal) |
 
 ---
 

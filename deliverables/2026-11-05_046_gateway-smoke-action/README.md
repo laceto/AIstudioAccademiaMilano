@@ -48,6 +48,10 @@ GATEWAY_QUEUE_DIR=$(mktemp -d) JOB_STORE=file uvicorn gateway.api:app --port 808
 python scripts/gateway_smoke.py --url http://127.0.0.1:8080 --wait 60
 ```
 
+## Vedere il deliverable
+
+Con `run_pipeline` (048) il job locale va oltre `needs_review` e produce il deliverable: guida in `deliverables/2026-11-05_048_smoke-deliverable/README.md`.
+
 ## Limiti
 
 - Il job `deployed` non è ancora stato provato: dal container di sviluppo `run.app` non è raggiungibile.
