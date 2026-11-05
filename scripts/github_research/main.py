@@ -21,8 +21,11 @@ def run_repos(args, token):
         min_stars=args.min_stars,
         max_per_topic=args.max_per_topic,
         token=token,
+        trending=None if args.trending == "off" else args.trending,
+        trending_language=args.trending_language,
     )
-    print(f"  -> {sum(len(v) for v in raw.values())} repos found")
+    print(f"  -> {sum(len(v) for v in raw.values())} repos found"
+          f" ({len(raw.get('trending', []))} AI repos on GitHub trending)")
 
     print("[Analyst] Scoring repos...")
     ranked = {topic: rank_repos(repos) for topic, repos in raw.items()}
@@ -80,6 +83,10 @@ def main():
     parser.add_argument("--topics", nargs="+", default=AI_TOPICS[:6])
     parser.add_argument("--min-stars", type=int, default=100)
     parser.add_argument("--max-per-topic", type=int, default=10)
+    parser.add_argument("--trending", choices=["daily", "weekly", "monthly", "off"], default="weekly",
+                        help="also scan github.com/trending for the period (AI repos only); off to skip")
+    parser.add_argument("--trending-language", default=None,
+                        help="trending page for one language (e.g. python); default: all languages")
     parser.add_argument("--output", type=Path, default=Path("research_report.md"))
     parser.add_argument("--query", default=DEFAULT_QUERY, help="GitHub user search query")
     parser.add_argument("--max-results", type=int, default=30, help="Max users to enrich")

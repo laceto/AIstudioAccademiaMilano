@@ -75,6 +75,8 @@ def build_digest(categorised: dict, *, now: datetime | None = None, top_n: int =
             "score": round(float(rs.score), 1),
             "category": category,
             "description": (repo.description or "")[:300],
+            "trending_stars": int(getattr(repo, "trending_stars", 0) or 0),
+            "trending_since": str(getattr(repo, "trending_since", "") or ""),
         })
     return {"generated_at": now.isoformat(), "repos": repos}
 
@@ -143,6 +145,17 @@ def _parse_time(raw: object) -> datetime | None:
     return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
 
 
+_PERIOD_WORDS = {"daily": "today", "weekly": "this week", "monthly": "this month"}
+
+
+def _trending_note(repo: dict) -> str:
+    """' (trending +N this week)' for a repo on github.com/trending, '' otherwise or when damaged."""
+    gained, period = repo.get("trending_stars"), _PERIOD_WORDS.get(repo.get("trending_since"))
+    if not period or isinstance(gained, bool) or not isinstance(gained, int) or gained <= 0:
+        return ""
+    return f" (trending +{gained:,} {period})"
+
+
 def load_latest_digest(store=None, *, now: datetime | None = None, max_age_days: int = MAX_AGE_DAYS,
                        top_n: int = READ_TOP_N) -> str | None:
     """The latest digest as a short, flat text block, or None. Never raises."""
@@ -169,7 +182,7 @@ def load_latest_digest(store=None, *, now: datetime | None = None, max_age_days:
             except (TypeError, ValueError):
                 continue
             lines.append(
-                f"{len(lines) + 1}. {repo['full_name']} [{_clean(repo.get('tier'), 2) or '?'} {score}] "
+                f"{len(lines) + 1}. {repo['full_name']}{_trending_note(repo)} [{_clean(repo.get('tier'), 2) or '?'} {score}] "
                 f"{stars} stars, {language if _LANGUAGE.match(language) else 'n/a'} - "
                 f"{_clean(repo.get('description'), MAX_DESCRIPTION) or 'no description'}"
             )

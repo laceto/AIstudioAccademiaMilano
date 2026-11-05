@@ -2,11 +2,17 @@
 
 **Role:** GitHub Discovery  
 **Reports to:** Research Department  
-**Script:** `scripts/github_research/search_repos.py`
+**Script:** `scripts/github_research/search_repos.py` (+ `trending.py` for github.com/trending)
 
 ## Responsibility
 
 Scout owns the top of the research funnel. It queries the GitHub Search API for repositories matching a curated list of AI topics, applies a minimum star threshold to filter noise, and returns a raw list of `Repo` objects for downstream processing.
+
+**Trending (049).** Scout also reads github.com/trending (default `weekly`, `--trending off` to skip)
+and keeps only repos that look like AI by name/description. Each kept repo is described by the
+REST API (topics, dates) and carries `trending_stars` (stars gained in the period). They land in a
+`trending` bucket; topic hits that are also trending get the same mark. The page is HTML with no
+API: if it fails or changes layout, Scout logs it and returns the topic search alone.
 
 ## Inputs
 

@@ -6,7 +6,7 @@ A four-agent team that continuously scans GitHub for emerging AI tools, ranks th
 
 ```
 Scout
-  Searches GitHub for trending AI repos by topic
+  Searches GitHub for AI repos by topic + github.com/trending
     |
     v
 Analyst
