@@ -215,6 +215,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `gateway/research_digest.py`, `process/runbook_research_digest.md` | Digest settimanale GitHub AI per Gianni (pipeline v2): salvataggio, lettura difensiva, endpoint `/research/run` sul worker, comando Scheduler |
 | `driverouter/` | Drive Semantic Router (043): `classifier.py` (MiniLM + ChromaDB), `main.py` (FastAPI, Drive, scheduler), `Dockerfile`, `deploy_azure.sh` (F1 + Key Vault); guida in `deliverables/2026-10-16_043_drive-semantic-router/` |
 | `bankanalyst/` | Analista estratti conto (045): PDF Credem/ING → movimenti → categorie (`rules.yaml`) → Excel per trimestre con quadratura saldi; guida in `deliverables/2026-10-16_045_bank-statement-analyst/` |
+| `scripts/gateway_smoke.py`, `.github/workflows/gateway-smoke.yml` | Smoke test del gateway (046): richiesta simulata → `/submit` → `/status`; locale nel runner a ogni push su `gateway/**`, su Cloud Run solo a mano |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
@@ -400,6 +401,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 043 | 2026-10-16 | Drive Semantic Router — FastAPI + sentence-transformers (MiniLM, CPU) + ChromaDB: smista `05_In_Arrivo_Da_Smistare` nelle cartelle di categoria e rinomina `YYYY-MM-DD_Categoria_Descrizione.ext`; OCR via Drive, APScheduler, log JSON, Dockerfile, deploy Azure App Service F1 + Key Vault; `DRY_RUN` di default; 27 test offline; non provato con il modello vero, Drive reale né Azure | null (pending Luigi — proposta 29.90) |
 | 044 | 2026-10-16 | Lezioni apprese nel learning loop (idea da Harness², google-research/harness2) — `learning_flags.lessons` (cue/lesson/evidence/confidence) negli audit, unite in `global_settings.json` senza duplicati, digest `process/lessons_learned.md` letto da Gianni e Chiara; 13 test offline; demo Harness² non eseguita (permessi) | 0.00 (internal) |
 | 045 | 2026-10-16 | Analista estratti conto — `bankanalyst`: PDF Credem e ING → movimenti (colonne Dare/Avere lette dalla posizione), quadratura saldo iniziale + movimenti = saldo finale, classificazione a regole YAML (18 categorie, override, giroconti tra conti esclusi dai totali), doppioni tra estratti sovrapposti tolti, Excel per trimestre (Riepilogo, Per categoria, Movimenti, Da classificare, Controlli); 24 test offline su PDF sintetici; layout reali Credem/ING non ancora visti: da provare sui PDF di Luigi | 14.90 |
+| 046 | 2026-11-05 | Gateway smoke test (GitHub Action) — `gateway-smoke.yml` + `scripts/gateway_smoke.py`: richiesta di progetto simulata su `/submit`; job `local` (gateway nel runner, worker acceso → `needs_review`) a ogni push/PR su `gateway/**`, job `deployed` (Cloud Run: health, submit, status) solo a mano; riepilogo nella Summary; 7 test offline; il job deployed non è ancora stato provato | 0.00 (internal) |
 
 ---
 
