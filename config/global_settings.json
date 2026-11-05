@@ -3,10 +3,10 @@
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
     "last_updated": "2026-11-05",
-    "last_request_id": "047",
-    "total_requests_processed": 34,
+    "last_request_id": "048",
+    "total_requests_processed": 35,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "047"
+    "last_processed_audit_log": "048"
   },
   "skills": {
     "html_tailwind_css": {
@@ -1195,7 +1195,7 @@
           "success_rate": 0.0
         },
         "internal_tooling": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 0.0,
           "success_rate": 1.0
         }
@@ -1266,7 +1266,7 @@
           "success_rate": 0.0
         },
         "internal_tooling": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 0.0,
           "success_rate": 1.0
         }
@@ -1332,7 +1332,7 @@
           "success_rate": 0.0
         },
         "internal_tooling": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 0.0,
           "success_rate": 1.0
         }
@@ -1398,7 +1398,7 @@
           "success_rate": 0.0
         },
         "internal_tooling": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 0.0,
           "success_rate": 1.0
         }
@@ -1507,7 +1507,7 @@
           "success_rate": 0.0
         },
         "internal_tooling": {
-          "count": 2,
+          "count": 3,
           "avg_sec": 0.0,
           "success_rate": 1.0
         }
@@ -1770,6 +1770,22 @@
       ],
       "requests": [
         "047"
+      ],
+      "intents": [
+        "internal_tooling"
+      ],
+      "seen": 1
+    },
+    {
+      "agent": "Chiara",
+      "cue": "When running a repo script that imports gateway/ or other repo packages",
+      "lesson": "Run it as a module (python -m scripts.name) or with PYTHONPATH=.; python scripts/name.py fails with ModuleNotFoundError: gateway.",
+      "confidence": "high",
+      "evidence": [
+        "048: python scripts/gateway_deliver.py failed with ModuleNotFoundError: No module named 'gateway'; python -m scripts.gateway_deliver worked."
+      ],
+      "requests": [
+        "048"
       ],
       "intents": [
         "internal_tooling"
