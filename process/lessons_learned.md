@@ -7,3 +7,5 @@ Do not edit by hand: add a lesson to the audit log of the delivery that taught i
 
 - **When testing the deployed gateway through POST /submit** → Do not wait for classification: on Cloud Run (GATEWAY_SYNC_REPLY=1) only the Telegram webhook classifies inline; /submit jobs stay queued. Test classification on a gateway run inside the runner.
   _confidence high, seen 1× (requests 046)_. Evidence: 046: gateway/api.py lifespan skips the QueueWorker when GATEWAY_SYNC_REPLY is set; /submit only calls PipelineAdapter.submit.
+- **When adding authentication to a gateway endpoint** → First grep the served HTML for fetch() calls to that endpoint: a browser page cannot hold a secret, so decide with Luigi what replaces it before locking the endpoint.
+  _confidence high, seen 1× (requests 047)_. Evidence: 047: the showcase page at / called /submit and /status from the browser on every product card.

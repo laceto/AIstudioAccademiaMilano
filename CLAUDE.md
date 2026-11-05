@@ -138,6 +138,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 - Output advisory: disclaimer obbligatorio (validato da `validate_advisory_output()`)
 - Apple Calendar: solo app-specific password (appleid.apple.com) — mai password principale
 - Twilio webhook: HMAC-SHA1 attivo in produzione
+- Gateway `/submit` e `/status`: `X-API-Key` obbligatoria (`GATEWAY_API_KEY`); senza chiave configurata rispondono 503, mai aperti in produzione
 - Google `credentials.json` e `token.json`: locali, mai committati
 - **Pre-commit secret scan** (`scripts/git-hooks/pre-commit`): blocca `.env` staged e pattern di credenziali noti. Auto-attivato dal hook `SessionStart` in `.claude/settings.json` (`git config core.hooksPath scripts/git-hooks`). Bypass solo con `--no-verify` per falsi positivi confermati.
 
@@ -216,6 +217,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `driverouter/` | Drive Semantic Router (043): `classifier.py` (MiniLM + ChromaDB), `main.py` (FastAPI, Drive, scheduler), `Dockerfile`, `deploy_azure.sh` (F1 + Key Vault); guida in `deliverables/2026-10-16_043_drive-semantic-router/` |
 | `bankanalyst/` | Analista estratti conto (045): PDF Credem/ING → movimenti → categorie (`rules.yaml`) → Excel per trimestre con quadratura saldi; guida in `deliverables/2026-10-16_045_bank-statement-analyst/` |
 | `scripts/gateway_smoke.py`, `.github/workflows/gateway-smoke.yml` | Smoke test del gateway (046): richiesta simulata → `/submit` → `/status`; locale nel runner a ogni push su `gateway/**`, su Cloud Run solo a mano |
+| `gateway/auth.py` | Chiave del gateway (047): `X-API-Key` su `/submit` e `/status`, fail-closed; guida in `deliverables/2026-11-05_047_protect-gateway/` |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
@@ -402,6 +404,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 044 | 2026-10-16 | Lezioni apprese nel learning loop (idea da Harness², google-research/harness2) — `learning_flags.lessons` (cue/lesson/evidence/confidence) negli audit, unite in `global_settings.json` senza duplicati, digest `process/lessons_learned.md` letto da Gianni e Chiara; 13 test offline; demo Harness² non eseguita (permessi) | 0.00 (internal) |
 | 045 | 2026-10-16 | Analista estratti conto — `bankanalyst`: PDF Credem e ING → movimenti (colonne Dare/Avere lette dalla posizione), quadratura saldo iniziale + movimenti = saldo finale, classificazione a regole YAML (18 categorie, override, giroconti tra conti esclusi dai totali), doppioni tra estratti sovrapposti tolti, Excel per trimestre (Riepilogo, Per categoria, Movimenti, Da classificare, Controlli); 24 test offline su PDF sintetici; layout reali Credem/ING non ancora visti: da provare sui PDF di Luigi | 14.90 |
 | 046 | 2026-11-05 | Gateway smoke test (GitHub Action) — `gateway-smoke.yml` + `scripts/gateway_smoke.py`: richiesta di progetto simulata su `/submit`; job `local` (gateway nel runner, worker acceso → `needs_review`) a ogni push/PR su `gateway/**`, job `deployed` (Cloud Run: health, submit, status) solo a mano; riepilogo nella Summary; 7 test offline; il job deployed non è ancora stato provato | 0.00 (internal) |
+| 047 | 2026-11-05 | Gateway protetto — `POST /submit` e `GET /status` vogliono `X-API-Key` (`GATEWAY_API_KEY`, ≥ 32 caratteri, fail-closed 503 se manca, apertura solo locale con `GATEWAY_ALLOW_OPEN_SUBMIT=1`), rate limit prima della chiave; catalogo `/` senza ordini dal browser, bottoni → bot Telegram (`TELEGRAM_BOT_USERNAME`); deploy genera la chiave in Secret Manager; smoke test con la chiave; 24 test nuovi; non ancora deployato | 0.00 (internal) |
 
 ---
 
@@ -433,3 +436,4 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | ISS-027 | P3 | Gumroad secondary-channel publisher per PDF, planner, flashcard, journal | OPEN |
 | ISS-029 | P2 | Bot admin separato (041): creare il bot in @BotFather, `TELEGRAM_ADMIN_BOT_TOKEN` in `.env` + Start, deploy (`deploy_cloudrun.sh --dry-run` poi reale), provare la scheda su Telegram; poi pulizia git: togliere il commit 72569fb e l'audit `040_admin-bot` persi su `claude/mailagent-filing-rules`, rinumerare i due audit 040 su `downloads-agent` e `mailagent-filing-rules` | OPEN (codice mergiato in #222, non deployato) |
 | ISS-030 | P2 | Drive Semantic Router (043): prezzo, client OAuth Google + refresh token, build immagine, `deploy_azure.sh --dry-run` poi reale, giro `DRY_RUN` sulla cartella vera per tarare `MIN_SIMILARITY`, cron esterno (F1 si addormenta) | OPEN |
+| ISS-031 | P1 | Gateway protetto (047): `TELEGRAM_BOT_USERNAME` in `.env`, deploy (`deploy_cloudrun.sh --dry-run` poi reale), copiare `GATEWAY_API_KEY` da Secret Manager nel secret GitHub, smoke test `deployed` | OPEN (codice pronto, non deployato) |

@@ -6,6 +6,7 @@ the worker classifies it.
 
 Checks, in order (stops at the first one that makes the rest meaningless):
   health              GET  /health -> 200 {"status": "ok"}
+  rejects_missing_key POST /submit without X-API-Key -> 401 (047)
   rejects_bad_channel POST /submit with channel "fax" -> 422
   submit              POST /submit with the simulated request -> 202 + job_id
   status              GET  /status/{job_id} -> 200, same job, same text
@@ -16,8 +17,11 @@ Checks, in order (stops at the first one that makes the rest meaningless):
 Standard library only, so it runs on a bare runner.
 
 Usage:
-  python scripts/gateway_smoke.py --url http://127.0.0.1:8080 --wait 60
-  python scripts/gateway_smoke.py --url https://gateway-...run.app   # deployed: no --wait
+  GATEWAY_API_KEY=... python scripts/gateway_smoke.py --url http://127.0.0.1:8080 --wait 60
+  GATEWAY_API_KEY=... python scripts/gateway_smoke.py --url https://gateway-...run.app   # deployed: no --wait
+
+The key is read from the GATEWAY_API_KEY environment variable, never from the command
+line (it would end up in shell history and in CI logs).
 
 On a deployed gateway with GATEWAY_SYNC_REPLY=1 nothing classifies jobs sent to
 /submit, so --wait would always time out there. The job stays `queued` and expires
@@ -52,8 +56,9 @@ DEFAULT_REQUEST = (
 FINAL_OK = {"needs_review"}
 PENDING = {"queued", "processing"}
 
-# (method, path, json body or None) -> (http status, parsed json or {})
-Transport = Callable[[str, str, "dict | None"], "tuple[int, dict]"]
+# (method, path, json body or None, key=True) -> (http status, parsed json or {})
+# key=False: send the request without X-API-Key.
+Transport = Callable[..., "tuple[int, dict]"]
 
 
 @dataclass
@@ -63,13 +68,16 @@ class Check:
     detail: str
 
 
-def http_transport(base_url: str, timeout: float = 20.0) -> Transport:
+def http_transport(base_url: str, api_key: str = "", timeout: float = 20.0) -> Transport:
+    """Every call sends X-API-Key, except the ones run_smoke makes with key=False."""
     base = base_url.rstrip("/")
 
-    def call(method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
+    def call(method: str, path: str, body: dict | None = None, key: bool = True) -> tuple[int, dict]:
         data = json.dumps(body).encode() if body is not None else None
         req = urllib.request.Request(base + path, data=data, method=method)
         req.add_header("User-Agent", "aistudio-gateway-smoke/1.0")
+        if key and api_key:
+            req.add_header("X-API-Key", api_key)
         if data is not None:
             req.add_header("Content-Type", "application/json")
         try:
@@ -101,6 +109,9 @@ def run_smoke(
     checks.append(Check("health", code == 200 and data.get("status") == "ok", f"HTTP {code}"))
     if not checks[-1].ok:
         return checks, None
+
+    code, _ = call("POST", "/submit", {"text": "smoke"}, key=False)
+    checks.append(Check("rejects_missing_key", code == 401, f"HTTP {code} (atteso 401)"))
 
     code, _ = call("POST", "/submit", {"text": "smoke", "channel": "fax"})
     checks.append(Check("rejects_bad_channel", code == 422, f"HTTP {code} (atteso 422)"))
@@ -165,8 +176,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--expect", default="needs_review", help="stati finali accettati, separati da virgola")
     a = p.parse_args(argv)
 
+    api_key = os.environ.get("GATEWAY_API_KEY", "").strip()
+    if not api_key:
+        print("GATEWAY_API_KEY non impostata: /submit e /status risponderanno 401 o 503", file=sys.stderr)
     checks, job_id = run_smoke(
-        http_transport(a.url), a.text, wait_seconds=a.wait,
+        http_transport(a.url, api_key), a.text, wait_seconds=a.wait,
         expect={s.strip() for s in a.expect.split(",") if s.strip()},
     )
     for c in checks:

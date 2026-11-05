@@ -168,6 +168,20 @@ else
 fi
 PRESENT_SECRETS+=(TELEGRAM_WEBHOOK_SECRET)
 
+# Key for POST /submit and GET /status (047). Without it the gateway answers 503 on both.
+# Read it back with: gcloud secrets versions access latest --secret=GATEWAY_API_KEY
+GW_KEY_ENV="$(env_val GATEWAY_API_KEY)"
+if [ -n "$GW_KEY_ENV" ] && [ "${#GW_KEY_ENV}" -lt 32 ]; then
+  die "GATEWAY_API_KEY in .env is shorter than 32 characters: the gateway would refuse it (503). Empty it to have one generated."
+fi
+if $DRY_RUN; then
+  echo "  [dry-run] GATEWAY_API_KEY (from .env, else Secret Manager, else generated)"
+else
+  resolve_secret GATEWAY_API_KEY >/dev/null
+  echo "  GATEWAY_API_KEY — ready"
+fi
+PRESENT_SECRETS+=(GATEWAY_API_KEY)
+
 printf '%s\n' "${PRESENT_SECRETS[@]}" | grep -qx TELEGRAM_BOT_TOKEN \
   || die "TELEGRAM_BOT_TOKEN did not make it into Secret Manager."
 if ! printf '%s\n' "${PRESENT_SECRETS[@]}" | grep -qxE 'ANTHROPIC_API_KEY|OPENAI_API_KEY'; then
@@ -317,7 +331,7 @@ run gcloud run deploy gateway \
   --image "$IMAGE_BASE/gateway" --region "$REGION" \
   --allow-unauthenticated --memory 512Mi --timeout 120 \
   --set-env-vars "$(gateway_env_vars "PIPELINE_QUEUE=$QUEUE_NAME" "PIPELINE_WORKER_URL=$WORKER_URL" "TASKS_LOCATION=$TASKS_LOCATION" "TASKS_INVOKER_SA=$TASKS_SA" "PIPELINE_PROJECT=$PROJECT")" \
-  --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN TELEGRAM_ADMIN_BOT_TOKEN ANTHROPIC_API_KEY OPENAI_API_KEY SMTP_PASSWORD TELEGRAM_WEBHOOK_SECRET)" \
+  --set-secrets "$(secret_flags TELEGRAM_BOT_TOKEN TELEGRAM_ADMIN_BOT_TOKEN ANTHROPIC_API_KEY OPENAI_API_KEY SMTP_PASSWORD TELEGRAM_WEBHOOK_SECRET GATEWAY_API_KEY)" \
   --quiet
 
 if $DRY_RUN; then

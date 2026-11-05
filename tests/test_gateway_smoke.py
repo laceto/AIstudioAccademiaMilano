@@ -13,16 +13,22 @@ from gateway.pipeline_adapter import PipelineAdapter
 from scripts import gateway_smoke as smoke
 
 
+KEY = "s" * 40
+
+
 @pytest.fixture
-def client(tmp_path):
+def client(tmp_path, monkeypatch):
     middleware._buckets.clear()  # the rate limiter is per process; keep tests independent
+    monkeypatch.delenv("GATEWAY_ALLOW_OPEN_SUBMIT", raising=False)
+    monkeypatch.setenv("GATEWAY_API_KEY", KEY)
     api_module._adapter = PipelineAdapter(queue_dir=str(tmp_path))
     return TestClient(api_module.app)  # no `with`: lifespan (and its worker) does not start
 
 
-def _transport(client):
-    def call(method, path, body=None):
-        r = client.request(method, path, json=body)
+def _transport(client, api_key=KEY):
+    def call(method, path, body=None, key=True):
+        headers = {"X-API-Key": api_key} if key and api_key else {}
+        r = client.request(method, path, json=body, headers=headers)
         try:
             data = r.json()
         except ValueError:
@@ -36,7 +42,13 @@ def test_full_smoke_passes_against_real_app(client):
     assert job_id
     assert all(c.ok for c in checks), [c for c in checks if not c.ok]
     names = [c.name for c in checks]
-    assert names == ["health", "rejects_bad_channel", "submit", "status", "unknown_job_404"]
+    assert names == ["health", "rejects_missing_key", "rejects_bad_channel", "submit", "status", "unknown_job_404"]
+
+
+def test_wrong_key_fails_the_submit_check(client):
+    checks, job_id = smoke.run_smoke(_transport(client, api_key="wrong"), "x", wait_seconds=0)
+    assert job_id is None
+    assert {c.name: c for c in checks}["submit"].ok is False
 
 
 def test_job_is_marked_as_smoke_test(client):
@@ -47,7 +59,7 @@ def test_job_is_marked_as_smoke_test(client):
 
 
 def test_health_failure_stops_early():
-    def down(method, path, body=None):
+    def down(method, path, body=None, key=True):
         return 503, {}
     checks, job_id = smoke.run_smoke(down, "x", wait_seconds=0)
     assert job_id is None
@@ -58,7 +70,9 @@ def test_health_failure_stops_early():
 def test_wait_until_classified_accepts_expected_status():
     states = iter(["queued", "processing", "needs_review"])
 
-    def fake(method, path, body=None):
+    def fake(method, path, body=None, key=True):
+        if not key:
+            return 401, {}
         if path == "/health":
             return 200, {"status": "ok"}
         if path == "/submit" and body.get("channel") == "fax":
@@ -79,7 +93,9 @@ def test_wait_until_classified_accepts_expected_status():
 
 
 def test_wait_fails_on_error_status():
-    def fake(method, path, body=None):
+    def fake(method, path, body=None, key=True):
+        if not key:
+            return 401, {}
         if path == "/health":
             return 200, {"status": "ok"}
         if path == "/submit" and body.get("channel") == "fax":
@@ -97,7 +113,9 @@ def test_wait_fails_on_error_status():
 
 
 def test_wait_times_out_when_job_stays_queued():
-    def fake(method, path, body=None):
+    def fake(method, path, body=None, key=True):
+        if not key:
+            return 401, {}
         if path == "/health":
             return 200, {"status": "ok"}
         if path == "/submit" and body.get("channel") == "fax":

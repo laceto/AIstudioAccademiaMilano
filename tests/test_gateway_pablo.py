@@ -116,9 +116,12 @@ class TestRateLimit:
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("GATEWAY_HMAC_SECRET", "test-secret")
+    monkeypatch.setenv("GATEWAY_API_KEY", "p" * 40)  # 047: /submit and /status need X-API-Key
     import gateway.api as api_module
+    from gateway import middleware
+    middleware._buckets.clear()
     api_module._adapter = PipelineAdapter(queue_dir=str(tmp_path))
-    return TestClient(api_module.app)
+    return TestClient(api_module.app, headers={"X-API-Key": "p" * 40})
 
 
 class TestApiEndpoints:
