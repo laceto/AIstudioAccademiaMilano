@@ -4,8 +4,8 @@ gateway/api.py — Pablo (Platform Engineer)
 FastAPI application exposing the Input Gateway to the public internet.
 
 Endpoints:
-  POST /submit              Accept a pipeline request (JSON)
-  GET  /status/{id}         Poll job status
+  POST /submit              Accept a pipeline request (JSON) — needs X-API-Key (gateway/auth.py)
+  GET  /status/{id}         Poll job status — needs X-API-Key
   POST /webhook/whatsapp    Twilio WhatsApp webhook (Carlos, HMAC-validated)
   POST /webhook/telegram    Telegram webhook (registered after Cloud Run deploy)
   POST /webhook/telegram-admin  Luigi's admin bot (approvals, commands); only when TELEGRAM_ADMIN_BOT_TOKEN is set
@@ -20,12 +20,16 @@ Environment variables:
   OPENAI_API_KEY        OpenAI API key (fallback for queue worker)
   TELEGRAM_BOT_TOKEN    Required for Telegram webhook mode (the customer bot)
   TELEGRAM_ADMIN_BOT_TOKEN  Optional second bot only for Luigi; when set, the customer bot has no admin powers
+  GATEWAY_API_KEY       Key for /submit and /status (>= 32 chars); unset = both answer 503
+  GATEWAY_ALLOW_OPEN_SUBMIT  Local development only: 1 = no key needed while GATEWAY_API_KEY is unset
+  TELEGRAM_BOT_USERNAME Customer bot username: the showcase's "Order" buttons link to it
 """
 
 import asyncio
 import hmac
 import logging
 import os
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -42,11 +46,12 @@ if _env_file.exists():
             _k, _, _v = _line.partition("=")
             os.environ.setdefault(_k.strip(), _v.strip())
 
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, field_validator
 
 from config.brand import b
+from gateway.auth import require_api_key
 from gateway.bot_whatsapp import router as whatsapp_router
 from gateway.admin_telegram import AdminBot, handle_admin_message, handle_callback, refuse_admin_command
 from gateway.convlog import log_message, silence_http_loggers
@@ -121,6 +126,15 @@ class SubmitRequest(BaseModel):
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
+_BOT_USERNAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]{3,31}$")
+
+
+def _telegram_bot_username() -> str | None:
+    """TELEGRAM_BOT_USERNAME without the '@', or None when unset or not a valid username."""
+    name = os.environ.get("TELEGRAM_BOT_USERNAME", "").strip().lstrip("@")
+    return name if _BOT_USERNAME_RE.match(name) else None
+
+
 def _render_showcase(cards: list[ShowcaseCard]) -> str:
     """Inline HTML gallery — no Jinja2 dependency for a single-page render."""
     studio_name = b("studio.name")
@@ -144,6 +158,13 @@ def _render_showcase(cards: list[ShowcaseCard]) -> str:
 {items}
     </div>"""
 
+    bot = _telegram_bot_username()
+    order_btn = (
+        f'<a class="btn-order" href="https://t.me/{bot}" target="_blank" rel="noopener">Order on Telegram ↗</a>'
+        if bot
+        else ""
+    )
+
     def _card(c: ShowcaseCard) -> str:
         open_btn = (
             f'<a class="btn-open" href="{c.live_url}" target="_blank" rel="noopener">Open app ↗</a>'
@@ -158,15 +179,7 @@ def _render_showcase(cards: list[ShowcaseCard]) -> str:
   <p class="meta">#{c.request_id} · delivered {c.date}</p>
   <div class="card-actions">
     {open_btn}
-    <form onsubmit="return submitIntent(event)">
-      <button type="submit">Order this</button>
-    </form>
-  </div>
-  <div class="status" hidden>
-    <p class="state"></p>
-    <p class="job-id"></p>
-    <p class="details"></p>
-    <button type="button" class="close">Dismiss</button>
+    {order_btn}
   </div>
 </article>"""
 
@@ -194,10 +207,8 @@ def _render_showcase(cards: list[ShowcaseCard]) -> str:
     .price {{ color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }}
     .meta {{ color: var(--muted); font-size: 0.85rem; margin: 0; }}
     .card-actions {{ display: flex; gap: 0.5rem; margin-top: auto; flex-wrap: wrap; }}
-    .card-actions form {{ flex: 1; min-width: 0; }}
-    .card button {{ width: 100%; background: var(--fg); color: var(--bg); border: 0; border-radius: 8px; padding: 0.6rem 1rem; font-weight: 600; cursor: pointer; font: inherit; }}
-    .card button:hover {{ background: var(--accent); color: #fff; }}
-    .card button:disabled {{ opacity: 0.6; cursor: wait; }}
+    .btn-order {{ flex: 1; display: flex; align-items: center; justify-content: center; background: var(--fg); color: var(--bg); border-radius: 8px; padding: 0.6rem 1rem; font-weight: 600; text-decoration: none; white-space: nowrap; }}
+    .btn-order:hover {{ background: var(--accent); color: #fff; }}
     .btn-open {{ display: flex; align-items: center; justify-content: center; gap: 0.25rem; background: transparent; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 8px; padding: 0.6rem 1rem; font-weight: 600; font-size: 0.9rem; text-decoration: none; white-space: nowrap; }}
     .btn-open:hover {{ background: var(--accent); color: #fff; }}
     .tools-row {{ display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.5rem; }}
@@ -207,13 +218,6 @@ def _render_showcase(cards: list[ShowcaseCard]) -> str:
     .tool-price {{ font-size: 0.8rem; color: var(--accent); font-variant-numeric: tabular-nums; }}
     .tool-chip:hover .tool-price {{ color: rgba(255,255,255,0.8); }}
     .tool-arrow {{ font-size: 1rem; }}
-    .status {{ display: flex; flex-direction: column; gap: 0.4rem; margin-top: auto; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: rgba(127,127,127,0.06); }}
-    .status p {{ margin: 0; font-size: 0.85rem; }}
-    .status .state {{ font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }}
-    .status .job-id {{ color: var(--muted); font-family: ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; }}
-    .status .details {{ color: var(--fg); }}
-    .status button.close {{ align-self: flex-end; background: transparent; color: var(--muted); padding: 0.25rem 0.5rem; font-size: 0.8rem; font-weight: 500; }}
-    .status button.close:hover {{ background: transparent; color: var(--accent); }}
     footer {{ max-width: 1100px; margin: 0 auto; padding: 2rem; color: var(--muted); font-size: 0.85rem; }}
   </style>
 </head>
@@ -230,83 +234,6 @@ def _render_showcase(cards: list[ShowcaseCard]) -> str:
     </div>
   </main>
   <footer>Every card is a real delivery — the catalogue is built from <code>process/audit/</code> at request time. · <a href="/trading" style="color:inherit">Trading Dashboard</a></footer>
-  <script>
-    const POLL_MS = 2000;
-    const MAX_POLLS = 30; // ~60s ceiling
-
-    function showStatus(card, parts) {{
-      const form = card.querySelector("form");
-      const status = card.querySelector(".status");
-      form.hidden = true;
-      status.hidden = false;
-      if (parts.state !== undefined) status.querySelector(".state").textContent = parts.state;
-      if (parts.jobId !== undefined) status.querySelector(".job-id").textContent = parts.jobId ? "Job ID: " + parts.jobId : "";
-      if (parts.details !== undefined) status.querySelector(".details").textContent = parts.details;
-    }}
-
-    function resetCard(card) {{
-      const form = card.querySelector("form");
-      const status = card.querySelector(".status");
-      const btn = form.querySelector("button");
-      status.hidden = true; form.hidden = false;
-      btn.disabled = false; btn.textContent = "Order this";
-    }}
-
-    async function pollUntilSettled(card, jobId) {{
-      for (let i = 0; i < MAX_POLLS; i++) {{
-        await new Promise(r => setTimeout(r, POLL_MS));
-        let res;
-        try {{ res = await fetch("/status/" + encodeURIComponent(jobId)); }}
-        catch (e) {{ continue; }}
-        if (!res.ok) continue;
-        const job = await res.json();
-        const s = job.status || "pending";
-        if (s === "pending" || s === "processing") {{
-          showStatus(card, {{ state: s, details: "Stacy is reading your request…" }});
-          continue;
-        }}
-        const cls = job.classification || {{}};
-        const intent = cls.intent || "—";
-        const conf = cls.confidence !== undefined ? Math.round(cls.confidence * 100) + "%" : "—";
-        let details = job.result || "";
-        if (cls.summary) details = "Intent: " + intent + " · confidence " + conf + (cls.summary ? ". " + cls.summary : "");
-        showStatus(card, {{ state: s, details: details }});
-        return;
-      }}
-      showStatus(card, {{ state: "timeout", details: "Still working — save the Job ID and check back later." }});
-    }}
-
-    async function submitIntent(event) {{
-      event.preventDefault();
-      const card = event.target.closest(".card");
-      const productType = card.dataset.product;
-      const btn = event.target.querySelector("button");
-      btn.disabled = true; btn.textContent = "Sending…";
-      let data;
-      try {{
-        const res = await fetch("/submit", {{
-          method: "POST", headers: {{ "Content-Type": "application/json" }},
-          body: JSON.stringify({{ text: "I would like to order: " + productType, channel: "api", metadata: {{ source: "showcase", product_type: productType }} }})
-        }});
-        data = await res.json();
-        if (!res.ok) {{
-          showStatus(card, {{ state: "error", jobId: "", details: data.detail || "Submit failed" }});
-          return false;
-        }}
-      }} catch (e) {{
-        showStatus(card, {{ state: "error", jobId: "", details: "Network error — please retry." }});
-        return false;
-      }}
-      const jobId = data.job_id || "";
-      showStatus(card, {{ state: "queued", jobId: jobId, details: "Waiting for Stacy to classify your request…" }});
-      pollUntilSettled(card, jobId);
-      return false;
-    }}
-
-    document.addEventListener("click", (e) => {{
-      if (e.target.matches(".status button.close")) resetCard(e.target.closest(".card"));
-    }});
-  </script>
 </body>
 </html>"""
 
@@ -443,12 +370,20 @@ async def health():
     return {"status": "ok"}
 
 
-@app.post("/submit", status_code=status.HTTP_202_ACCEPTED)
-async def submit(request: Request, body: SubmitRequest):
+def _rate_limited(request: Request) -> None:
+    """Dependency: runs before the key check, so guessing keys is rate limited too."""
     ip = request.client.host if request.client else "unknown"
-
     if not check_rate_limit(ip):
         raise HTTPException(status_code=429, detail="Rate limit exceeded — try again in 60 seconds")
+
+
+@app.post(
+    "/submit",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(_rate_limited), Depends(require_api_key)],
+)
+async def submit(request: Request, body: SubmitRequest):
+    ip = request.client.host if request.client else "unknown"
 
     result = _adapter.submit(
         text=body.text,
@@ -462,7 +397,7 @@ async def submit(request: Request, body: SubmitRequest):
     return result
 
 
-@app.get("/status/{job_id}")
+@app.get("/status/{job_id}", dependencies=[Depends(_rate_limited), Depends(require_api_key)])
 async def get_status(job_id: str):
     job = _adapter.get_status(job_id)
     if job["status"] == "not_found":

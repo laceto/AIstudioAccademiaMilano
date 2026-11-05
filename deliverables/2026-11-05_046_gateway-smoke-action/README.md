@@ -51,4 +51,4 @@ python scripts/gateway_smoke.py --url http://127.0.0.1:8080 --wait 60
 ## Limiti
 
 - Il job `deployed` non è ancora stato provato: dal container di sviluppo `run.app` non è raggiungibile.
-- `/submit` sul gateway pubblico non chiede autenticazione: chiunque può creare job (c'è solo il limite di 10 richieste al minuto per IP).
+- Dal 047 `/submit` e `/status` vogliono `X-API-Key`: il job `local` usa una chiave usa e getta, il job `deployed` il secret di repository `GATEWAY_API_KEY`.

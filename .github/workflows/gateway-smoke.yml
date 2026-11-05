@@ -9,7 +9,10 @@ name: Gateway smoke test
 #   deployed  the real gateway on Cloud Run: health, submit, status. Manual only,
 #             because it leaves a real job (user_id smoke-test-github-actions, status
 #             queued) in Firestore until it expires. The URL comes from the repository
-#             variable GATEWAY_URL, or the default below.
+#             variable GATEWAY_URL, or the default below; the key from the repository
+#             secret GATEWAY_API_KEY (same value as in Secret Manager).
+#
+# 047: /submit and /status need X-API-Key. The local job makes a throwaway key per run.
 
 on:
   push:
@@ -75,6 +78,12 @@ jobs:
       - name: Unit tests of the smoke client
         run: pytest tests/test_gateway_smoke.py -v --tb=short
 
+      - name: Make a throwaway API key
+        run: |
+          KEY="$(openssl rand -hex 32)"
+          echo "::add-mask::$KEY"
+          echo "GATEWAY_API_KEY=$KEY" >> "$GITHUB_ENV"
+
       - name: Start the gateway
         env:
           GATEWAY_QUEUE_DIR: ${{ runner.temp }}/gateway-queue
@@ -120,7 +129,12 @@ jobs:
       - name: Send the simulated request
         env:
           GATEWAY_URL: ${{ vars.GATEWAY_URL || 'https://gateway-947977086404.europe-west8.run.app' }}
+          GATEWAY_API_KEY: ${{ secrets.GATEWAY_API_KEY }}
         run: |
+          if [ -z "$GATEWAY_API_KEY" ]; then
+            echo "::error::Repository secret GATEWAY_API_KEY missing: copy it from Secret Manager (gcloud secrets versions access latest --secret=GATEWAY_API_KEY)"
+            exit 1
+          fi
           # no --wait: with GATEWAY_SYNC_REPLY=1 nothing classifies jobs sent to /submit
           args=(--url "$GATEWAY_URL")
           if [ -n "$SMOKE_TEXT" ]; then args+=(--text "$SMOKE_TEXT"); fi
