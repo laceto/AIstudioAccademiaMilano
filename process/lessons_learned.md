@@ -7,6 +7,8 @@ Do not edit by hand: add a lesson to the audit log of the delivery that taught i
 
 - **When running a repo script that imports gateway/ or other repo packages** → Run it as a module (python -m scripts.name) or with PYTHONPATH=.; python scripts/name.py fails with ModuleNotFoundError: gateway.
   _confidence high, seen 1× (requests 048)_. Evidence: 048: python scripts/gateway_deliver.py failed with ModuleNotFoundError: No module named 'gateway'; python -m scripts.gateway_deliver worked.
+- **When a feature reads a github.com HTML page (not api.github.com) from the cloud container** → Expect 403 from the container proxy; write the tests on a saved HTML fixture and say in the guide that the live page was not tried.
+  _confidence medium, seen 1× (requests 049)_. Evidence: 049: curl https://github.com/trending?since=weekly returned 403 from the container.
 
 ## Gianni
 
