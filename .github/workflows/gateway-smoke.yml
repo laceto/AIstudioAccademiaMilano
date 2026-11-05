@@ -13,6 +13,10 @@ name: Gateway smoke test
 #             secret GATEWAY_API_KEY (same value as in Secret Manager).
 #
 # 047: /submit and /status need X-API-Key. The local job makes a throwaway key per run.
+#
+# 048: run_pipeline (manual, local only) goes on past needs_review: it approves the job as
+# Luigi would, runs the real pipeline worker in the runner (real LLM, it costs money) and
+# uploads what came out as the artifact "deliverable" (also shown in the run Summary).
 
 on:
   push:
@@ -44,6 +48,15 @@ on:
         description: "Locale: classifica con il modello vero (usa il secret ANTHROPIC_API_KEY)"
         type: boolean
         default: false
+      run_pipeline:
+        description: "Locale: approva il job e fai girare la pipeline vera, deliverable come artifact (costa)"
+        type: boolean
+        default: false
+      pipeline_provider:
+        description: "Modello della pipeline (secret OPENAI_API_KEY o ANTHROPIC_API_KEY)"
+        type: choice
+        options: [openai, anthropic]
+        default: openai
 
 permissions:
   contents: read
@@ -104,10 +117,39 @@ jobs:
           exit 1
 
       - name: Send the simulated request
+        id: smoke
         run: |
           args=(--url http://127.0.0.1:8080 --wait 60)
           if [ -n "$SMOKE_TEXT" ]; then args+=(--text "$SMOKE_TEXT"); fi
           python scripts/gateway_smoke.py "${args[@]}"
+
+      - name: Install pipeline dependencies
+        if: inputs.run_pipeline
+        run: |
+          pip install -r gateway/requirements.worker.txt
+          pytest tests/test_gateway_deliver.py -v --tb=short
+
+      - name: Approve the job and run the pipeline
+        if: inputs.run_pipeline
+        env:
+          GATEWAY_QUEUE_DIR: ${{ runner.temp }}/gateway-queue
+          JOB_STORE: file
+          PIPELINE_PROVIDER: ${{ inputs.pipeline_provider }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JOB_ID: ${{ steps.smoke.outputs.job_id }}
+        run: |
+          python -m scripts.gateway_deliver --job-id "$JOB_ID" --price 0 \
+            --out-dir "$RUNNER_TEMP/deliverable"
+
+      - name: Upload the deliverable
+        if: always() && inputs.run_pipeline
+        uses: actions/upload-artifact@v4
+        with:
+          name: deliverable
+          path: ${{ runner.temp }}/deliverable/
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Gateway log
         if: always()

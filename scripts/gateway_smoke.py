@@ -190,6 +190,10 @@ def main(argv: list[str] | None = None) -> int:
     if summary:
         with open(summary, "a", encoding="utf-8") as f:
             f.write(summary_markdown(a.url, checks, job_id))
+    output = os.environ.get("GITHUB_OUTPUT")
+    if output and job_id:  # 048: the next step (scripts/gateway_deliver.py) needs it
+        with open(output, "a", encoding="utf-8") as f:
+            f.write(f"job_id={job_id}\n")
 
     return 0 if checks and all(c.ok for c in checks) else 1
 
