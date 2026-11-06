@@ -52,13 +52,17 @@ class Result:
     transfers: set[str] = field(default_factory=set)
 
 
-def analyze(statements: list[Statement], rules_path: str | Path | None = None) -> Result:
+def analyze(statements: list[Statement], rules_path: str | Path | None = None,
+            extra_labels: dict[str, str] | None = None) -> Result:
+    """`extra_labels`: {normalized description: category} (e.g. from the LLM), used only where the rules found nothing."""
     rules = load_rules(rules_path)
     classifier = Classifier(rules)
     txs = dedupe([t for st in statements for t in st.transactions])
     txs.sort(key=lambda t: (t.booking_date, t.bank))
     for t in txs:
         t.category = classifier.classify(t)
+        if t.category == UNCLASSIFIED and extra_labels:
+            t.category = extra_labels.get(" ".join(t.description.split()).lower(), UNCLASSIFIED)
 
     quarters = sorted({quarter_of(t.booking_date) for t in txs})
     totals = {q: {"entrate": ZERO, "uscite": ZERO, "netto": ZERO, "giroconti": ZERO, "movimenti": 0} for q in quarters}

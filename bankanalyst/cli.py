@@ -27,6 +27,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("inputs", nargs="+", help="PDF o cartelle di PDF")
     ap.add_argument("--out", default="analisi_estratti_conto.xlsx")
     ap.add_argument("--rules", help="file YAML di regole (default: bankanalyst/rules.yaml)")
+    ap.add_argument("--llm", action="store_true",
+                    help="classifica i 'Da classificare' con OpenAI Batch (kitai); serve OPENAI_API_KEY, invia solo le descrizioni")
+    ap.add_argument("--llm-cache", default="llm_categorie.json",
+                    help="cache delle categorie LLM (default: llm_categorie.json)")
     args = ap.parse_args(argv)
 
     pdfs = _pdfs(args.inputs)
@@ -35,6 +39,20 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     statements = [parse_statement(p) for p in pdfs]
     result = analyze(statements, args.rules)
+    if args.llm and result.unclassified:
+        from bankanalyst.classify import UNCLASSIFIED, load_rules
+        from bankanalyst.llm_classify import classify_with_batch
+
+        try:  # OPENAI_API_KEY lives in the project's .env
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError:
+            pass
+
+        allowed = {r.name for r in load_rules(args.rules).categories} - {UNCLASSIFIED}
+        print(f"LLM batch: {len(result.unclassified)} movimenti da classificare…")
+        labels = classify_with_batch(result.unclassified, allowed, cache_path=args.llm_cache)
+        result = analyze(statements, args.rules, extra_labels=labels)
     out = write_excel(result, args.out)
 
     print(f"{len(pdfs)} estratti conto, {len(result.transactions)} movimenti\n")
