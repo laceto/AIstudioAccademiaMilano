@@ -583,3 +583,64 @@ def test_pdfs_found_once_whatever_the_case(tmp_path):
         (tmp_path / name).write_bytes(b"%PDF-1.4")
     found = _pdfs([str(tmp_path), str(tmp_path / "ing" / "b.PDF")])
     assert sorted(p.name for p in found) == ["a.pdf", "b.PDF"]
+
+
+# ── LLM batch classification (kitai) ─────────────────────────────────────────
+
+def test_llm_labels_only_known_categories_and_unique_descriptions():
+    from bankanalyst.llm_classify import build_items, parse_labels
+    items = build_items([_tx("POS MISTERO SNC", "-1"), _tx("pos  mistero snc", "-2"), _tx("ALTRO POS", "-3")])
+    assert len(items) == 2  # same normalized description sent once
+    def reply(it, cat):
+        return {"custom_id": f"custom_id_{it['id']}",
+                "response": {"body": {"choices": [{"message": {"content": '{"category": "%s"}' % cat}}]}}}
+    labels = parse_labels([reply(items[0], "Salute"), reply(items[1], "Inventata")], items, {"Salute", "Shopping"})
+    assert labels == {items[0]["content"]: "Salute"}  # invented category dropped
+
+
+def test_analyze_applies_extra_labels_only_to_unclassified():
+    from bankanalyst.llm_classify import normalize
+    st = _stmt((date(2026, 1, 1), "POS MISTERO SNC", "-10"), (date(2026, 1, 2), "ESSELUNGA", "-20"))
+    res = analyze([st], None, extra_labels={normalize("POS MISTERO SNC"): "Salute",
+                                            normalize("ESSELUNGA"): "Shopping"})
+    assert {t.description: t.category for t in res.transactions} == {"POS MISTERO SNC": "Salute",
+                                                                     "ESSELUNGA": "Spesa alimentare"}
+    assert res.unclassified == []
+
+
+def test_classify_with_batch_uses_cache_and_skips_api(tmp_path):
+    import json
+    from bankanalyst.llm_classify import classify_with_batch, normalize
+    cache = tmp_path / "cache.json"
+    cache.write_text(json.dumps({normalize("POS MISTERO SNC"): "Salute"}), encoding="utf-8")
+    labels = classify_with_batch([_tx("POS MISTERO SNC", "-1")], {"Salute"}, cache_path=cache, client=None)
+    assert labels == {normalize("POS MISTERO SNC"): "Salute"}  # all cached: no client needed
+
+
+def test_classify_with_batch_full_flow_with_fake_client(tmp_path, monkeypatch):
+    import kitai.batch as kb
+    from bankanalyst.llm_classify import classify_with_batch, normalize
+    sent = {}
+    monkeypatch.setattr(kb, "submit_batch_job", lambda c, tasks, endpoint: sent.update(tasks=tasks) or "job1")
+    monkeypatch.setattr(kb, "poll_until_complete", lambda c, ids, poll_interval: ids)
+    monkeypatch.setattr(kb, "download_batch_results", lambda c, j: [
+        {"custom_id": t["custom_id"],
+         "response": {"body": {"choices": [{"message": {"content": '{"category": "Salute"}'}}]}}}
+        for t in sent["tasks"]])
+    cache = tmp_path / "c.json"
+    labels = classify_with_batch([_tx("POS MISTERO SNC", "-1")], {"Salute"}, cache_path=cache, client=object())
+    assert labels == {normalize("POS MISTERO SNC"): "Salute"} and cache.exists()
+    assert "-1" not in str(sent["tasks"][0]["body"]["messages"][1])  # only the description is sent
+
+
+def test_personal_merchant_rules():
+    from pathlib import Path
+    p = Path("estratti_conto/mie_regole.yaml")
+    if not p.exists():
+        pytest.skip("regole personali assenti")
+    c = Classifier(load_rules(p))
+    assert c.classify(_tx("CA TURATI - TRANSAZIONE", "-9")) == "Pausa pranzo ufficio"
+    assert c.classify(_tx("COCCIUTO", "-9")) == "Pausa pranzo ufficio"
+    assert c.classify(_tx("KAMMI", "-9")) == "Negozio scarpe"
+    assert c.classify(_tx("DAGOPHOTO", "-9")) == "Negozio stampa foto"
+    assert c.classify(_tx("BERTAME", "-300")) == "Officina auto"
