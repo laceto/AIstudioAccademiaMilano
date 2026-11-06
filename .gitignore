@@ -78,6 +78,11 @@ gateway/erasures/
 data/mailagent/
 credentials/mailagent_*_token.json
 
-# Estratti conto bancari e analisi (045): dati personali, mai nel repo
-estratti_conto/
+# Estratti conto bancari e analisi (045): dati personali, mai nel repo.
+# Nel repo solo la struttura della cartella: guida, segnaposto e regole d'esempio.
+estratti_conto/**
+!estratti_conto/*/
+!estratti_conto/*/.gitkeep
+!estratti_conto/README.md
+!estratti_conto/mie_regole.example.yaml
 analisi_estratti_conto*.xlsx
