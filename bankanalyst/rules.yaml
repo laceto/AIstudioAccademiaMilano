@@ -1,9 +1,13 @@
 # Regole di classificazione (delivery 045). Vince la prima categoria che corrisponde, dall'alto.
 # patterns: espressioni regolari, maiuscole/minuscole indifferenti, cercate nella descrizione.
 # direction: in (solo entrate), out (solo uscite), any (default).
-# transfer: true → spostamenti tra i propri conti, esclusi dai totali entrate/uscite.
-# overrides: frammento di descrizione → categoria; vince su tutto. Mettici i casi che le regole sbagliano.
-# Copia questo file, modificalo e passalo con --rules.
+# transfer: true → soldi spostati tra conti propri (anche verso conti di investimento): esclusi dai
+#   totali entrate/uscite, così non sembrano né spese né guadagni.
+# overrides: frammento di descrizione → categoria; vince su tutto.
+#
+# Queste sono le regole generiche. Quelle con nomi (il tuo nome sui giroconti, i tuoi esercenti abituali)
+# vanno in un file personale passato con --rules: le sue categorie vengono controllate prima di queste e
+# i suoi overrides si aggiungono. Tienilo fuori dal repo (es. estratti_conto/mie_regole.yaml).
 
 overrides: {}
 
@@ -13,67 +17,99 @@ categories:
     patterns: ['giroconto', 'giro ?conto', 'trasferimento (fondi|tra conti)', 'bonifico da ing', 'bonifico (a|verso) credem',
                'conto credem', 'conto arancio']
 
+  - name: Investimenti e risparmio
+    transfer: true
+    patterns: ['titoli', '\bfondo\b', '\betf\b', 'dossier', '\bpac\b', 'conto deposito', 'cedol', 'directa',
+               'fineco', 'degiro', 'trade republic', 'scalable', 'moneyfarm']
+
   - name: Stipendio e redditi
     direction: in
-    patterns: ['stipendio', 'emolument', 'retribuzion', 'pensione', 'cedolino', 'competenze']
+    patterns: ['stipendio', 'emolument', 'retribuzion', 'pensione', 'cedolino', 'compens', 'parcella', 'fattura n']
 
-  - name: Rimborsi e altre entrate
+  - name: Assegni e contributi pubblici
     direction: in
-    patterns: ['rimborso', 'storno', 'cashback', 'interessi creditori', 'bonifico (a vostro favore|da)', 'accredito']
+    patterns: ['assegno unico', '\binps\b', 'bonus', 'contributo', 'naspi']
 
   - name: Affitto e mutuo
-    patterns: ['affitto', 'canone locazione', 'mutuo', 'rata (mutuo|finanziamento|prestito)']
+    patterns: ['affitto', 'canone (di )?locazione', 'mutuo', 'rata (finanziamento|prestito)']
+
+  - name: 'Casa: acquisto, lavori, notaio'
+    patterns: ['notai', 'notarile', 'rogito', 'compravendita', 'caparra', 'agenzia immobiliare', 'ristruttur', 'impresa edile']
+
+  - name: Commissioni e costi bancari
+    patterns: ['commission', '\bcomm\.', 'canone (gestione|mensile|conto)', 'rimborso canone', 'spese (tenuta|di gestione|conto)',
+               'imposta di bollo', 'bolli c/c', '\bbollo\b', 'competenze (di chiusura|conto)', 'interessi debitori']
+
+  - name: Carta di credito (addebito mensile)
+    patterns: ['carta ego', 'saldo carta', 'addebito carta di credito', 'estratto conto carta', 'american express', 'nexi']
+
+  - name: Altre entrate
+    direction: in
+    patterns: ['rimborso', 'storno', 'cashback', 'interessi creditori', 'riparto', 'regalo', 'bonifico (a vostro favore|da)',
+               'accredito']
+
+  - name: Assicurazioni
+    patterns: ['assicuraz', 'unipol', 'generali', 'allianz', '\baxa\b', 'zurich', 'reale mutua', 'polizza', 'premio protezione',
+               '\brca\b']
 
   - name: Casa e utenze
-    patterns: ['enel', 'a2a', '\bhera\b', 'iren', 'edison', 'eni plenitude', 'sorgenia', 'acea', 'metropolitana milanese',
-               'tim\b', 'telecom', 'vodafone', 'windtre', 'wind tre', 'iliad', 'fastweb', 'condominio', 'tari\b',
-               'bolletta', 'ikea', 'leroy merlin', 'brico']
+    patterns: ['enel', '\ba2a\b', '\bhera\b', 'iren', 'edison', 'eni plenitude', 'sorgenia', 'acea', 'metropolitana milanese',
+               '\btim\b', 'telecom', 'vodafone', 'windtre', 'wind tre', 'iliad', 'fastweb', 'condominio', '\btari\b',
+               'bolletta', 'telefonia', 'ikea', 'leroy merlin', 'brico']
 
   - name: Spesa alimentare
-    patterns: ['esselunga', 'coop', 'conad', 'carrefour', 'lidl', 'eurospin', '\bpam\b', 'unes', 'iper\b', 'il gigante',
-               'bennet', 'penny', 'aldi', 'md spa', 'tigros', 'crai', 'despar', 'naturasi', 'supermerc', 'alimentari']
+    patterns: ['esselunga', '\bcoop\b', 'conad', 'carrefour', '\bcrf\b', 'lidl', 'eurospin', '\bpam\b', '\bunes\b', '\biper\b',
+               'il gigante', 'bennet', 'penny', 'aldi', 'tigros', '\bcrai\b', 'despar', 'naturasi', 'supermerc', 'alimentari',
+               'punto spesa', 'panific', '\bforno\b', 'pescheria', 'pescaria', 'macelleria', 'formag', 'casaro', 'latte',
+               'frutta', 'ortofrutt', 'dispens', 'gastronomia', 'no glutine', 'senza glutine']
 
   - name: Ristoranti e bar
-    patterns: ['ristorant', 'trattoria', 'osteria', 'pizzeri', '\bbar\b', 'caff', 'pasticceri', 'gelateri',
-               'mcdonald', 'burger king', 'deliveroo', 'glovo', 'just ?eat', 'uber ?eats', 'sushi']
+    patterns: ['ristorant', 'trattoria', 'osteria', 'pizz', '\bbar\b', 'caff', 'cafe\b', 'pasticce', 'gelateri', 'panino', 'paninoteca',
+               'food', 'cucina', 'sushi', 'kebab', 'chiosco', 'autogrill', 'menu', 'mcdonald', 'burger king', 'deliveroo',
+               'glovo', 'just ?eat', 'uber ?eats']
 
-  - name: Trasporti e carburante
-    patterns: ['\beni\b', 'eni station', '\bq8\b', '\bip\b', 'tamoil', 'esso', 'agip', 'carburant', 'telepass',
-               'autostrad', '\batm\b milano', 'trenitalia', 'italo', 'trenord', 'uber', 'free ?now', 'parcheggi',
-               'easypark', 'ryanair', 'easyjet', 'ita airways', 'rca', 'bollo auto']
+  - name: Tabacchi
+    patterns: ['tabacc']
+
+  - name: Trasporti e auto
+    patterns: ['\beni\b', 'eni station', '\bq8\b', 'tamoil', '\besso\b', '\bagip\b', 'carburant', 'telepass', 'autostrad',
+               'trenitalia', '\bitalo\b', 'trenord', '\bfnm\b', '\batm\b milano', 'taxi', 'uber', 'free ?now', 'parcheggi',
+               'easypark', 'autolavaggio', 'ryanair', 'easyjet', 'ita airways', 'aeroporto', 'bollo auto', 'officina',
+               'gommista']
 
   - name: Salute
-    patterns: ['farmaci', 'parafarm', 'ospedal', 'ticket', 'medic', 'dentist', 'ottic', 'analisi', 'poliambulator',
-               'clinica', 'cup ']
+    patterns: ['farmaci', 'parafarm', 'ospedal', 'medic', 'dentist', 'ottic', 'analisi cliniche', 'poliambulator', 'clinic',
+               'humanitas', 'c\.d\.i\.', 'centro diagnostico', 'diagnos', 'screening', 'fisioterap']
+
+  - name: Cura personale e servizi
+    patterns: ['parrucch', 'barbier', 'estetic', 'lavanderia', 'tintoria', 'sartoria', 'calzolai']
 
   - name: Abbonamenti e digitale
-    patterns: ['netflix', 'spotify', 'amazon prime', 'disney', 'dazn', 'sky ', 'now tv', 'apple\.com', 'itunes',
+    patterns: ['netflix', 'spotify', 'amazon prime', 'disney', '\bdazn\b', '\bsky\b', 'now tv', 'apple\.com', 'itunes',
                'google', 'microsoft', 'openai', 'anthropic', 'claude\.ai', 'github', 'icloud', 'youtube', 'palestra',
                'abbonamento']
 
   - name: Shopping
-    patterns: ['amazon', 'zalando', 'decathlon', 'h&m', 'zara', 'mediaworld', 'unieuro', 'euronics', 'ebay', 'paypal',
-               'shein', 'temu', 'oviesse', 'coin\b', 'rinascente']
+    patterns: ['amazon', 'zalando', 'decathlon', 'h&m', '\bzara\b', 'mediaworld', 'unieuro', 'euronics', '\bebay\b', 'paypal',
+               'shein', '\btemu\b', 'oviesse', 'rinascente', '\bmoda\b', '\bnike\b', 'aw lab', 'foot ?locker', 'calzatur',
+               'abbigliamento']
 
   - name: Famiglia e istruzione
-    patterns: ['scuola', 'asilo', 'nido', 'mensa', 'retta', 'universit', 'libreria', 'giocattol', 'toys', 'prenatal']
+    patterns: ['scuola', 'asilo', '\bnido\b', 'mensa', 'retta', 'universit', 'libreria', 'giocattol', 'toys', 'prenatal',
+               'bebe', 'chicco']
 
   - name: Tasse e F24
-    patterns: ['\bf24\b', 'agenzia (delle )?entrate', 'imposta', 'tribut', 'pagopa', 'inps', 'multa', 'contravvenzion']
+    patterns: ['\bf24\b', 'agenzia (delle )?entrate', 'imposta', 'tribut', 'pagopa', 'multa', 'contravvenzion']
 
-  - name: Assicurazioni
-    patterns: ['assicuraz', 'unipol', 'generali', 'allianz', 'axa', 'zurich', 'reale mutua', 'polizza']
+  - name: Regali e donazioni
+    direction: out
+    patterns: ['regalo', 'auguri', 'donazion', 'beneficenza', 'onlus']
 
-  - name: Investimenti e risparmio
-    patterns: ['titoli', 'fondo', '\betf\b', 'dossier', 'pac\b', 'conto deposito', 'compravendita', 'cedol', 'directa',
-               'fineco', 'degiro', 'trade republic', 'scalable']
-
-  - name: Commissioni e costi bancari
-    patterns: ['commission', 'canone', 'spese (tenuta|di gestione|conto)', 'imposta di bollo', 'bollo', 'competenze di chiusura',
-               'interessi debitori']
+  - name: Svago e tempo libero
+    patterns: ['cinema', 'teatro', 'museo', 'concerto', 'ticketone', 'vivaticket', 'luna ?park', 'piscina']
 
   - name: Prelievi contanti
-    patterns: ['prelievo', 'prelevamento', 'bancomat atm', '\batm\b']
+    patterns: ['prelievo', 'prelevamento', 'bancomat atm']
 
   - name: Bonifici in uscita
     direction: out

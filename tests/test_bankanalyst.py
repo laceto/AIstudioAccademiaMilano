@@ -84,6 +84,103 @@ def make_credem(path):
                        "Saldo iniziale 2.000,00"], cols, rows, ["Saldo finale 2.062,40"])
 
 
+def make_credem_real(path, stripes=False):
+    """Layout of the real Credem statements: summary page, then a table where each movement is a block
+    (description above and below the row holding dates and amount), then a 'conto scalare' to ignore.
+    With stripes, every other movement has a shaded background and one description has a blank line
+    in it, as on the real pages: only the stripes tell where that movement ends."""
+    pdf = fpdf.FPDF(unit="pt", format="A4")
+    pdf.set_auto_page_break(False)
+    pdf.set_font("Helvetica", size=8)
+
+    def at(x, y, text, w=0, align="L"):
+        pdf.set_xy(x, y)
+        pdf.cell(w, 6, text, align=align)
+
+    pdf.add_page()
+    at(220, 40, "Estratto conto")
+    at(40, 100, "DATA")
+    at(40, 110, "04/04/2026")
+    at(40, 200, "SALDO PRECEDENTE")
+    at(380, 200, "1.000,00")
+    at(40, 212, "SALDO FINE PERIODO")
+    at(380, 212, "3.918,55")
+    at(40, 240, "Legenda")
+    at(40, 250, "Entrate Uscite")
+    at(40, 780, "CREDITO EMILIANO SPA, Capogruppo del Gruppo Bancario Credito Emiliano - Credem")
+
+    pdf.add_page()
+    at(40, 40, "segue - Estratto conto al 31 marzo 2026")
+    at(40, 60, "Elenco movimenti")
+    pdf.set_font("Helvetica", size=6)
+    for x, word in [(40, "DATA CONTABILE"), (93, "DATA VALUTA"), (147, "DESCRIZIONE OPERAZIONE"),
+                    (398, "IMPORTO A DEBITO"), (478, "IMPORTO A CREDITO")]:
+        at(x, 76, word)
+    pdf.set_font("Helvetica", size=8)
+
+    def money(y, amount, credit=False):
+        at(477 if credit else 397, y, amount, w=78, align="R")
+
+    at(147, 88, "SALDO PRECEDENTE")
+    money(88, "1.000,00", credit=True)
+    y = 106
+    blocks = [
+        (["PAGOBANCOMAT 30/12/25,ORE 19:13,TESS.000000001"], "02/01/2026", "30/12/2025", "", "21,96", False,
+         ["caseificio esempio"]),
+        ([], "10/01/2026", "10/01/2026", "CARTA EGO", "26,99", False, []),
+        (["BONIFICO A CREDITO", "", "inps"] if stripes else ["BONIFICO A CREDITO", "inps"],
+         "21/02/2026", "21/02/2026", "", "57,50", True, ["rif. 123"]),
+        (["EMOLUMENTI ACME Italia SpA"], "28/01/2026", "28/01/2026", "stipendio 01-2026",
+         "3.010,00", True, ["rif. 0000000000000001"]),
+        (["PRELIEVO BANCOMAT"], "12/02/2026", "11/02/2026", "", "100,00", False,
+         ["11/02/26,ore 12:36,tess.000000001 unicredit s.p.a."]),
+    ]
+    for n, (above, booking, value, inline, amount, credit, below) in enumerate(blocks):
+        if stripes and n % 2 == 0:
+            pdf.set_fill_color(229, 236, 232)
+            pdf.rect(38, y - 4, 54, 5.2 * (len(above) + 1 + len(below)) + 6, style="F")
+        for text in above:
+            at(147, y, text)
+            y += 5.2
+        at(40, y, booking)
+        at(93, y, value)
+        if inline:
+            at(147, y, inline)
+        money(y, amount, credit)
+        y += 5.2
+        for text in below:
+            at(147, y, text)
+            y += 5.2
+        y += 8
+    at(147, y, "SALDO FINE PERIODO")
+    money(y, "3.918,55", credit=True)
+
+    pdf.add_page()
+    at(40, 40, "Conto Scalare")
+    at(40, 60, "DATA VALUTA SALDI PER VALUTA GIORNI NUMERI DEBITORI NUMERI CREDITORI")
+    at(40, 72, "22/01/2026 1.958,17 1 1.958,17")
+    pdf.output(str(path))
+    return path
+
+
+@pytest.mark.parametrize("stripes", [False, True])
+def test_parse_credem_real_layout(tmp_path, stripes):
+    st = parse_statement(make_credem_real(tmp_path / "Estratto_Conto_con_Allungo_31mar2026.pdf", stripes))
+    assert st.bank == "credem"
+    assert [t.amount for t in st.transactions] == [
+        Decimal("-21.96"), Decimal("-26.99"), Decimal("57.50"), Decimal("3010.00"), Decimal("-100.00")]
+    d = [t.description for t in st.transactions]
+    assert d[0] == "PAGOBANCOMAT 30/12/25,ORE 19:13,TESS.000000001 caseificio esempio"
+    assert d[1] == "CARTA EGO"
+    assert d[2] == "BONIFICO A CREDITO inps rif. 123"
+    assert d[3].startswith("EMOLUMENTI") and "stipendio 01-2026" in d[3] and d[3].endswith("0000000000000001")
+    assert d[4].startswith("PRELIEVO BANCOMAT 11/02/26")
+    assert st.transactions[0].value_date == date(2025, 12, 30)
+    assert st.opening == Decimal("1000.00") and st.closing == Decimal("3918.55")
+    assert st.reconciliation() == "ok"
+    assert st.warnings == []
+
+
 @pytest.fixture
 def pdf_dir(tmp_path):
     d = tmp_path / "estratti"
@@ -192,6 +289,35 @@ def test_rule_direction_and_custom_file(tmp_path):
     c = Classifier(load_rules(rules))
     assert c.classify(_tx("Rimborso ticket", "30")) == "Rimborsi"
     assert c.classify(_tx("Rimborso ticket", "-30")) == "Spese mediche"
+
+
+def test_personal_rules_layer_on_defaults(tmp_path):
+    rules = tmp_path / "mie_regole.yaml"
+    rules.write_text("overrides:\n  'asilo esempio': Famiglia e istruzione\n"
+                     "categories:\n  - name: Giroconti tra conti\n    patterns: ['a favore di mario rossi giro']\n",
+                     encoding="utf-8")
+    loaded = load_rules(rules)
+    c = Classifier(loaded)
+    assert c.classify(_tx("BONIFICO A DEBITO a favore di mario rossi giro gennaio", "-1500")) == "Giroconti tra conti"
+    assert "Giroconti tra conti" in loaded.transfers
+    assert c.classify(_tx("BONIFICO A DEBITO a favore di asilo esempio srl", "-677")) == "Famiglia e istruzione"
+    assert c.classify(_tx("PAGAMENTO MAESTRO ESSELUNGA -ITA", "-70")) == "Spesa alimentare"  # defaults still apply
+
+
+@pytest.mark.parametrize("desc,amount,expected", [
+    # Seen on real Credem statements: each was misfiled by an earlier version of the rules.
+    ("BONIFICO A CREDITO universita' di esempio cup h00x00000000000 compenso", "589.86", "Stipendio e redditi"),
+    ("BONIFICO A CREDITO inps assegno unico per 1 figli/o", "57.50", "Assegni e contributi pubblici"),
+    ("COMM. BONIFICO ISTANTANEO", "-0.58", "Commissioni e costi bancari"),
+    ("BOLLI C/C E DEPOSITI A RISPARMIO", "-8.55", "Commissioni e costi bancari"),
+    ("RICARICA-RIMBORSO CANONE", "5", "Commissioni e costi bancari"),
+    ("CARTA EGO", "-26.99", "Carta di credito (addebito mensile)"),
+    ("BONIFICO A DEBITO a favore di studio notarile atto compravendita", "-2622.61", "Casa: acquisto, lavori, notaio"),
+    ("BONIFICO A DEBITO a favore di lara rossi rca megane 25/26", "-385", "Assicurazioni"),
+    ("PAGOBANCOMAT 04/11/24,ORE 09:08,TESS.000000001 tabaccheria di rossi", "-5.5", "Tabacchi"),
+])
+def test_default_rules_on_real_descriptions(desc, amount, expected):
+    assert Classifier(load_rules()).classify(_tx(desc, amount)) == expected
 
 
 def test_overrides_win(tmp_path):

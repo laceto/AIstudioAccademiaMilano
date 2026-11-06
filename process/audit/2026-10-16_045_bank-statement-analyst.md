@@ -60,9 +60,28 @@ learning_flags:
       lesson: "Take the sign from the column position under the header, and check the parse against the document's own totals (opening + movements = closing)."
       evidence: "045: the reconciliation check caught a wrong expected closing balance in the first test run."
       confidence: medium
+    - agent: Gianni
+      cue: "When building a parser for a document layout nobody has seen (a bank, a supplier, a form)"
+      lesson: "Get one real sample before writing the parser, and build the synthetic test fixture from it; a guessed layout costs a second build."
+      evidence: "045: the Credem layout guessed from memory (Dare/Avere, one line per movement) matched nothing in the real statements (IMPORTO A DEBITO/CREDITO, description above and below the amount row, row stripes); 0 of 5 reconciled until the parser was rebuilt on a real sample."
+      confidence: high
 ---
 
 # 045 — Analista estratti conto
 
 Real Credem and ING layouts were not available: parser tested only on synthetic PDFs.
 Next step: run on Luigi's statements and adapt `bankanalyst/profiles.py` if the reconciliation is not `ok`.
+
+## Follow-up 2026-11-06: real Credem statements
+
+Luigi sent 5 Credem statements (Q4 2024 – Q4 2025). The first run read them as an unknown layout,
+nothing reconciled. Rebuilt on the real layout: header IMPORTO A DEBITO / IMPORTO A CREDITO, bank
+recognised from the legal footer, each movement a block with description above and below the
+dates/amount row, block bounds from the shaded row stripes (gap fallback when a page has none),
+Credem margin print code removed, table closed at SALDO FINE PERIODO (conto scalare ignored).
+Result: 471 movements, 5/5 reconciled to the cent, Q1 2025 totals equal the bank's own summary.
+Rules: compenso misfiled as Salute (`cup ` matched a CUP code), assegno unico as Tasse, COMM. as
+Bonifici — fixed, with regression tests; new categories (carta di credito, casa acquisto/notaio,
+assegni pubblici, tabacchi, cura personale, regali, svago); investments marked as transfers;
+personal rules file layered on the defaults (kept out of the repo: it holds names). 17 movements
+(1.467,82 €) left unclassified. 36 offline tests. ING still untested on a real statement.
