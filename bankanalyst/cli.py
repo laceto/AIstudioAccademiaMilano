@@ -23,7 +23,7 @@ def _pdfs(inputs: list[str]) -> list[Path]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(prog="bankanalyst", description="Estratti conto Credem / ING → movimenti classificati per trimestre")
+    ap = argparse.ArgumentParser(prog="bankanalyst", description="Estratti conto Credem / ING / Fineco → movimenti classificati per trimestre")
     ap.add_argument("inputs", nargs="+", help="PDF o cartelle di PDF")
     ap.add_argument("--out", default="analisi_estratti_conto.xlsx")
     ap.add_argument("--rules", help="file YAML di regole (default: bankanalyst/rules.yaml)")

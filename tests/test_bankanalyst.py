@@ -262,6 +262,63 @@ def test_parse_ing_real_layout(tmp_path, currency):
     assert st.warnings == []
 
 
+def make_fineco(path):
+    """Layout of the real Fineco statements: BIC FEBIITM on the first page, header over two lines
+    (DATA DATA USCITE ENTRATE DESCRIZIONE / OPERAZIONE VALUTA), dates as dd.mm.yy, unsigned amounts in the
+    USCITE / ENTRATE columns, balances printed as '+1.000,00 Saldo iniziale in euro' left of the columns."""
+    pdf = fpdf.FPDF(unit="pt", format="A4")
+    pdf.set_auto_page_break(False)
+    pdf.set_font("Helvetica", size=7)
+
+    def at(x, y, text, w=0, align="L"):
+        pdf.set_xy(x, y)
+        pdf.cell(w, 6, text, align=align)
+
+    pdf.add_page()
+    at(56, 30, "Estratto conto Ottobre - Novembre - Dicembre 2026")
+    at(56, 42, "PAGINA 1 DI 2")
+    at(56, 54, "NUMERO CONTO COORDINATE BANCARIE IBAN BIC SEPA BIC SWIFT")
+    at(56, 66, "000000000001 IT00 X000 0000 0000 0000 0000 001 FEBIITM1 FEBIITM2")
+    at(56, 90, "Movimenti Numero Conto: 000000000001 Situazione al: 31.12.2026")
+    for x, word in [(56, "DATA"), (96, "DATA"), (230, "USCITE"), (300, "ENTRATE"), (360, "DESCRIZIONE")]:
+        at(x, 102, word)
+    at(56, 110, "OPERAZIONE")
+    at(96, 110, "VALUTA")
+
+    def row(y, booking, value, amount, credit, desc):
+        at(56, y, booking)
+        at(96, y, value)
+        pdf.set_xy(215 if not credit else 285, y)
+        pdf.cell(45, 6, amount, align="R")
+        at(360, y, desc)
+
+    at(160, 126, "+1.000,00 Saldo iniziale in euro")
+    row(142, "02.10.26", "02.10.26", "39,90", False, "Compravendita Titoli Acea Qta/Val.nom. 25,000000")
+    row(154, "05.10.26", "05.10.26", "2.500,00", True, "Bonifico Disposto da Mario Rossi")
+    row(166, "07.10.26", "01.10.26", "4,62", False, "Rit.div.su 23,000 Novo Nordisk -B-")
+    at(160, 182, "+3.455,48 Saldo finale in euro")
+    at(56, 200, "FinecoBank S.p.A. - Sede legale 20131 Milano P.zza Durante, 11")
+
+    pdf.add_page()
+    at(56, 30, "PAGINA 2 DI 2")
+    at(56, 60, "Informazioni utili sul conto")
+    pdf.output(str(path))
+    return path
+
+
+def test_parse_fineco_layout(tmp_path):
+    st = parse_statement(make_fineco(tmp_path / "Documento.pdf"))
+    assert st.bank == "fineco"
+    assert [t.booking_date for t in st.transactions] == [date(2026, 10, 2), date(2026, 10, 5), date(2026, 10, 7)]
+    assert [t.value_date for t in st.transactions] == [date(2026, 10, 2), date(2026, 10, 5), date(2026, 10, 1)]
+    assert [t.amount for t in st.transactions] == [Decimal("-39.90"), Decimal("2500.00"), Decimal("-4.62")]
+    assert st.transactions[0].description == "Compravendita Titoli Acea Qta/Val.nom. 25,000000"
+    assert not any(t.sign_uncertain for t in st.transactions)
+    assert st.opening == Decimal("1000.00") and st.closing == Decimal("3455.48")
+    assert st.reconciliation() == "ok"
+    assert st.warnings == []
+
+
 @pytest.fixture
 def pdf_dir(tmp_path):
     d = tmp_path / "estratti"
