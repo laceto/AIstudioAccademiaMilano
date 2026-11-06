@@ -2,7 +2,7 @@
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -85,6 +85,77 @@ def analyze(statements: list[Statement], rules_path: str | Path | None = None) -
                   transfers=rules.transfers)
 
 
+CENT = Decimal("0.01")
+
+
+@dataclass
+class BudgetRow:
+    category: str
+    kind: str  # "entrata" | "uscita": from the sign of the category's net amount
+    window_total: Decimal
+    monthly: Decimal  # average per calendar month over the window
+    monthly_all: Decimal  # average per calendar month over the whole history
+    active_months: int  # months of the window with at least one movement: low = lumpy, not a monthly cost
+
+
+@dataclass
+class Budget:
+    first: str  # "YYYY-MM", first month of the window
+    last: str
+    months: int  # calendar months in the window
+    all_months: int
+    rows: list[BudgetRow]
+
+    @property
+    def income(self) -> Decimal:
+        return sum((r.monthly for r in self.rows if r.kind == "entrata"), ZERO)
+
+    @property
+    def expenses(self) -> Decimal:
+        return sum((r.monthly for r in self.rows if r.kind == "uscita"), ZERO)
+
+
+def _month_no(d: date) -> int:
+    return d.year * 12 + d.month - 1
+
+
+def _month_label(no: int) -> str:
+    return f"{no // 12}-{no % 12 + 1:02d}"
+
+
+def monthly_budget(result: Result, months: int = 12) -> Budget:
+    """Average monthly amount per category over the last `months` calendar months of the data.
+
+    Months with no movement count as zero, so an annual bill is spread over twelve months instead of
+    looking like a monthly cost. Transfer categories (giroconti, investments, trading positions) are
+    left out: they are not spending. "Da classificare" stays in, so the budget is complete.
+    """
+    txs = [t for t in result.transactions if t.category not in result.transfers]
+    if not txs:
+        return Budget("", "", 0, 0, [])
+    nos = [_month_no(t.booking_date) for t in result.transactions]  # the window follows all the data
+    last, first_all = max(nos), min(nos)
+    first = max(first_all, last - months + 1)
+    n, n_all = last - first + 1, last - first_all + 1
+
+    def avg(total: Decimal, count: int) -> Decimal:
+        return (total / count).quantize(CENT, rounding=ROUND_HALF_UP)
+
+    window: dict[str, Decimal] = defaultdict(lambda: ZERO)
+    whole: dict[str, Decimal] = defaultdict(lambda: ZERO)
+    active: dict[str, set[int]] = defaultdict(set)
+    for t in txs:
+        no = _month_no(t.booking_date)
+        whole[t.category] += t.amount
+        if no >= first:
+            window[t.category] += t.amount
+            active[t.category].add(no)
+    rows = [BudgetRow(c, "entrata" if window[c] > 0 else "uscita", window[c], avg(window[c], n),
+                      avg(whole[c], n_all), len(active[c])) for c in window]
+    rows.sort(key=lambda r: (r.kind != "uscita", r.window_total if r.kind == "uscita" else -r.window_total))
+    return Budget(_month_label(first), _month_label(last), n, n_all, rows)
+
+
 _BOLD = Font(bold=True)
 _HEAD = PatternFill("solid", fgColor="DDE4EE")
 _EUR = '#,##0.00 "€";[Red]-#,##0.00 "€"'
@@ -128,6 +199,22 @@ def write_excel(result: Result, out: str | Path) -> Path:
     _sheet(wb, "Per categoria", ["Categoria", *result.quarters, "Totale"],
            [[c, *(result.pivot[c].get(q, ZERO) for q in result.quarters), sum(result.pivot[c].values(), ZERO)]
             for c in cats], money_cols=range(2, len(result.quarters) + 3))
+
+    b = monthly_budget(result)
+    if b.rows:
+        brows = [[r.category, r.kind, r.monthly, r.monthly_all, r.monthly * 12, r.window_total, r.active_months]
+                 for r in b.rows]
+        brows += [["Totale entrate", "", b.income, "", b.income * 12, "", ""],
+                  ["Totale uscite", "", b.expenses, "", b.expenses * 12, "", ""],
+                  ["Saldo", "", b.income + b.expenses, "", (b.income + b.expenses) * 12, "", ""]]
+        ws = _sheet(wb, "Budget mensile",
+                    ["Categoria", "Tipo", f"Media mensile ({b.first} - {b.last})",
+                     f"Media mensile (tutto il periodo, {b.all_months} mesi)", "Budget annuo (media × 12)",
+                     f"Totale {b.months} mesi", f"Mesi con movimenti (su {b.months})"],
+                    brows, money_cols=(3, 4, 5, 6))
+        for row in ws[ws.max_row - 2:ws.max_row]:
+            for c in row:
+                c.font = _BOLD
 
     tx_header = ["Banca", "Data", "Valuta", "Trimestre", "Descrizione", "Importo", "Categoria", "Segno incerto",
                  "File", "Pagina"]

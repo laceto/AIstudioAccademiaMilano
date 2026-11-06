@@ -1,6 +1,7 @@
 # Regole di classificazione (delivery 045). Vince la prima categoria che corrisponde, dall'alto.
 # patterns: espressioni regolari, maiuscole/minuscole indifferenti, cercate nella descrizione.
 # direction: in (solo entrate), out (solo uscite), any (default).
+# amount: importo esatto con segno (es. -5.50): stesso esercente, significato diverso a seconda del prezzo.
 # transfer: true → soldi spostati tra conti propri (anche verso conti di investimento): esclusi dai
 #   totali entrate/uscite, così non sembrano né spese né guadagni.
 # overrides: frammento di descrizione → categoria; vince su tutto.

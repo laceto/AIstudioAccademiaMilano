@@ -4,7 +4,7 @@ from pathlib import Path
 
 from bankanalyst.amounts import fmt_eur
 from bankanalyst.parse import parse_statement
-from bankanalyst.report import analyze, write_excel
+from bankanalyst.report import analyze, monthly_budget, write_excel
 
 
 def _pdfs(inputs: list[str]) -> list[Path]:
@@ -45,6 +45,18 @@ def main(argv: list[str] | None = None) -> int:
     print("\nPer categoria (tutti i trimestri):")
     for cat, by_q in sorted(result.pivot.items(), key=lambda kv: sum(kv[1].values())):
         print(f"  {cat:<30} {fmt_eur(sum(by_q.values())):>14}")
+    budget = monthly_budget(result)
+    if budget.rows:
+        print(f"\nBudget: media mensile per categoria, ultimi {budget.months} mesi ({budget.first} - {budget.last}), "
+              f"giroconti esclusi")
+        print(f"  {'Categoria':<44} {'Mensile':>11} {'Annuo':>13} {'Mesi attivi':>12}")
+        for r in budget.rows:
+            print(f"  {r.category[:44]:<44} {fmt_eur(r.monthly):>11} {fmt_eur(r.monthly * 12):>13} "
+                  f"{r.active_months:>5}/{budget.months}")
+        print(f"  {'Entrate':<44} {fmt_eur(budget.income):>11} {fmt_eur(budget.income * 12):>13}")
+        print(f"  {'Uscite':<44} {fmt_eur(budget.expenses):>11} {fmt_eur(budget.expenses * 12):>13}")
+        net = budget.income + budget.expenses
+        print(f"  {'Saldo':<44} {fmt_eur(net):>11} {fmt_eur(net * 12):>13}")
     print(f"\nDa classificare: {len(result.unclassified)}")
     uncertain = sum(t.sign_uncertain for t in result.transactions)
     if uncertain:
