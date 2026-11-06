@@ -19,9 +19,13 @@ CREDEM = Profile("credem", ("credito emiliano",),
 # Real ING statements (2024-2025): "CONTO CORRENTE ARANCIO", USCITE/ENTRATE, legal footer "ING BANK N.V.".
 ING = Profile("ing", ("ing bank", "conto arancio", "conto corrente arancio", "ing italia", "ing direct"),
               debit=("uscite", "addebiti", "dare"), credit=("entrate", "accrediti", "avere"))
+# Real Fineco statements (2025-2026): "DATA OPERAZIONE / DATA VALUTA / USCITE / ENTRATE / DESCRIZIONE", dates as
+# dd.mm.yy, balances as "+5.225,90 Saldo iniziale in euro"; letterhead "FinecoBank S.p.A.", BIC FEBIITM1/2.
+FINECO = Profile("fineco", ("fineco", "febiitm"),
+                 debit=("uscite", "addebiti", "dare"), credit=("entrate", "accrediti", "avere"))
 GENERIC = Profile("generic", (), debit=("dare", "uscite", "addebiti"), credit=("avere", "entrate", "accrediti"))
 
-PROFILES = (CREDEM, ING)
+PROFILES = (CREDEM, ING, FINECO)
 
 
 def detect(first_page: str) -> Profile:
