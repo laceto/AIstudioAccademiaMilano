@@ -97,3 +97,27 @@ def test_the_queue_is_created_in_the_tasks_region_not_the_service_region():
 def test_the_gateway_is_told_where_the_queue_lives():
     assert '"TASKS_LOCATION=$TASKS_LOCATION"' in _script()
     assert '"TASKS_LOCATION=$REGION"' not in _script()
+
+
+# ── Chiara's Claude Code engine (050): optional, off by default ──────────────
+
+
+def test_claude_code_is_installed_only_when_the_build_arg_asks():
+    assert re.search(r"^ARG CHIARA_CLAUDE_CODE=0$", DOCKERFILE, re.M)
+    install = [l for l in DOCKERFILE.splitlines() if "@anthropic-ai/claude-code@" in l]
+    assert install, "the CLI must be installed from npm with a pinned version"
+    assert re.search(r"^ARG CLAUDE_CODE_VERSION=\d+\.\d+\.\d+$", DOCKERFILE, re.M)
+    assert '"$CHIARA_CLAUDE_CODE" = "1"' in DOCKERFILE
+
+
+def test_the_image_has_an_unprivileged_builder_user_for_the_engine():
+    assert "useradd" in DOCKERFILE and "builder" in DOCKERFILE
+
+
+def test_cloudbuild_passes_the_engine_build_arg_with_off_as_default():
+    assert "--build-arg" in CLOUDBUILD and "CHIARA_CLAUDE_CODE=${_CHIARA_CLAUDE_CODE}" in CLOUDBUILD
+    assert re.search(r"_CHIARA_CLAUDE_CODE:\s*['\"]?0", CLOUDBUILD)
+
+
+def test_the_worker_can_run_the_deliverable_tests():
+    assert re.search(r"^pytest\b", REQS, re.M)

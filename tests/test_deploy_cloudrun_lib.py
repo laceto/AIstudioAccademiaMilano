@@ -382,3 +382,27 @@ def test_webhook_secret_wrapper_still_works(tmp_path):
 def test_gateway_env_vars_passes_the_bot_username(tmp_path):
     res, _ = _run(tmp_path, "gateway_env_vars", env={"FAKE_ENV_TELEGRAM_BOT_USERNAME": "StudioMilanoBot"})
     assert "|TELEGRAM_BOT_USERNAME=StudioMilanoBot" in res.stdout
+
+
+def test_worker_env_vars_carry_the_chiara_engine_settings(tmp_path):
+    res, _ = _run(
+        tmp_path, "worker_env_vars",
+        env={
+            "FAKE_ENV_CHIARA_ENGINE": "claude_code", "FAKE_ENV_CHIARA_CLAUDE_CODE_BUDGET_USD": "1.50",
+            "FAKE_ENV_CHIARA_CLAUDE_CODE_PRODUCTS": "chatbot_app,weather_dashboard",
+            "FAKE_ENV_CHIARA_CLAUDE_CODE_TIMEOUT": "400", "FAKE_ENV_CHIARA_CLAUDE_CODE_MODEL": "sonnet",
+            "FAKE_ENV_CHIARA_CLAUDE_CODE_ALLOW_SAME_USER": "1",
+            "FAKE_ENV_ANTHROPIC_API_KEY": "k-should-not-appear",
+        },
+    )
+    out = res.stdout
+    assert "CHIARA_ENGINE=claude_code" in out and "CHIARA_CLAUDE_CODE_BUDGET_USD=1.50" in out
+    assert "CHIARA_CLAUDE_CODE_PRODUCTS=chatbot_app,weather_dashboard" in out  # commas survive the ^|^ delimiter
+    assert "CHIARA_CLAUDE_CODE_TIMEOUT=400" in out and "CHIARA_CLAUDE_CODE_MODEL=sonnet" in out
+    assert "ALLOW_SAME_USER" not in out  # laptop-only switch never reaches Cloud Run
+    assert "should-not-appear" not in out
+
+
+def test_deploy_builds_the_worker_with_the_engine_only_when_enabled():
+    script = (Path(__file__).resolve().parent.parent / "scripts" / "deploy_cloudrun.sh").read_text(encoding="utf-8")
+    assert "_CHIARA_CLAUDE_CODE=" in script and "CHIARA_ENGINE" in script

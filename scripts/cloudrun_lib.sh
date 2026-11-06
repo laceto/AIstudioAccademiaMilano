@@ -56,7 +56,11 @@ worker_env_vars() {
   local provider k v out
   provider="$(env_val PIPELINE_PROVIDER)"
   out="^|^JOB_STORE=firestore|PIPELINE_PROVIDER=${provider:-openai}"
-  for k in NOTIFY_TELEGRAM_CHAT_IDS PIPELINE_RUN_TIMEOUT PIPELINE_STALE_SECONDS; do
+  # CHIARA_* drive Chiara's Claude Code engine (050). CHIARA_CLAUDE_CODE_ALLOW_SAME_USER is left out on
+  # purpose: it is for a laptop only, Cloud Run always runs the engine as the builder user.
+  for k in NOTIFY_TELEGRAM_CHAT_IDS PIPELINE_RUN_TIMEOUT PIPELINE_STALE_SECONDS \
+           CHIARA_ENGINE CHIARA_CLAUDE_CODE_PRODUCTS CHIARA_CLAUDE_CODE_BUDGET_USD \
+           CHIARA_CLAUDE_CODE_TIMEOUT CHIARA_CLAUDE_CODE_MODEL CHIARA_CLAUDE_CODE_USER; do
     v="$(env_val "$k")"
     [ -n "$v" ] && out="$out|$k=$v"
   done
