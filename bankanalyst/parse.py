@@ -4,8 +4,10 @@ Words are read with their positions (pdfplumber) and grouped into lines. When th
 header line (IMPORTO A DEBITO / IMPORTO A CREDITO for Credem, Uscite/Entrate for ING…), the x position of
 each amount says which column it sits in, so the sign comes from the layout rather than from the wording.
 
-Inside the table, every line that starts with a date is a movement ("anchor"). Description lines can sit
-above and below it: Credem centres a multi-line description on the row with dates and amount. Rows are
+Inside the table, every line that starts with a date in the date column is a movement ("anchor"); a line
+that starts in the description column is description, even when it starts with a date (ING writes
+"28/09/2024 ALLE ORE 11:19" under a card payment). Description lines can sit above and below the anchor:
+Credem centres a multi-line description on the row with dates and amount, ING continues it below. Rows are
 told apart by the shaded stripes behind every other row when the page has them (Credem does), otherwise
 by the wider gaps between movements; each description line goes to the nearest anchor of its row block
 (a tie goes to the earlier one). The table ends at the closing balance, so whatever
@@ -32,6 +34,7 @@ _BLOCK_GAP = 1.6  # a gap this many times the usual line spacing separates two m
 _MAX_HEADER_WORDS = 16  # longer lines naming debit and credit are prose (the legend), not a header
 _TIE = 1.0  # points: a description line this close to equidistant goes to the earlier movement
 _IN_COLUMN = 60  # points: an amount farther than this from both amount columns is outside the table
+_CURRENCY = ("€", "EUR")  # ING prints the currency as a separate word right after the amount
 _PAGE_CODE = re.compile(r"^\d{9,}[A-Z]{3}\d+[A-Z]+$")  # Credem print code in the margin: 310010002290EUX01960OMERC
 _STOP = re.compile(r"\b(pagina|pag\.|segue|continua)\b", re.I)
 _DESC_HEADER = ("descrizione", "causale", "operazioni", "operazione", "dettaglio")
@@ -213,11 +216,15 @@ def _parse_table(pages: list[_Page], profile: Profile, st: Statement, source: st
                 break
             if kind:
                 continue
+            if _in_description(line, cols):
+                if not _STOP.search(line.text):
+                    items.append((line.top, line.text))
+                continue
             anchor = _anchor(line, cols, page_no, st)
             if anchor:
                 items.append(anchor)
-            elif not _amounts(line) and not _STOP.search(line.text) and parse_date(line.words[0].text) is None \
-                    and (cols.desc_x is None or line.words[0].x0 >= cols.desc_x - 5):
+            elif cols.desc_x is None and not _amounts(line) and not _STOP.search(line.text) \
+                    and parse_date(line.words[0].text) is None:
                 items.append((line.top, line.text))
         _assign(items, _row_bounds(page, cols))
         for a in (i for i in items if isinstance(i, _Anchor)):
@@ -227,6 +234,10 @@ def _parse_table(pages: list[_Page], profile: Profile, st: Statement, source: st
                                                page=a.page, sign_uncertain=a.uncertain))
         if closed:
             return
+
+
+def _in_description(line: _Line, cols: _Columns) -> bool:
+    return cols.desc_x is not None and line.words[0].x0 >= cols.desc_x - 5
 
 
 def _anchor(line: _Line, cols: _Columns, page_no: int, st: Statement) -> _Anchor | None:
@@ -246,6 +257,9 @@ def _anchor(line: _Line, cols: _Columns, page_no: int, st: Statement) -> _Anchor
         return None
     word, value = min(amounts, key=lambda c: min(abs(c[0].center - cols.debit), abs(c[0].center - cols.credit)))
     skip.update(id(w) for w, _ in _amounts(line))
+    after = words.index(word) + 1
+    if after < len(words) and words[after].text in _CURRENCY:
+        skip.add(id(words[after]))
     return _Anchor(top=line.top, page=page_no, booking=booking, value_date=value_date,
                    amount=-abs(value) if _is_debit(word, cols) else abs(value),
                    inline=" ".join(w.text for w in words if id(w) not in skip))

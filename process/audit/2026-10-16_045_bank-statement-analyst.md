@@ -85,3 +85,17 @@ Bonifici — fixed, with regression tests; new categories (carta di credito, cas
 assegni pubblici, tabacchi, cura personale, regali, svago); investments marked as transfers;
 personal rules file layered on the defaults (kept out of the repo: it holds names). 17 movements
 (1.467,82 €) left unclassified. 36 offline tests. ING still untested on a real statement.
+
+## Follow-up 2026-11-06: real ING statements
+
+Luigi sent 4 ING Conto Arancio statements (Q4 2024 – Q3 2025). Amounts reconciled on the first
+run, but descriptions lost the merchant: ING continues the description below the amount row and
+some continuation lines start with a date ("28/09/2024 ALLE ORE…"), which were taken for movements
+without an amount. Fix: a line starting in the description column is description, whatever its
+first word; the currency word after the amount ("€") is dropped; "CONTO CORRENTE ARANCIO" added to
+the ING markers. Rules: coupons/dividends as income (were excluded as transfers), dossier stamp duty
+as a cost, `tribut` matched "distributore", `garage` matched a restaurant; ING merchants added
+(Amazon, OVS, parking, beach, travel…). Result: 4/4 reconciled; with Credem 9 statements, 1.466
+movements, every Credem→ING transfer matched by bank reference. 202 movements (6.388,81 €, of which
+2.079,84 € in three MAV) left unclassified. 42 offline tests (the "€" case needs the DejaVu font,
+skipped where it is missing).

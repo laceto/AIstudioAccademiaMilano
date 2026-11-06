@@ -1,4 +1,5 @@
 """Offline tests for bankanalyst (delivery 045): synthetic Credem and ING statements built with fpdf2."""
+import os
 from datetime import date
 from decimal import Decimal
 
@@ -181,6 +182,86 @@ def test_parse_credem_real_layout(tmp_path, stripes):
     assert st.warnings == []
 
 
+DEJAVU = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+
+def make_ing_real(path, currency="EUR"):
+    """Layout of the real ING (Conto Corrente Arancio) statements: header over three lines, amount followed
+    by a separate '€', description starting on the amount row and continuing below, some continuation
+    lines starting with a date, opening and closing balance as dated rows, then a conto scalare."""
+    pdf = fpdf.FPDF(unit="pt", format="A4")
+    pdf.set_auto_page_break(False)
+    if currency == "€":  # the core fonts are latin-1 only
+        pdf.add_font("DejaVu", fname=DEJAVU)
+        pdf.set_font("DejaVu", size=7)
+    else:
+        pdf.set_font("Helvetica", size=7)
+
+    def at(x, y, text, w=0, align="L"):
+        pdf.set_xy(x, y)
+        pdf.cell(w, 6, text, align=align)
+
+    pdf.add_page()
+    at(56, 40, "ESTRATTO CONTO CONTO CORRENTE ARANCIO")
+    at(56, 52, "Estratto conto Trimestrale al 31/12/2026")
+    at(56, 74, "DATA")
+    for x, word in [(124, "DATA VALUTA"), (199, "USCITE"), (268, "ENTRATE"), (337, "DESCRIZIONE")]:
+        at(x, 80, word)
+    at(56, 86, "OPERAZIONE")
+
+    def row(y, booking, value, amount, credit, desc):
+        at(63, y, booking)
+        if value:
+            at(134, y, value)
+        pdf.set_xy(200 if not credit else 262, y)
+        pdf.cell(47, 6, amount, align="R")
+        at(249 if not credit else 311, y, currency)  # "EUR" is wider than "€": keep it clear of the description
+        at(334, y, desc)
+
+    y = 105
+    row(y, "30/09/2026", None, "647,67", True, "SALDO INIZIALE")
+    y += 22.3
+    blocks = [
+        ("01/10/2026", "28/09/2026", "87,11", False, "PAGAMENTO CARTA - OPERAZIONE MASTERCARD DEL",
+         ["28/09/2026 ALLE ORE 11:19 CON CARTA", "XXXXXXXXXXXX0000 DIV=EUR IMPORTO IN DIVISA=87.11 /",
+          "IMPORTO IN EURO=87.11 PRESSO ESSELUNGA -", "TRANSAZIONE C-LESS"]),
+        ("03/10/2026", "03/10/2026", "1.100,00", True, "ACCREDITO BONIFICO - BONIFICO N. 1",
+         ["ORDINANTE MARIO ROSSI NOTE: SPESE FAMILIARI"]),
+        ("05/10/2026", "05/10/2026", "2,00", False, "COMMISSIONE", []),
+    ]
+    for booking, value, amount, credit, desc, below in blocks:
+        row(y, booking, value, amount, credit, desc)
+        for text in below:
+            y += 10.2
+            at(334, y, text)
+        y += 22.3
+    row(y, "31/12/2026", None, "1.658,56", True, "SALDO FINALE")
+
+    pdf.add_page()
+    at(56, 60, "DATA SALDI IMPORTI PER N° GG NUMERI TASSO INTERESSI NUMERI TASSO")
+    at(56, 80, "01/10/2026 647,67 647,67 1 0,00 0,0000 647,67")
+    pdf.output(str(path))
+    return path
+
+
+@pytest.mark.parametrize("currency", ["EUR", "€"])
+def test_parse_ing_real_layout(tmp_path, currency):
+    if currency == "€" and not os.path.exists(DEJAVU):
+        pytest.skip("DejaVu font not installed")
+    st = parse_statement(make_ing_real(tmp_path / "5_0000000000_000000_100.pdf", currency))
+    assert st.bank == "ing"
+    assert [t.amount for t in st.transactions] == [Decimal("-87.11"), Decimal("1100.00"), Decimal("-2.00")]
+    d = [t.description for t in st.transactions]
+    assert d[0] == ("PAGAMENTO CARTA - OPERAZIONE MASTERCARD DEL 28/09/2026 ALLE ORE 11:19 CON CARTA "
+                    "XXXXXXXXXXXX0000 DIV=EUR IMPORTO IN DIVISA=87.11 / IMPORTO IN EURO=87.11 PRESSO ESSELUNGA - "
+                    "TRANSAZIONE C-LESS")
+    assert d[1] == "ACCREDITO BONIFICO - BONIFICO N. 1 ORDINANTE MARIO ROSSI NOTE: SPESE FAMILIARI"
+    assert d[2] == "COMMISSIONE"
+    assert st.opening == Decimal("647.67") and st.closing == Decimal("1658.56")
+    assert st.reconciliation() == "ok"
+    assert st.warnings == []
+
+
 @pytest.fixture
 def pdf_dir(tmp_path):
     d = tmp_path / "estratti"
@@ -315,6 +396,13 @@ def test_personal_rules_layer_on_defaults(tmp_path):
     ("BONIFICO A DEBITO a favore di studio notarile atto compravendita", "-2622.61", "Casa: acquisto, lavori, notaio"),
     ("BONIFICO A DEBITO a favore di lara rossi rca megane 25/26", "-385", "Assicurazioni"),
     ("PAGOBANCOMAT 04/11/24,ORE 09:08,TESS.000000001 tabaccheria di rossi", "-5.5", "Tabacchi"),
+    # ING card payments: the merchant follows PRESSO in a long description.
+    ("PAGAMENTO CARTA - OPERAZIONE MASTERCARD DEL 01/02/2025 IMPORTO IN EURO=59.14 PRESSO DISTRIBUTORE AREA SERV",
+     "-59.14", "Trasporti e auto"),
+    ("PAGAMENTO CARTA - OPERAZIONE MASTERCARD PRESSO BERTAME KITCHEN GARAGE - TRANSAZIONE C-LESS", "-107",
+     "Ristoranti e bar"),
+    ("CEDOLE/DIVIDENDI/PREMI ESTR. - INCASSO CEDOLA DEL TITOLO BTP", "17.5", "Rendite finanziarie"),
+    ("IMPOSTA DI BOLLO TRADING - IMPOSTA DI BOLLO TOL DOSSIER LUG-SET 2024", "-1", "Commissioni e costi bancari"),
 ])
 def test_default_rules_on_real_descriptions(desc, amount, expected):
     assert Classifier(load_rules()).classify(_tx(desc, amount)) == expected

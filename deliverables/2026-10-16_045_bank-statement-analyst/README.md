@@ -33,8 +33,11 @@ movimenti restano da classificare e l'esito della quadratura di ogni estratto.
    della tabella (IMPORTO A DEBITO / IMPORTO A CREDITO per Credem, Uscite/Entrate per ING) dice
    dove stanno le colonne; ogni importo va in uscita o in entrata secondo la colonna sotto cui si
    trova. Negli estratti Credem la descrizione sta sopra e sotto la riga con data e importo: i
-   confini di ogni movimento vengono dalle righe a sfondo alternato della tabella. La lettura si
-   ferma a "SALDO FINE PERIODO", così conto scalare e comunicazioni non diventano movimenti.
+   confini di ogni movimento vengono dalle righe a sfondo alternato della tabella. Negli estratti
+   ING la descrizione parte sulla riga dell'importo e continua sotto (anche con righe che iniziano
+   con una data, "28/09/2024 ALLE ORE…"): conta la colonna in cui inizia la riga, non la data. La
+   lettura si ferma al saldo finale ("SALDO FINE PERIODO", "SALDO FINALE"), così conto scalare e
+   comunicazioni non diventano movimenti.
 2. **Quadratura.** Saldo iniziale + movimenti deve dare il saldo finale. Se non torna, il foglio
    Controlli lo dice con la differenza: vuol dire che qualche riga è stata letta male.
 3. **Classificazione.** Regole in `bankanalyst/rules.yaml`, dall'alto in basso, vince la prima.
@@ -66,8 +69,10 @@ Un frammento di descrizione → una categoria; gli override vincono su tutte le 
 
 - **Credem: provato su 5 estratti veri** (Q4 2024 – Q4 2025, 471 movimenti), tutti in
   quadratura al centesimo; Q1 2025 coincide con il riepilogo della banca.
-- **ING: layout vero non ancora visto.** Il profilo è costruito su un PDF sintetico. Al primo
-  giro guarda il foglio Controlli: se la quadratura non è `ok`, va adattato `bankanalyst/profiles.py`.
+- **ING: provato su 4 estratti veri** (Q4 2024 – Q3 2025, 995 movimenti), tutti in quadratura.
+  Con Credem insieme: 9 estratti, 1.466 movimenti; i giroconti tra i due conti si annullano
+  (stesso riferimento bancario sui due lati), salvo quelli a cavallo di fine trimestre.
+- I giroconti si annullano solo se ci sono gli estratti di entrambi i conti per lo stesso periodo.
 - **PDF scansionati** (immagini, senza testo) non vengono letti: il foglio Controlli lo segnala.
 - Con un layout sconosciuto il segno dell'importo viene dedotto dalle parole ("accredito",
   "stipendio"…) e la colonna "Segno incerto" lo segnala.

@@ -17,9 +17,16 @@ categories:
     patterns: ['giroconto', 'giro ?conto', 'trasferimento (fondi|tra conti)', 'bonifico da ing', 'bonifico (a|verso) credem',
                'conto credem', 'conto arancio']
 
+  - name: Rendite finanziarie
+    direction: in
+    patterns: ['cedol', 'dividend']
+
+  - name: Commissioni e costi bancari   # before the investment rule: the stamp duty on a dossier is a cost
+    patterns: ['imposta di bollo']
+
   - name: Investimenti e risparmio
     transfer: true
-    patterns: ['titoli', '\bfondo\b', '\betf\b', 'dossier', '\bpac\b', 'conto deposito', 'cedol', 'directa',
+    patterns: ['titoli', '\bfondo\b', '\betf\b', 'dossier', '\bpac\b', 'conto deposito', 'directa',
                'fineco', 'degiro', 'trade republic', 'scalable', 'moneyfarm']
 
   - name: Stipendio e redditi
@@ -41,7 +48,8 @@ categories:
                'imposta di bollo', 'bolli c/c', '\bbollo\b', 'competenze (di chiusura|conto)', 'interessi debitori']
 
   - name: Carta di credito (addebito mensile)
-    patterns: ['carta ego', 'saldo carta', 'addebito carta di credito', 'estratto conto carta', 'american express', 'nexi']
+    patterns: ['carta ego', 'saldo carta', 'addebito carta di credito', 'estratto conto carta', 'american express', 'nexi',
+               'ricarica carta prepagata']
 
   - name: Altre entrate
     direction: in
@@ -55,17 +63,20 @@ categories:
   - name: Casa e utenze
     patterns: ['enel', '\ba2a\b', '\bhera\b', 'iren', 'edison', 'eni plenitude', 'sorgenia', 'acea', 'metropolitana milanese',
                '\btim\b', 'telecom', 'vodafone', 'windtre', 'wind tre', 'iliad', 'fastweb', 'condominio', '\btari\b',
-               'bolletta', 'telefonia', 'ikea', 'leroy merlin', 'brico']
+               'bolletta', 'telefonia', 'ikea', 'leroy merlin', 'brico', 'punto casa', 'colorificio',
+               'acqua e sapone', 'ferrament']
 
   - name: Spesa alimentare
     patterns: ['esselunga', '\bcoop\b', 'conad', 'carrefour', '\bcrf\b', 'lidl', 'eurospin', '\bpam\b', '\bunes\b', '\biper\b',
-               'il gigante', 'bennet', 'penny', 'aldi', 'tigros', '\bcrai\b', 'despar', 'naturasi', 'supermerc', 'alimentari',
+               'il gigante', 'bennet', 'penny', 'aldi', 'tigros', '\bcrai\b', 'despar', 'eurospar', '\bspar\b', 'naturasi',
+               'cortilia', 'supermerc', 'alimentari', 'frutteto', 'carni', 'butcher', 'pesce', 'raviolific', 'agricol',
                'punto spesa', 'panific', '\bforno\b', 'pescheria', 'pescaria', 'macelleria', 'formag', 'casaro', 'latte',
                'frutta', 'ortofrutt', 'dispens', 'gastronomia', 'no glutine', 'senza glutine']
 
   - name: Ristoranti e bar
     patterns: ['ristorant', 'trattoria', 'osteria', 'pizz', '\bbar\b', 'caff', 'cafe\b', 'pasticce', 'gelateri', 'panino', 'paninoteca',
-               'food', 'cucina', 'sushi', 'kebab', 'chiosco', 'autogrill', 'menu', 'mcdonald', 'burger king', 'deliveroo',
+               'food', 'cucina', 'sushi', 'kebab', 'chiosco', 'autogrill', 'menu', 'mc ?donald', 'burger king', 'deliveroo',
+               'eataly', 'kitchen', 'piadin', 'rosticc', 'ristor', 'birr', 'dolcer', 'glaces', 'cafeth', 'mixology', 'venchi',
                'glovo', 'just ?eat', 'uber ?eats']
 
   - name: Tabacchi
@@ -73,16 +84,18 @@ categories:
 
   - name: Trasporti e auto
     patterns: ['\beni\b', 'eni station', '\bq8\b', 'tamoil', '\besso\b', '\bagip\b', 'carburant', 'telepass', 'autostrad',
-               'trenitalia', '\bitalo\b', 'trenord', '\bfnm\b', '\batm\b milano', 'taxi', 'uber', 'free ?now', 'parcheggi',
-               'easypark', 'autolavaggio', 'ryanair', 'easyjet', 'ita airways', 'aeroporto', 'bollo auto', 'officina',
+               '\beni\d+', 'trenitalia', '\bitalo\b', 'trenord', '\bfnm\b', '\batm\b milano', 'ticket atm', 'taxi', 'uber',
+               'free ?now', 'distributore', 'area serv', 'carburanti', 'parcheggi', 'parking', 'parcometri', 'garage', 'direz\. ?(uscita|entrata)', 'norauto', 'speedy car',
+               '\bads\b',
+               'easypark', 'autolavagg', 'ryanair', 'easyjet', 'ita airwa', 'aeroporto', 'bollo auto', 'officina',
                'gommista']
 
   - name: Salute
-    patterns: ['farmaci', 'parafarm', 'ospedal', 'medic', 'dentist', 'ottic', 'analisi cliniche', 'poliambulator', 'clinic',
+    patterns: ['farmac', 'parafarm', 'sanitaria', 'ospedal', 'medic', 'dentist', 'ottic', 'analisi cliniche', 'poliambulator', 'clinic',
                'humanitas', 'c\.d\.i\.', 'centro diagnostico', 'diagnos', 'screening', 'fisioterap']
 
   - name: Cura personale e servizi
-    patterns: ['parrucch', 'barbier', 'estetic', 'lavanderia', 'tintoria', 'sartoria', 'calzolai']
+    patterns: ['parrucch', 'coiffeur', 'barbier', 'estetic', 'lavanderia', 'tintoria', 'sartoria', 'calzolai']
 
   - name: Abbonamenti e digitale
     patterns: ['netflix', 'spotify', 'amazon prime', 'disney', '\bdazn\b', '\bsky\b', 'now tv', 'apple\.com', 'itunes',
@@ -91,22 +104,28 @@ categories:
 
   - name: Shopping
     patterns: ['amazon', 'zalando', 'decathlon', 'h&m', '\bzara\b', 'mediaworld', 'unieuro', 'euronics', '\bebay\b', 'paypal',
-               'shein', '\btemu\b', 'oviesse', 'rinascente', '\bmoda\b', '\bnike\b', 'aw lab', 'foot ?locker', 'calzatur',
-               'abbigliamento']
+               'shein', '\btemu\b', 'oviesse', '\bovs\b', 'upim', 'rinascente', '\bmoda\b', '\bnike\b', 'aw lab', 'foot ?locker',
+               'calzatur', 'abbigliamento', 'amzn', 'intimissimi', 'tezenis', 'pittarosso', '\bmango\b', 'tiger store',
+               'feltrinelli', 'mondadori']
 
   - name: Famiglia e istruzione
     patterns: ['scuola', 'asilo', '\bnido\b', 'mensa', 'retta', 'universit', 'libreria', 'giocattol', 'toys', 'prenatal',
-               'bebe', 'chicco']
+               'bebe', 'chicco', 'giochi']
 
   - name: Tasse e F24
-    patterns: ['\bf24\b', 'agenzia (delle )?entrate', 'imposta', 'tribut', 'pagopa', 'multa', 'contravvenzion']
+    patterns: ['\bf24\b', 'agenzia (delle )?entrate', 'imposta', '\btribut', 'pago ?pa', 'multa', 'contravvenzion',
+               'regione lombardia']
 
   - name: Regali e donazioni
     direction: out
     patterns: ['regalo', 'auguri', 'donazion', 'beneficenza', 'onlus']
 
+  - name: Viaggi e vacanze
+    patterns: ['airbnb', 'booking\.com', 'expedia', 'hotel', '\bibis\b', 'novotel', '\blido\b', 'balneare', 'beach']
+
   - name: Svago e tempo libero
-    patterns: ['cinema', 'teatro', 'museo', 'concerto', 'ticketone', 'vivaticket', 'luna ?park', 'piscina']
+    patterns: ['cinema', '\buci\b', 'teatro', 'museo', 'pinacoteca', 'exhibition', 'mostra', 'concerto', 'ticketone',
+               'vivaticket', 'luna ?park', 'palapark', 'piscina', 'milanosport', 'edicola']
 
   - name: Prelievi contanti
     patterns: ['prelievo', 'prelevamento', 'bancomat atm']

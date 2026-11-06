@@ -16,7 +16,8 @@ class Profile:
 # Real Credem statements (2024-2025): "IMPORTO A DEBITO / IMPORTO A CREDITO"; legal footer names Credito Emiliano.
 CREDEM = Profile("credem", ("credito emiliano",),
                  debit=("debito", "dare", "addebiti"), credit=("credito", "avere", "accrediti"))
-ING = Profile("ing", ("ing bank", "conto arancio", "ing italia", "ing direct"),
+# Real ING statements (2024-2025): "CONTO CORRENTE ARANCIO", USCITE/ENTRATE, legal footer "ING BANK N.V.".
+ING = Profile("ing", ("ing bank", "conto arancio", "conto corrente arancio", "ing italia", "ing direct"),
               debit=("uscite", "addebiti", "dare"), credit=("entrate", "accrediti", "avere"))
 GENERIC = Profile("generic", (), debit=("dare", "uscite", "addebiti"), credit=("avere", "entrate", "accrediti"))
 
