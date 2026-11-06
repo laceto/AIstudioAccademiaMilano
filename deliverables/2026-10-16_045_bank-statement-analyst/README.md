@@ -13,8 +13,18 @@ python -m bankanalyst estratti_conto/ --out analisi_estratti_conto.xlsx
 python -m bankanalyst estratti_conto/ --rules estratti_conto/mie_regole.yaml --out analisi_estratti_conto.xlsx
 ```
 
-Accetta cartelle (anche con sottocartelle, es. `estratti_conto/credem/`, `estratti_conto/ing/`) e
-singoli file. A schermo stampa entrate/uscite/netto per trimestre, i totali per categoria, quanti
+Accetta cartelle (anche con sottocartelle) e singoli file. Struttura consigliata:
+
+```
+estratti_conto/            ← fuori da git (.gitignore)
+├── credem/                ← tutti gli estratti Credem, di qualsiasi anno
+├── ing/                   ← tutti gli estratti ING
+└── mie_regole.yaml        ← regole personali
+```
+
+I nomi dei file non contano: banca e periodo si leggono dentro il PDF. Un estratto caricato due
+volte o due estratti che si sovrappongono non contano doppio. Ogni PDF viene letto una volta
+sola, anche su Windows (`.pdf` e `.PDF`). A schermo stampa entrate/uscite/netto per trimestre, i totali per categoria, quanti
 movimenti restano da classificare e l'esito della quadratura di ogni estratto.
 
 ## Cosa c'è nell'Excel

@@ -8,11 +8,18 @@ from bankanalyst.report import analyze, write_excel
 
 
 def _pdfs(inputs: list[str]) -> list[Path]:
-    found = []
+    """Every PDF under the given folders (any case of the extension), each file once.
+
+    rglob("*.pdf") is case-insensitive on Windows: globbing *.pdf and *.PDF there would list every
+    statement twice and double all the amounts.
+    """
+    found: dict[Path, Path] = {}
     for raw in inputs:
         p = Path(raw)
-        found += sorted(p.rglob("*.pdf")) + sorted(p.rglob("*.PDF")) if p.is_dir() else [p]
-    return found
+        files = sorted(f for f in p.rglob("*") if f.is_file() and f.suffix.lower() == ".pdf") if p.is_dir() else [p]
+        for f in files:
+            found.setdefault(f.resolve(), f)
+    return list(found.values())
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -457,3 +457,14 @@ def test_cli(pdf_dir, tmp_path, capsys):
     text = capsys.readouterr().out
     assert "2026-Q1" in text and "Da classificare: 1" in text
     assert out.exists()
+
+
+def test_pdfs_found_once_whatever_the_case(tmp_path):
+    """On Windows rglob('*.pdf') and rglob('*.PDF') both match every file: each must be read once."""
+    from bankanalyst.cli import _pdfs
+    (tmp_path / "credem").mkdir()
+    (tmp_path / "ing").mkdir()
+    for name in ("credem/a.pdf", "ing/b.PDF", "ing/note.txt"):
+        (tmp_path / name).write_bytes(b"%PDF-1.4")
+    found = _pdfs([str(tmp_path), str(tmp_path / "ing" / "b.PDF")])
+    assert sorted(p.name for p in found) == ["a.pdf", "b.PDF"]
