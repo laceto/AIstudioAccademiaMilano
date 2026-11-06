@@ -259,10 +259,12 @@ else
   fi
 
   if want_build worker; then
-    say "Building pipeline worker image (langgraph + langchain)"
+    # Chiara's Claude Code engine (050): the CLI goes into the image only when .env turns it on.
+    CHIARA_CC=0; [ "$(env_val CHIARA_ENGINE)" = "claude_code" ] && CHIARA_CC=1
+    say "Building pipeline worker image (langgraph + langchain; Claude Code engine: $CHIARA_CC)"
     run gcloud builds submit "$REPO_ROOT" \
       --config "$REPO_ROOT/deploy/cloudbuild.worker.yaml" \
-      --substitutions "_IMAGE=$IMAGE_BASE/pipeline-worker"
+      --substitutions "_IMAGE=$IMAGE_BASE/pipeline-worker,_CHIARA_CLAUDE_CODE=$CHIARA_CC"
   fi
 
   if want_build rag-api; then

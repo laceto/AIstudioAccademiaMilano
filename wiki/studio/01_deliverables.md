@@ -1,7 +1,7 @@
 # Deliverables Catalogue
 
 Every shipped product. Auto-updated by `scripts/learning_loop.py` after each delivery.
-Last updated: 2026-11-05
+Last updated: 2026-11-06
 
 | ID | Date | Product | Stack | Price | Path |
 |----|------|---------|-------|-------|------|
@@ -30,6 +30,7 @@ Last updated: 2026-11-05
 | 047 | 2026-11-05 | Gateway protected with an API key — `POST /submit` and `GET /status` need `X-API-Key` (fail closed with 503 when no key is set), showcase order buttons link to the Telegram bot, deploy keeps the key in Secret Manager | FastAPI, Cloud Run, Secret Manager | €0.00 (internal) | `deliverables/2026-11-05_047_protect-gateway/` |
 | 048 | 2026-11-05 | Smoke test all the way to a deliverable — `scripts/gateway_deliver.py` approves the smoke job as Luigi would and runs it through the real pipeline worker in the runner; deliverable, `result.json` and `steps.txt` as the artifact `deliverable` and in the run Summary (opt-in `run_pipeline`) | GitHub Actions, LangGraph, FastAPI | €0.00 (internal) | `deliverables/2026-11-05_048_smoke-deliverable/` |
 | 049 | 2026-11-05 | GitHub research also scans trending — `scripts/github_research/trending.py` reads github.com/trending, keeps AI repos, enriches them via the REST API; trending bucket in the Scout, growth from the current pace, "Trending on GitHub" report section, trending note in Gianni's digest | Python, GitHub REST API | €0.00 (internal) | `deliverables/2026-11-05_049_research-trending/` |
+| 050 | 2026-11-06 | Chiara builds with Claude Code — with `CHIARA_ENGINE=claude_code`, code products are built by the Claude Code CLI headless (several files, tests written and run), packed into one text bundle (`scripts/unpack_bundle.py` restores the files); clean env, separate `builder` user, pytest-only Bash, budget and timeout; falls back to the usual strategy on any error; off by default | LangGraph, Claude Code CLI, Cloud Run | €0.00 (internal) | `deliverables/2026-11-06_050_chiara-claude-code/` |
 ## Revenue Summary
 
 | Status | Amount |
