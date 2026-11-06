@@ -442,6 +442,60 @@ def test_personal_rules_layer_on_defaults(tmp_path):
     assert c.classify(_tx("PAGAMENTO MAESTRO ESSELUNGA -ITA", "-70")) == "Spesa alimentare"  # defaults still apply
 
 
+def _stmt(*rows):
+    from bankanalyst.models import Statement
+    txs = [Transaction(bank="ing", booking_date=d, value_date=None, description=desc, amount=Decimal(a),
+                       source="x.pdf", page=1) for d, desc, a in rows]
+    return Statement(path="x.pdf", bank="ing", transactions=txs)
+
+
+def test_monthly_budget_window_average_and_exclusions():
+    from bankanalyst.report import monthly_budget
+    st = _stmt(
+        (date(2025, 1, 10), "PAGAMENTO ESSELUNGA", "-50"),          # outside the 3-month window
+        (date(2026, 1, 10), "PAGAMENTO ESSELUNGA", "-100"),
+        (date(2026, 3, 5), "PAGAMENTO ESSELUNGA", "-300"),
+        (date(2026, 1, 27), "ACCREDITO STIPENDIO GENNAIO", "1500"),
+        (date(2026, 2, 3), "GIROCONTO A CONTO ARANCIO", "-700"),   # transfer: never in the budget
+        (date(2026, 3, 9), "BOH QUALCOSA", "-30"),                  # unclassified: shown, not hidden
+    )
+    b = monthly_budget(analyze([st]), months=3)
+    assert (b.first, b.last, b.months) == ("2026-01", "2026-03", 3)
+    rows = {r.category: r for r in b.rows}
+    assert "Giroconti tra conti" not in rows
+    food = rows["Spesa alimentare"]
+    assert food.window_total == Decimal("-400")
+    assert food.monthly == Decimal("-133.33")            # 400 / 3 calendar months, February counts as zero
+    assert food.monthly_all == Decimal("-30.00")         # 450 over the 15 months Jan 2025 - Mar 2026
+    assert food.active_months == 2
+    assert rows["Stipendio e redditi"].kind == "entrata" and rows["Stipendio e redditi"].monthly == Decimal("500.00")
+    assert rows["Da classificare"].monthly == Decimal("-10.00")
+    assert b.income == Decimal("500.00") and b.expenses == Decimal("-143.33")
+    assert [r.category for r in b.rows if r.kind == "uscita"][0] == "Spesa alimentare"  # largest expense first
+
+
+def test_monthly_budget_shorter_history_than_window():
+    from bankanalyst.report import monthly_budget
+    b = monthly_budget(analyze([_stmt((date(2026, 2, 1), "PAGAMENTO ESSELUNGA", "-60"),
+                                      (date(2026, 3, 1), "PAGAMENTO ESSELUNGA", "-60"))]), months=12)
+    assert b.months == 2                                  # only the months that exist, not 12
+    assert {r.category: r for r in b.rows}["Spesa alimentare"].monthly == Decimal("-60.00")
+
+
+def test_rule_amount_matches_only_that_amount(tmp_path):
+    """Same merchant, two uses: a fixed price (cigarettes) vs. any other amount (lunch)."""
+    rules = tmp_path / "mie_regole.yaml"
+    rules.write_text("categories:\n"
+                     "  - name: Tabacchi\n    amount: -5.50\n    patterns: ['tess.000000001 bar esempio']\n"
+                     "  - name: Ristoranti e bar\n    patterns: ['tess.000000001 bar esempio']\n", encoding="utf-8")
+    c = Classifier(load_rules(rules))
+    desc = "PAGOBANCOMAT 02/10/24,ORE 17:24,TESS.000000001 bar esempio"
+    assert c.classify(_tx(desc, "-5.50")) == "Tabacchi"
+    assert c.classify(_tx(desc, "-5.5")) == "Tabacchi"
+    assert c.classify(_tx(desc, "-13.00")) == "Ristoranti e bar"
+    assert c.classify(_tx(desc, "5.50")) == "Ristoranti e bar"  # sign matters: only the payment is cigarettes
+
+
 @pytest.mark.parametrize("desc,amount,expected", [
     # Seen on real Credem statements: each was misfiled by an earlier version of the rules.
     ("BONIFICO A CREDITO universita' di esempio cup h00x00000000000 compenso", "589.86", "Stipendio e redditi"),
@@ -501,7 +555,11 @@ def test_analyze_quarters_and_transfers(statements):
 def test_write_excel(statements, tmp_path):
     out = write_excel(analyze(statements), tmp_path / "report.xlsx")
     wb = openpyxl.load_workbook(out)
-    assert wb.sheetnames == ["Riepilogo", "Per categoria", "Movimenti", "Da classificare", "Controlli"]
+    assert wb.sheetnames == ["Riepilogo", "Per categoria", "Budget mensile", "Movimenti", "Da classificare",
+                             "Controlli"]
+    budget = wb["Budget mensile"]
+    assert [c.value for c in budget[1]][:2] == ["Categoria", "Tipo"]
+    assert budget.cell(budget.max_row, 1).value == "Saldo"
     mov = wb["Movimenti"]
     assert mov.max_row == 1 + 10
     assert [c.value for c in mov[1]][:4] == ["Banca", "Data", "Valuta", "Trimestre"]

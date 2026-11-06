@@ -1,6 +1,7 @@
 """Rule-based classification: ordered regex rules from YAML, first match wins, overrides beat everything."""
 import re
 from dataclasses import dataclass
+from decimal import Decimal
 from pathlib import Path
 
 import yaml
@@ -17,9 +18,12 @@ class Rule:
     patterns: list[re.Pattern]
     direction: str = "any"
     transfer: bool = False
+    amount: Decimal | None = None  # exact signed amount (e.g. -5.50): same merchant, different meaning by price
 
     def matches(self, tx: Transaction) -> bool:
         if self.direction == "in" and tx.amount < 0 or self.direction == "out" and tx.amount > 0:
+            return False
+        if self.amount is not None and tx.amount != self.amount:
             return False
         return any(p.search(tx.description) for p in self.patterns)
 
@@ -37,7 +41,8 @@ class Rules:
 def _read(path: Path) -> Rules:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     cats = [Rule(name=c["name"], patterns=[re.compile(p, re.I) for p in c.get("patterns", [])],
-                 direction=c.get("direction", "any"), transfer=bool(c.get("transfer", False)))
+                 direction=c.get("direction", "any"), transfer=bool(c.get("transfer", False)),
+                 amount=Decimal(str(c["amount"])) if c.get("amount") is not None else None)
             for c in data.get("categories") or []]
     return Rules(categories=cats, overrides=dict(data.get("overrides") or {}))
 
