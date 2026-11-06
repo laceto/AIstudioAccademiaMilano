@@ -34,12 +34,28 @@ class Rules:
         return {r.name for r in self.categories if r.transfer}
 
 
-def load_rules(path: str | Path | None = None) -> Rules:
-    data = yaml.safe_load(Path(path or DEFAULT_RULES).read_text(encoding="utf-8")) or {}
+def _read(path: Path) -> Rules:
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     cats = [Rule(name=c["name"], patterns=[re.compile(p, re.I) for p in c.get("patterns", [])],
                  direction=c.get("direction", "any"), transfer=bool(c.get("transfer", False)))
             for c in data.get("categories") or []]
     return Rules(categories=cats, overrides=dict(data.get("overrides") or {}))
+
+
+def load_rules(path: str | Path | None = None) -> Rules:
+    """Default rules, with a personal file layered on top: its categories are tried first, its overrides added.
+
+    A category in the personal file with the same name as a default one inherits its `transfer` flag, so
+    personal patterns for "Giroconti tra conti" still keep those movements out of the totals.
+    """
+    base = _read(DEFAULT_RULES)
+    if path is None:
+        return base
+    own = _read(Path(path))
+    flags = {r.name: r.transfer for r in base.categories}
+    for r in own.categories:
+        r.transfer = r.transfer or flags.get(r.name, False)
+    return Rules(categories=own.categories + base.categories, overrides={**base.overrides, **own.overrides})
 
 
 class Classifier:
