@@ -88,3 +88,5 @@ estratti_conto/**
 # Documenti bancari (estratti conto, sintesi, spese, regole personali): dati personali, tutto fuori dal repo.
 documenti_bancari/
 analisi_estratti_conto*.xlsx
+credentials/calendar_sentinel_token.json
+data/calendar_sentinel_state.json
