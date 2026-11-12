@@ -2,11 +2,11 @@
   "_meta": {
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
-    "last_updated": "2026-11-06",
-    "last_request_id": "050",
-    "total_requests_processed": 37,
+    "last_updated": "2026-11-12",
+    "last_request_id": "051",
+    "total_requests_processed": 38,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "050"
+    "last_processed_audit_log": "051"
   },
   "skills": {
     "html_tailwind_css": {
@@ -1190,9 +1190,9 @@
           "success_rate": 1.0
         },
         "calendar_integration": {
-          "count": 1,
-          "avg_sec": 25.0,
-          "success_rate": 0.0
+          "count": 2,
+          "avg_sec": 12.5,
+          "success_rate": 0.5
         },
         "internal_tooling": {
           "count": 5,
@@ -1261,9 +1261,9 @@
           "success_rate": 1.0
         },
         "calendar_integration": {
-          "count": 1,
-          "avg_sec": 900.0,
-          "success_rate": 0.0
+          "count": 2,
+          "avg_sec": 450.0,
+          "success_rate": 0.5
         },
         "internal_tooling": {
           "count": 5,
@@ -1327,9 +1327,9 @@
           "success_rate": 0.0
         },
         "calendar_integration": {
-          "count": 1,
-          "avg_sec": 4.0,
-          "success_rate": 0.0
+          "count": 2,
+          "avg_sec": 2.0,
+          "success_rate": 0.5
         },
         "internal_tooling": {
           "count": 5,
@@ -1665,9 +1665,11 @@
     "google_calendar_api_v3": 1,
     "langgraph_human_in_the_loop": 1,
     "python_packaging_hatchling": 1,
-    "breakdown": 6,
+    "breakdown": 7,
     "agentic-router": 2,
-    "langgraph-fundamentals": 2
+    "langgraph-fundamentals": 2,
+    "google-calendar-api": 1,
+    "telegram-bot-api": 1
   },
   "github_activity_counters": {
     "commit": 0,
