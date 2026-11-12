@@ -1,4 +1,5 @@
 """Quarterly aggregation and Excel export."""
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import date
@@ -50,6 +51,7 @@ class Result:
     unclassified: list[Transaction]
     checks: list[dict] = field(default_factory=list)
     transfers: set[str] = field(default_factory=set)
+    flags: set[str] = field(default_factory=set)  # flagged categories: apart from totals and budget
 
 
 def analyze(statements: list[Statement], rules_path: str | Path | None = None,
@@ -64,14 +66,25 @@ def analyze(statements: list[Statement], rules_path: str | Path | None = None,
         if t.category == UNCLASSIFIED and extra_labels:
             t.category = extra_labels.get(" ".join(t.description.split()).lower(), UNCLASSIFIED)
 
+    checks = [{"file": Path(st.path).name, "banca": st.bank, "movimenti": len(st.transactions),
+               "saldo_iniziale": st.opening, "saldo_finale": st.closing, "esito": st.reconciliation(),
+               "avvisi": "; ".join(st.warnings)} for st in statements]
+    return _summarize(txs, checks, rules.transfers, rules.flags)
+
+
+def _summarize(txs: list[Transaction], checks: list[dict], transfers: set[str], flags: set[str]) -> Result:
+    """Quarterly totals and category pivot of already classified movements (also used for one bank only)."""
     quarters = sorted({quarter_of(t.booking_date) for t in txs})
-    totals = {q: {"entrate": ZERO, "uscite": ZERO, "netto": ZERO, "giroconti": ZERO, "movimenti": 0} for q in quarters}
+    totals = {q: {"entrate": ZERO, "uscite": ZERO, "netto": ZERO, "giroconti": ZERO, "flaggati": ZERO,
+                  "movimenti": 0} for q in quarters}
     pivot: dict[str, dict[str, Decimal]] = defaultdict(lambda: defaultdict(lambda: ZERO))
     for t in txs:
         q = totals[quarter_of(t.booking_date)]
         q["movimenti"] += 1
         pivot[t.category][quarter_of(t.booking_date)] += t.amount
-        if t.category in rules.transfers:
+        if t.category in flags:  # a flag wins over transfer: one column per movement
+            q["flaggati"] += t.amount
+        elif t.category in transfers:
             q["giroconti"] += t.amount
         elif t.amount > 0:
             q["entrate"] += t.amount
@@ -79,14 +92,18 @@ def analyze(statements: list[Statement], rules_path: str | Path | None = None,
             q["uscite"] += t.amount
     for q in totals.values():
         q["netto"] = q["entrate"] + q["uscite"]
-
-    checks = [{"file": Path(st.path).name, "banca": st.bank, "movimenti": len(st.transactions),
-               "saldo_iniziale": st.opening, "saldo_finale": st.closing, "esito": st.reconciliation(),
-               "avvisi": "; ".join(st.warnings)} for st in statements]
     return Result(transactions=txs, quarters=quarters, totals=totals,
                   pivot={c: dict(v) for c, v in pivot.items()},
                   unclassified=[t for t in txs if t.category == UNCLASSIFIED], checks=checks,
-                  transfers=rules.transfers)
+                  transfers=transfers, flags=flags)
+
+
+def split_by_bank(result: Result) -> dict[str, Result]:
+    """One Result per bank, from the same classified movements (so the rules and the dedupe are shared)."""
+    banks = sorted({t.bank for t in result.transactions})
+    return {b: _summarize([t for t in result.transactions if t.bank == b],
+                          [c for c in result.checks if c["banca"] == b], result.transfers, result.flags)
+            for b in banks}
 
 
 CENT = Decimal("0.01")
@@ -132,9 +149,10 @@ def monthly_budget(result: Result, months: int = 12) -> Budget:
 
     Months with no movement count as zero, so an annual bill is spread over twelve months instead of
     looking like a monthly cost. Transfer categories (giroconti, investments, trading positions) are
-    left out: they are not spending. "Da classificare" stays in, so the budget is complete.
+    left out: they are not spending; so are flagged categories. "Da classificare" stays in, so the budget
+    is complete.
     """
-    txs = [t for t in result.transactions if t.category not in result.transfers]
+    txs = [t for t in result.transactions if t.category not in result.transfers | result.flags]
     if not txs:
         return Budget("", "", 0, 0, [])
     nos = [_month_no(t.booking_date) for t in result.transactions]  # the window follows all the data
@@ -183,19 +201,33 @@ def _sheet(wb, title, header, rows, money_cols=()):
     return ws
 
 
-def _tx_rows(txs):
+_PRESSO = re.compile(r"\bPRESSO\s+(.+)$", re.I)
+_CONTACTLESS = re.compile(r"\s+-\s+TRANSAZIONE\b.*$", re.I)
+
+
+def merchant(description: str) -> str:
+    """The shop of an ING card payment: what follows "PRESSO" ("… PRESSO AMZN MKTP IT*NM81K1ZJ4").
+
+    The trailing " - TRANSAZIONE C-LESS" (contactless) is not part of the name. Empty when there is no PRESSO.
+    """
+    m = _PRESSO.search(description)
+    return " ".join(_CONTACTLESS.sub("", m.group(1)).split()) if m else ""
+
+
+def _tx_rows(txs, flags=frozenset()):
     return [[t.bank, t.booking_date, t.value_date, quarter_of(t.booking_date), t.description, t.amount, t.category,
-             "sì" if t.sign_uncertain else "", t.source, t.page] for t in txs]
+             merchant(t.description), "sì" if t.category in flags else "", "sì" if t.sign_uncertain else "", t.source, t.page] for t in txs]
 
 
 def write_excel(result: Result, out: str | Path) -> Path:
     wb = Workbook()
     wb.remove(wb.active)
-    rows = [[q, v["entrate"], v["uscite"], v["netto"], v["giroconti"], v["movimenti"]] for q, v in result.totals.items()]
-    tot = [sum((r[i] for r in rows), ZERO) for i in range(1, 5)]
-    rows.append(["Totale", *tot, sum(r[5] for r in rows)])
-    ws = _sheet(wb, "Riepilogo", ["Trimestre", "Entrate", "Uscite", "Netto", "Giroconti (esclusi)", "Movimenti"],
-                rows, money_cols=(2, 3, 4, 5))
+    rows = [[q, v["entrate"], v["uscite"], v["netto"], v["giroconti"], v["flaggati"], v["movimenti"]]
+            for q, v in result.totals.items()]
+    tot = [sum((r[i] for r in rows), ZERO) for i in range(1, 6)]
+    rows.append(["Totale", *tot, sum(r[6] for r in rows)])
+    ws = _sheet(wb, "Riepilogo", ["Trimestre", "Entrate", "Uscite", "Netto", "Giroconti (esclusi)",
+                                  "Flaggati (esclusi)", "Movimenti"], rows, money_cols=(2, 3, 4, 5, 6))
     for c in ws[ws.max_row]:
         c.font = _BOLD
 
@@ -220,10 +252,10 @@ def write_excel(result: Result, out: str | Path) -> Path:
             for c in row:
                 c.font = _BOLD
 
-    tx_header = ["Banca", "Data", "Valuta", "Trimestre", "Descrizione", "Importo", "Categoria", "Segno incerto",
-                 "File", "Pagina"]
+    tx_header = ["Banca", "Data", "Valuta", "Trimestre", "Descrizione", "Importo", "Categoria", "Esercente",
+                 "Flag", "Segno incerto", "File", "Pagina"]
     for name, txs in (("Movimenti", result.transactions), ("Da classificare", result.unclassified)):
-        ws = _sheet(wb, name, tx_header, _tx_rows(txs), money_cols=(6,))
+        ws = _sheet(wb, name, tx_header, _tx_rows(txs, result.flags), money_cols=(6,))
         for col in ("B", "C"):
             for c in ws[col][1:]:
                 c.number_format = "DD/MM/YYYY"
