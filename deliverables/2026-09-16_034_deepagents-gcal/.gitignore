@@ -1,0 +1,20 @@
+# Credentials — never commit these. GCAL_TOKEN_FILE defaults to ./token.json, so a live
+# refresh token lands in the project root unless this file travels with the package.
+credentials.json
+token.json
+token.json.tmp*
+*.env
+.env
+!.env.example
+service-account*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/

@@ -33,7 +33,10 @@ jobs:
           cache-dependency-path: requirements-rag.txt
 
       - name: Install RAG dependencies
-        run: pip install -r requirements-rag.txt
+        run: |
+          pip install -r requirements-rag.txt
+          pip install langchain-chroma
+          pip install "git+https://github.com/laceto/kitai.git"
 
       - name: Guard — OPENAI_API_KEY must be set
         id: guard
@@ -68,10 +71,10 @@ jobs:
             git checkout -b "$BRANCH"
             git commit -m "rag: bootstrap vectorstore $(date +%Y-%m-%d) [skip ci]"
             git push origin "$BRANCH"
-            gh pr create \
+            PR_URL=$(gh pr create \
               --base main \
               --head "$BRANCH" \
               --title "rag: bootstrap vectorstore $(date +%Y-%m-%d)" \
-              --body "Auto-generated RAG index update from bootstrap workflow." \
-              --auto-merge
+              --body "Auto-generated RAG index update from bootstrap workflow.")
+            gh pr merge "$PR_URL" --squash --admin
           fi

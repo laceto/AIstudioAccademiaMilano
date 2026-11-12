@@ -8,7 +8,7 @@ input_type: text
 intent: algo_trading
 product_type: algo_trading
 outcome: success
-live_url: null
+live_url: https://huggingface.co/spaces/lacetohf/trading-agent-team
 agents_invoked:
   - name: Stacy
     role: intent_classifier

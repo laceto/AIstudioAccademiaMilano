@@ -64,6 +64,11 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+# httpx logs request URLs at INFO, and the Telegram Bot API puts the bot token in the URL path.
+# (Not imported from gateway/: this server ships in its own image without that package.)
+for _noisy in ("httpx", "httpcore"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
+
 SYSTEM_PROMPT = (
     fmt(b("agent_personas.rag_expert_prompt")) + "\n"
     "Use the following repo excerpts to answer the question precisely.\n"
@@ -210,7 +215,7 @@ def chat_stream(req: ChatRequest):
 
 @app.post("/webhook/telegram")
 async def webhook_telegram(request: _Request):
-    token   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    token   = os.environ.get("TELEGRAM_RAG_BOT_TOKEN", "")
     body    = await request.json()
     msg     = body.get("message", {})
     text    = (msg.get("text") or "").strip()
@@ -225,7 +230,7 @@ async def webhook_telegram(request: _Request):
                 json={"chat_id": chat_id, "text": answer},
             )
     else:
-        log.warning("/webhook/telegram: TELEGRAM_BOT_TOKEN unset — reply suppressed")
+        log.warning("/webhook/telegram: TELEGRAM_RAG_BOT_TOKEN unset — reply suppressed")
     return {}
 
 

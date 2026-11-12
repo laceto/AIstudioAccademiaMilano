@@ -1,0 +1,6 @@
+# Analista estratti conto (delivery 045)
+pdfplumber==0.11.10
+openpyxl==3.1.5
+PyYAML==6.0.2
+# solo per i test (PDF sintetici)
+fpdf2==2.8.9

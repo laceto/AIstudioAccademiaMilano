@@ -40,6 +40,8 @@ learning_flags:
   new_skills: [list]
   new_mcp: [list]
   risk_score: 1-5
+  lessons:            # optional: only what this delivery actually showed
+    - {agent, cue, lesson, evidence, confidence: high|medium|low}
 ```
 
 File: `process/audit/YYYY-MM-DD_NNN_<slug>.md`

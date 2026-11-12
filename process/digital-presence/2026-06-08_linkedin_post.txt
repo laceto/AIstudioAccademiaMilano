@@ -1,0 +1,9 @@
+Just pushed a batch of updates live for our AI Studio Accademia Milano repo.
+
+Here's what's new: streamlined our workflow with squash merges, enhanced our RAG API deployment, and made key library updates. Squash merging simplifies our commit history, making it cleaner and easier for contributors to follow. We've also fortified our API deployment with FastAPI, uvicorn, and python-multipart, ensuring smooth and efficient operations. Lastly, pinned down version requirements and ditched some unused dependencies for a leaner, meaner setup.
+
+Why does this matter? It's about efficiency and clarity. A tidy commit history and robust deployments mean less friction for developers. They can focus on building, not firefighting. It's a reminder: sometimes the small, gritty updates make the biggest difference in the long run.
+
+Building with AI has taught me one thing: the devil's in the details. Every tweak counts. In AI, there's no room for shortcuts.
+
+#AI #DevOps #APIDevelopment #Python #GitHub

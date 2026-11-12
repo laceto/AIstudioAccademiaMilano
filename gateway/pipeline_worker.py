@@ -1,0 +1,145 @@
+"""The private service that runs the studio pipeline for approved jobs.
+
+Cloud Tasks POSTs {"job_id": ...} to /run (gateway/pipeline_queue.py). The service is
+deployed without public access: Cloud Run only lets in the pipeline-tasks service account.
+
+Rules, because every run costs LLM money:
+  * only a job in status `approved` runs; the claim (approved -> running) is one atomic
+    store.transition(), so a duplicate delivery or a double click cannot run it twice;
+  * /run always answers 200 once the request is well formed. A failed run is recorded on
+    the job and reported to Luigi, never signalled with an error that would make Cloud
+    Tasks retry (the queue is also configured with max-attempts=1);
+  * the result is not sent to the customer. It is stored on the job (`awaiting_review`)
+    and sent to Luigi, who decides (Invia al cliente / Scarta).
+
+Env: JOB_STORE=firestore, PIPELINE_PROVIDER (default openai), PIPELINE_RUN_TIMEOUT seconds
+(default 600; the Cloud Run request timeout is 900), TELEGRAM_BOT_TOKEN and
+NOTIFY_TELEGRAM_CHAT_IDS for the message to Luigi, OPENAI_API_KEY for the LLM,
+PIPELINE_STALE_SECONDS (default 1200) after which POST /sweep fails a job stuck in `running`.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import os
+import re
+from datetime import datetime, timezone
+
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, field_validator
+
+from gateway.convlog import silence_http_loggers
+from gateway.jobstore import make_store
+from gateway.notify import notify_result
+from gateway.recovery import finish_run, sweep_and_notify
+from gateway.research_digest import ResearchError, make_digest_store, run_weekly
+from gateway.studio_runner import RunResult, run_job, scrub
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+# httpx logs request URLs at INFO, and the Telegram Bot API puts the bot token in the URL path:
+# without this every message to Luigi writes the token into Cloud Logging.
+silence_http_loggers()
+
+app = FastAPI(title="AI Studio pipeline worker")
+
+_JOB_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+class RunBody(BaseModel):
+    job_id: str
+
+    @field_validator("job_id")
+    @classmethod
+    def _well_formed(cls, value: str) -> str:
+        if not _JOB_ID_RE.match(value):
+            raise ValueError("malformed job id")
+        return value
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _run_timeout() -> float:
+    return float(os.environ.get("PIPELINE_RUN_TIMEOUT", "600"))
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@app.post("/sweep")
+async def sweep():
+    """Fail the jobs stuck in `running` and tell Luigi (see gateway/recovery.py). Idempotent: Cloud
+    Scheduler calls it every 10 minutes as the same service account as /run."""
+    store = make_store(os.environ.get("GATEWAY_QUEUE_DIR", "gateway/queue"))
+    swept = await sweep_and_notify(store, notify_result)
+    return {"swept": [job["job_id"] for job in swept]}
+
+
+@app.post("/research/run")
+async def research_run():
+    """Weekly GitHub AI research digest for Gianni (gateway/research_digest.py). Cloud Scheduler calls it
+    once a week as the same service account as /run. No LLM, so no cost beyond the GitHub API. A failed
+    run answers 502 (the scheduler shows it) and leaves the previous digest in place."""
+    token = os.environ.get("RESEARCH_GITHUB_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    try:
+        digest = await asyncio.to_thread(run_weekly, store=make_digest_store(), token=token)
+    except ResearchError as exc:
+        logger.warning("[research] %s", scrub(exc))
+        return JSONResponse({"error": "research run failed"}, status_code=502)
+    except Exception as exc:  # e.g. the store: keep the details in the log, not in the response
+        logger.warning("[research] run failed: %s", type(exc).__name__)
+        return JSONResponse({"error": "research run failed"}, status_code=502)
+    logger.info("[research] digest saved with %d repos", len(digest["repos"]))
+    return {"saved": len(digest["repos"]), "generated_at": digest["generated_at"]}
+
+
+@app.post("/run")
+async def run(body: RunBody):
+    store = make_store(os.environ.get("GATEWAY_QUEUE_DIR", "gateway/queue"))
+
+    job = store.transition(body.job_id, "approved", {"status": "running", "started_at": _now()})
+    if job is None:
+        current = store.get(body.job_id)
+        reason = current.get("status", "unknown") if current else "not_found"
+        logger.info("[worker] job %s skipped (%s)", body.job_id, reason)
+        return {"skipped": reason}
+
+    logger.info("[worker] job %s running", body.job_id)
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(run_job, job, provider=os.environ.get("PIPELINE_PROVIDER", "openai")),
+            timeout=_run_timeout(),
+        )
+    except asyncio.TimeoutError:
+        result = RunResult(ok=False, error=f"Timeout: la pipeline non ha finito entro {int(_run_timeout())} secondi.")
+    except Exception as exc:
+        result = RunResult(ok=False, error=scrub(f"{type(exc).__name__}: {exc}"))
+
+    status = "awaiting_review" if result.ok else "failed"
+    data = result.to_dict()
+    outcome = finish_run(
+        store, job,
+        {"status": status, "finished_at": _now(), "result": data, "error": result.error},
+    )
+    if outcome in ("already_failed", "superseded"):
+        # the sweeper already told Luigi this run failed, or a newer run owns the job: stay quiet
+        logger.warning("[worker] job %s ended (%s) after being swept or restarted: nothing recorded", body.job_id, outcome)
+        return {"status": outcome}
+    if outcome == "late":
+        logger.warning("[worker] job %s finished after the sweeper failed it: result kept", body.job_id)
+    elif outcome == "lost":
+        logger.error("[worker] job %s was no longer 'running' when the run ended", body.job_id)
+    logger.info("[worker] job %s -> %s", body.job_id, status)
+
+    try:
+        await notify_result(job, data)
+    except Exception as exc:  # the outcome is already stored; Luigi can find it with /pending
+        logger.warning("[worker] could not notify Luigi about job %s: %s", body.job_id, type(exc).__name__)
+
+    return {"status": status}

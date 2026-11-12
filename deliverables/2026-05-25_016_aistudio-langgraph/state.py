@@ -89,6 +89,9 @@ class StudioState(TypedDict):
     qa_passed: bool
 
     # ── Marco ────────────────────────────────────────────────────────────
+    # Price chosen by a human (the gateway's approval). Wins over PRICING_TABLE;
+    # "0.00" is a valid free approval, so test `is not None`, never truthiness.
+    approved_price: Optional[str]
     product_price: Optional[str]
     invoice: Optional[dict]
     invoice_id: Optional[str]
@@ -107,5 +110,6 @@ class StudioState(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
 
     # ── Control ───────────────────────────────────────────────────────────
-    error: Optional[str]
+    # Annotated so parallel risk agents can each write error without conflict
+    error: Annotated[Optional[str], lambda a, b: b if b is not None else a]
     finished: bool

@@ -1,0 +1,183 @@
+name: Gateway smoke test
+
+# 046 — Simulates a new project request, sends it to the Input Gateway and checks
+# that it is accepted, stored and classified. Script: scripts/gateway_smoke.py
+#
+#   local     gateway started inside the runner (file job store, background worker on,
+#             no Telegram, no e-mail): the full path submit -> worker -> needs_review.
+#             Runs on every push / PR that touches the gateway, and on demand.
+#   deployed  the real gateway on Cloud Run: health, submit, status. Manual only,
+#             because it leaves a real job (user_id smoke-test-github-actions, status
+#             queued) in Firestore until it expires. The URL comes from the repository
+#             variable GATEWAY_URL, or the default below; the key from the repository
+#             secret GATEWAY_API_KEY (same value as in Secret Manager).
+#
+# 047: /submit and /status need X-API-Key. The local job makes a throwaway key per run.
+#
+# 048: run_pipeline (manual, local only) goes on past needs_review: it approves the job as
+# Luigi would, runs the real pipeline worker in the runner (real LLM, it costs money) and
+# uploads what came out as the artifact "deliverable" (also shown in the run Summary).
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths:
+      - 'gateway/**'
+      - 'scripts/gateway_smoke.py'
+      - 'tests/test_gateway_smoke.py'
+      - '.github/workflows/gateway-smoke.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'gateway/**'
+      - 'scripts/gateway_smoke.py'
+      - 'tests/test_gateway_smoke.py'
+      - '.github/workflows/gateway-smoke.yml'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Dove mandare la richiesta simulata"
+        type: choice
+        options: [local, deployed, both]
+        default: local
+      request:
+        description: "Testo della richiesta simulata (vuoto = pasticceria di esempio)"
+        required: false
+        default: ""
+      use_llm:
+        description: "Locale: classifica con il modello vero (usa il secret ANTHROPIC_API_KEY)"
+        type: boolean
+        default: false
+      run_pipeline:
+        description: "Locale: approva il job e fai girare la pipeline vera, deliverable come artifact (costa)"
+        type: boolean
+        default: false
+      pipeline_provider:
+        description: "Modello della pipeline (secret OPENAI_API_KEY o ANTHROPIC_API_KEY)"
+        type: choice
+        options: [openai, anthropic]
+        default: openai
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gateway-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  SMOKE_TEXT: ${{ inputs.request }}
+
+jobs:
+  local:
+    name: Gateway locale (submit -> worker -> needs_review)
+    if: github.event_name != 'workflow_dispatch' || inputs.target != 'deployed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: gateway/requirements.txt
+
+      - name: Install gateway dependencies
+        run: pip install -r gateway/requirements.txt pytest
+
+      - name: Unit tests of the smoke client
+        run: pytest tests/test_gateway_smoke.py -v --tb=short
+
+      - name: Make a throwaway API key
+        run: |
+          KEY="$(openssl rand -hex 32)"
+          echo "::add-mask::$KEY"
+          echo "GATEWAY_API_KEY=$KEY" >> "$GITHUB_ENV"
+
+      - name: Start the gateway
+        env:
+          GATEWAY_QUEUE_DIR: ${{ runner.temp }}/gateway-queue
+          JOB_STORE: file
+          # empty unless asked for on a manual run; without a key the worker
+          # classifies every job as unknown_product -> needs_review
+          ANTHROPIC_API_KEY: ${{ inputs.use_llm && secrets.ANTHROPIC_API_KEY || '' }}
+        run: |
+          mkdir -p "$GATEWAY_QUEUE_DIR"
+          nohup python -m uvicorn gateway.api:app --host 127.0.0.1 --port 8080 \
+            > "$RUNNER_TEMP/gateway.log" 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1 && exit 0
+            sleep 1
+          done
+          echo "::error::Gateway not up after 30s"
+          cat "$RUNNER_TEMP/gateway.log"
+          exit 1
+
+      - name: Send the simulated request
+        id: smoke
+        run: |
+          args=(--url http://127.0.0.1:8080 --wait 60)
+          if [ -n "$SMOKE_TEXT" ]; then args+=(--text "$SMOKE_TEXT"); fi
+          python scripts/gateway_smoke.py "${args[@]}"
+
+      - name: Install pipeline dependencies
+        if: inputs.run_pipeline
+        run: |
+          pip install -r gateway/requirements.worker.txt
+          pytest tests/test_gateway_deliver.py -v --tb=short
+
+      - name: Approve the job and run the pipeline
+        if: inputs.run_pipeline
+        env:
+          GATEWAY_QUEUE_DIR: ${{ runner.temp }}/gateway-queue
+          JOB_STORE: file
+          PIPELINE_PROVIDER: ${{ inputs.pipeline_provider }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JOB_ID: ${{ steps.smoke.outputs.job_id }}
+        run: |
+          python -m scripts.gateway_deliver --job-id "$JOB_ID" --price 0 \
+            --out-dir "$RUNNER_TEMP/deliverable"
+
+      - name: Upload the deliverable
+        if: always() && inputs.run_pipeline
+        uses: actions/upload-artifact@v4
+        with:
+          name: deliverable
+          path: ${{ runner.temp }}/deliverable/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Gateway log
+        if: always()
+        run: cat "$RUNNER_TEMP/gateway.log" || true
+
+  deployed:
+    name: Gateway su Cloud Run (health, submit, status)
+    if: github.event_name == 'workflow_dispatch' && inputs.target != 'local'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Send the simulated request
+        env:
+          GATEWAY_URL: ${{ vars.GATEWAY_URL || 'https://gateway-947977086404.europe-west8.run.app' }}
+          GATEWAY_API_KEY: ${{ secrets.GATEWAY_API_KEY }}
+        run: |
+          if [ -z "$GATEWAY_API_KEY" ]; then
+            echo "::error::Repository secret GATEWAY_API_KEY missing: copy it from Secret Manager (gcloud secrets versions access latest --secret=GATEWAY_API_KEY)"
+            exit 1
+          fi
+          # no --wait: with GATEWAY_SYNC_REPLY=1 nothing classifies jobs sent to /submit
+          args=(--url "$GATEWAY_URL")
+          if [ -n "$SMOKE_TEXT" ]; then args+=(--text "$SMOKE_TEXT"); fi
+          python scripts/gateway_smoke.py "${args[@]}"

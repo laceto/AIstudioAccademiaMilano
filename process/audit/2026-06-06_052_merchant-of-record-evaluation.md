@@ -1,5 +1,5 @@
 ```yaml
-request_id: "030"
+request_id: "052"
 date: "2026-06-06"
 intent: merchant_of_record_evaluation
 product_type: strategic_report

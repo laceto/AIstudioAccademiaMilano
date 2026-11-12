@@ -6,11 +6,14 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 
 COPY requirements-rag.txt .
+# kitai has a stale langchain<1.0 constraint — install it without deps first
+RUN pip install --no-cache-dir --no-deps git+https://github.com/laceto/kitai.git
 RUN pip install --no-cache-dir -r requirements-rag.txt
 
 COPY scripts/ ./scripts/
 COPY config/ ./config/
 COPY data/vectorstore/ ./data/vectorstore/
+COPY data/rag_registry.tsv ./data/rag_registry.tsv
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1

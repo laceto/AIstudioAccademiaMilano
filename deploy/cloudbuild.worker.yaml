@@ -1,0 +1,18 @@
+# Build the pipeline worker image (gateway/Dockerfile.worker) from the repo root.
+#
+# The repo holds several Dockerfiles and a default source build picks the wrong one, so the
+# Dockerfile is named explicitly.
+#
+#   gcloud builds submit --config deploy/cloudbuild.worker.yaml \
+#     --substitutions _IMAGE=europe-west8-docker.pkg.dev/$PROJECT/aistudio/pipeline-worker
+#
+# _CHIARA_CLAUDE_CODE=1 adds the Claude Code CLI for Chiara's engine (050); 0, the default, leaves it out.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "gateway/Dockerfile.worker", "--build-arg", "CHIARA_CLAUDE_CODE=${_CHIARA_CLAUDE_CODE}",
+           "-t", "${_IMAGE}", "."]
+images: ["${_IMAGE}"]
+substitutions:
+  _CHIARA_CLAUDE_CODE: "0"
+options:
+  logging: CLOUD_LOGGING_ONLY

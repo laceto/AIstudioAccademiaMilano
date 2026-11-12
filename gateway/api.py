@@ -4,10 +4,11 @@ gateway/api.py — Pablo (Platform Engineer)
 FastAPI application exposing the Input Gateway to the public internet.
 
 Endpoints:
-  POST /submit              Accept a pipeline request (JSON)
-  GET  /status/{id}         Poll job status
+  POST /submit              Accept a pipeline request (JSON) — needs X-API-Key (gateway/auth.py)
+  GET  /status/{id}         Poll job status — needs X-API-Key
   POST /webhook/whatsapp    Twilio WhatsApp webhook (Carlos, HMAC-validated)
   POST /webhook/telegram    Telegram webhook (registered after Cloud Run deploy)
+  POST /webhook/telegram-admin  Luigi's admin bot (approvals, commands); only when TELEGRAM_ADMIN_BOT_TOKEN is set
   GET  /health              Liveness probe
 
 Run locally:
@@ -17,12 +18,18 @@ Environment variables:
   GATEWAY_QUEUE_DIR     Queue directory path (default: gateway/queue)
   ANTHROPIC_API_KEY     Claude API key for the queue worker
   OPENAI_API_KEY        OpenAI API key (fallback for queue worker)
-  TELEGRAM_BOT_TOKEN    Required for Telegram webhook mode
+  TELEGRAM_BOT_TOKEN    Required for Telegram webhook mode (the customer bot)
+  TELEGRAM_ADMIN_BOT_TOKEN  Optional second bot only for Luigi; when set, the customer bot has no admin powers
+  GATEWAY_API_KEY       Key for /submit and /status (>= 32 chars); unset = both answer 503
+  GATEWAY_ALLOW_OPEN_SUBMIT  Local development only: 1 = no key needed while GATEWAY_API_KEY is unset
+  TELEGRAM_BOT_USERNAME Customer bot username: the showcase's "Order" buttons link to it
 """
 
 import asyncio
+import hmac
 import logging
 import os
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -39,12 +46,15 @@ if _env_file.exists():
             _k, _, _v = _line.partition("=")
             os.environ.setdefault(_k.strip(), _v.strip())
 
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, field_validator
 
 from config.brand import b
+from gateway.auth import require_api_key
 from gateway.bot_whatsapp import router as whatsapp_router
+from gateway.admin_telegram import AdminBot, handle_admin_message, handle_callback, refuse_admin_command
+from gateway.convlog import log_message, silence_http_loggers
 from gateway.middleware import check_rate_limit
 from gateway.pipeline_adapter import PipelineAdapter
 from gateway.showcase import ShowcaseCard, load_cards
@@ -52,9 +62,27 @@ from gateway.showcase import ShowcaseCard, load_cards
 _queue_dir = os.environ.get("GATEWAY_QUEUE_DIR", "gateway/queue")
 _adapter = PipelineAdapter(queue_dir=_queue_dir)
 
+# httpx logs request URLs at INFO, and Telegram's URLs carry the bot token.
+silence_http_loggers()
+
+
+def _sync_reply_enabled() -> bool:
+    """True when jobs must be classified inside the request.
+
+    Set GATEWAY_SYNC_REPLY=1 on scale-to-zero hosts (Cloud Run, Lambda-style):
+    they freeze the container after the response, so a background polling loop
+    never advances and the user only ever sees the acknowledgement.
+    """
+    return os.environ.get("GATEWAY_SYNC_REPLY", "").strip().lower() in {"1", "true", "yes"}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if _sync_reply_enabled():
+        logger.info("GATEWAY_SYNC_REPLY set — classifying inline, background worker disabled")
+        yield
+        return
+
     from gateway.worker import QueueWorker
     worker = QueueWorker(queue_dir=_queue_dir)
     task = asyncio.create_task(worker.run())
@@ -64,7 +92,6 @@ async def lifespan(app: FastAPI):
         await task
     except asyncio.CancelledError:
         pass
-    pass
 
 
 app = FastAPI(title=b("studio.name") + " Input Gateway", version="1.0.0", lifespan=lifespan)
@@ -99,6 +126,15 @@ class SubmitRequest(BaseModel):
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
+_BOT_USERNAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]{3,31}$")
+
+
+def _telegram_bot_username() -> str | None:
+    """TELEGRAM_BOT_USERNAME without the '@', or None when unset or not a valid username."""
+    name = os.environ.get("TELEGRAM_BOT_USERNAME", "").strip().lstrip("@")
+    return name if _BOT_USERNAME_RE.match(name) else None
+
+
 def _render_showcase(cards: list[ShowcaseCard]) -> str:
     """Inline HTML gallery — no Jinja2 dependency for a single-page render."""
     studio_name = b("studio.name")
@@ -122,6 +158,13 @@ def _render_showcase(cards: list[ShowcaseCard]) -> str:
 {items}
     </div>"""
 
+    bot = _telegram_bot_username()
+    order_btn = (
+        f'<a class="btn-order" href="https://t.me/{bot}" target="_blank" rel="noopener">Order on Telegram ↗</a>'
+        if bot
+        else ""
+    )
+
     def _card(c: ShowcaseCard) -> str:
         open_btn = (
             f'<a class="btn-open" href="{c.live_url}" target="_blank" rel="noopener">Open app ↗</a>'
@@ -136,15 +179,7 @@ def _render_showcase(cards: list[ShowcaseCard]) -> str:
   <p class="meta">#{c.request_id} · delivered {c.date}</p>
   <div class="card-actions">
     {open_btn}
-    <form onsubmit="return submitIntent(event)">
-      <button type="submit">Order this</button>
-    </form>
-  </div>
-  <div class="status" hidden>
-    <p class="state"></p>
-    <p class="job-id"></p>
-    <p class="details"></p>
-    <button type="button" class="close">Dismiss</button>
+    {order_btn}
   </div>
 </article>"""
 
@@ -172,10 +207,8 @@ def _render_showcase(cards: list[ShowcaseCard]) -> str:
     .price {{ color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }}
     .meta {{ color: var(--muted); font-size: 0.85rem; margin: 0; }}
     .card-actions {{ display: flex; gap: 0.5rem; margin-top: auto; flex-wrap: wrap; }}
-    .card-actions form {{ flex: 1; min-width: 0; }}
-    .card button {{ width: 100%; background: var(--fg); color: var(--bg); border: 0; border-radius: 8px; padding: 0.6rem 1rem; font-weight: 600; cursor: pointer; font: inherit; }}
-    .card button:hover {{ background: var(--accent); color: #fff; }}
-    .card button:disabled {{ opacity: 0.6; cursor: wait; }}
+    .btn-order {{ flex: 1; display: flex; align-items: center; justify-content: center; background: var(--fg); color: var(--bg); border-radius: 8px; padding: 0.6rem 1rem; font-weight: 600; text-decoration: none; white-space: nowrap; }}
+    .btn-order:hover {{ background: var(--accent); color: #fff; }}
     .btn-open {{ display: flex; align-items: center; justify-content: center; gap: 0.25rem; background: transparent; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 8px; padding: 0.6rem 1rem; font-weight: 600; font-size: 0.9rem; text-decoration: none; white-space: nowrap; }}
     .btn-open:hover {{ background: var(--accent); color: #fff; }}
     .tools-row {{ display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.5rem; }}
@@ -185,13 +218,6 @@ def _render_showcase(cards: list[ShowcaseCard]) -> str:
     .tool-price {{ font-size: 0.8rem; color: var(--accent); font-variant-numeric: tabular-nums; }}
     .tool-chip:hover .tool-price {{ color: rgba(255,255,255,0.8); }}
     .tool-arrow {{ font-size: 1rem; }}
-    .status {{ display: flex; flex-direction: column; gap: 0.4rem; margin-top: auto; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: rgba(127,127,127,0.06); }}
-    .status p {{ margin: 0; font-size: 0.85rem; }}
-    .status .state {{ font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }}
-    .status .job-id {{ color: var(--muted); font-family: ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; }}
-    .status .details {{ color: var(--fg); }}
-    .status button.close {{ align-self: flex-end; background: transparent; color: var(--muted); padding: 0.25rem 0.5rem; font-size: 0.8rem; font-weight: 500; }}
-    .status button.close:hover {{ background: transparent; color: var(--accent); }}
     footer {{ max-width: 1100px; margin: 0 auto; padding: 2rem; color: var(--muted); font-size: 0.85rem; }}
   </style>
 </head>
@@ -208,83 +234,6 @@ def _render_showcase(cards: list[ShowcaseCard]) -> str:
     </div>
   </main>
   <footer>Every card is a real delivery — the catalogue is built from <code>process/audit/</code> at request time. · <a href="/trading" style="color:inherit">Trading Dashboard</a></footer>
-  <script>
-    const POLL_MS = 2000;
-    const MAX_POLLS = 30; // ~60s ceiling
-
-    function showStatus(card, parts) {{
-      const form = card.querySelector("form");
-      const status = card.querySelector(".status");
-      form.hidden = true;
-      status.hidden = false;
-      if (parts.state !== undefined) status.querySelector(".state").textContent = parts.state;
-      if (parts.jobId !== undefined) status.querySelector(".job-id").textContent = parts.jobId ? "Job ID: " + parts.jobId : "";
-      if (parts.details !== undefined) status.querySelector(".details").textContent = parts.details;
-    }}
-
-    function resetCard(card) {{
-      const form = card.querySelector("form");
-      const status = card.querySelector(".status");
-      const btn = form.querySelector("button");
-      status.hidden = true; form.hidden = false;
-      btn.disabled = false; btn.textContent = "Order this";
-    }}
-
-    async function pollUntilSettled(card, jobId) {{
-      for (let i = 0; i < MAX_POLLS; i++) {{
-        await new Promise(r => setTimeout(r, POLL_MS));
-        let res;
-        try {{ res = await fetch("/status/" + encodeURIComponent(jobId)); }}
-        catch (e) {{ continue; }}
-        if (!res.ok) continue;
-        const job = await res.json();
-        const s = job.status || "pending";
-        if (s === "pending" || s === "processing") {{
-          showStatus(card, {{ state: s, details: "Stacy is reading your request…" }});
-          continue;
-        }}
-        const cls = job.classification || {{}};
-        const intent = cls.intent || "—";
-        const conf = cls.confidence !== undefined ? Math.round(cls.confidence * 100) + "%" : "—";
-        let details = job.result || "";
-        if (cls.summary) details = "Intent: " + intent + " · confidence " + conf + (cls.summary ? ". " + cls.summary : "");
-        showStatus(card, {{ state: s, details: details }});
-        return;
-      }}
-      showStatus(card, {{ state: "timeout", details: "Still working — save the Job ID and check back later." }});
-    }}
-
-    async function submitIntent(event) {{
-      event.preventDefault();
-      const card = event.target.closest(".card");
-      const productType = card.dataset.product;
-      const btn = event.target.querySelector("button");
-      btn.disabled = true; btn.textContent = "Sending…";
-      let data;
-      try {{
-        const res = await fetch("/submit", {{
-          method: "POST", headers: {{ "Content-Type": "application/json" }},
-          body: JSON.stringify({{ text: "I would like to order: " + productType, channel: "api", metadata: {{ source: "showcase", product_type: productType }} }})
-        }});
-        data = await res.json();
-        if (!res.ok) {{
-          showStatus(card, {{ state: "error", jobId: "", details: data.detail || "Submit failed" }});
-          return false;
-        }}
-      }} catch (e) {{
-        showStatus(card, {{ state: "error", jobId: "", details: "Network error — please retry." }});
-        return false;
-      }}
-      const jobId = data.job_id || "";
-      showStatus(card, {{ state: "queued", jobId: jobId, details: "Waiting for Stacy to classify your request…" }});
-      pollUntilSettled(card, jobId);
-      return false;
-    }}
-
-    document.addEventListener("click", (e) => {{
-      if (e.target.matches(".status button.close")) resetCard(e.target.closest(".card"));
-    }});
-  </script>
 </body>
 </html>"""
 
@@ -421,12 +370,20 @@ async def health():
     return {"status": "ok"}
 
 
-@app.post("/submit", status_code=status.HTTP_202_ACCEPTED)
-async def submit(request: Request, body: SubmitRequest):
+def _rate_limited(request: Request) -> None:
+    """Dependency: runs before the key check, so guessing keys is rate limited too."""
     ip = request.client.host if request.client else "unknown"
-
     if not check_rate_limit(ip):
         raise HTTPException(status_code=429, detail="Rate limit exceeded — try again in 60 seconds")
+
+
+@app.post(
+    "/submit",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(_rate_limited), Depends(require_api_key)],
+)
+async def submit(request: Request, body: SubmitRequest):
+    ip = request.client.host if request.client else "unknown"
 
     result = _adapter.submit(
         text=body.text,
@@ -440,12 +397,58 @@ async def submit(request: Request, body: SubmitRequest):
     return result
 
 
-@app.get("/status/{job_id}")
+@app.get("/status/{job_id}", dependencies=[Depends(_rate_limited), Depends(require_api_key)])
 async def get_status(job_id: str):
     job = _adapter.get_status(job_id)
     if job["status"] == "not_found":
         raise HTTPException(status_code=404, detail=f"Job {job_id!r} not found")
     return job
+
+
+async def _reply(bot, chat_id, text: str, **kwargs) -> None:
+    """Log the outgoing message, then send it. Logged first so a failed send is still on record."""
+    log_message("out", chat_id, text)
+    await bot.send_message(chat_id=chat_id, text=text, **kwargs)
+
+
+def _admin_bot_token() -> str:
+    """Token of Luigi's own bot; empty means the customer bot still carries the admin side."""
+    return os.environ.get("TELEGRAM_ADMIN_BOT_TOKEN", "").strip()
+
+
+@app.post("/webhook/telegram-admin")
+async def telegram_admin_webhook(request: Request):
+    """Updates for Luigi's admin bot: button presses, commands and price answers. Never creates a job."""
+    from telegram import Bot
+
+    admin_token = _admin_bot_token()
+    customer_token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    secret = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
+    if not (admin_token and customer_token and secret):  # fail closed: no secret, no admin actions
+        raise HTTPException(status_code=503, detail="admin bot not configured")
+    supplied = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+    if not hmac.compare_digest(supplied.encode(), secret.encode()):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": True}
+
+    # Luigi's cards and answers go out on the admin bot; anything for a customer, on the customer bot.
+    bot = AdminBot(Bot(token=admin_token), Bot(token=customer_token))
+    try:
+        callback = data.get("callback_query")
+        if callback:
+            await handle_callback(bot, _adapter.store, callback)
+        else:
+            message = data.get("message") or data.get("edited_message")
+            if message:
+                log_message("in", (message.get("chat") or {}).get("id"), message.get("text", ""))
+                await handle_admin_message(bot, _adapter.store, message)  # a stranger or plain text: ignored
+    except Exception as exc:  # always 200: Telegram retries anything else
+        logger.error("admin webhook failed: %s", type(exc).__name__)
+    return {"ok": True}
 
 
 @app.post("/webhook/telegram")
@@ -458,9 +461,34 @@ async def telegram_webhook(request: Request):
     if not token:
         raise HTTPException(status_code=503, detail="TELEGRAM_BOT_TOKEN not configured")
 
+    # Luigi is recognised by the numeric id inside the payload, which anyone could forge. Telegram
+    # echoes the secret_token given to setWebhook in this header, so it proves the sender.
+    # Without TELEGRAM_WEBHOOK_SECRET the webhook still serves ordinary users but every admin
+    # action stays off (fail closed). With it, requests that do not carry it are refused.
+    secret = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
+    supplied = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+    authentic = bool(secret) and hmac.compare_digest(supplied.encode(), secret.encode())
+    if secret and not authentic:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    # With a separate admin bot this one only talks to customers: Luigi's test requests are ordinary
+    # requests and his decisions come in on /webhook/telegram-admin.
+    admin_here = authentic and not _admin_bot_token()
+
     try:
         data = await request.json()
     except Exception:
+        return {"ok": True}
+
+    callback = data.get("callback_query")
+    if callback:
+        if not admin_here:
+            logger.warning("callback_query ignored: TELEGRAM_WEBHOOK_SECRET is not configured or the admin bot is in use")
+            return {"ok": True}
+        # Luigi pressed a button on a review card. Always answer 200: Telegram retries anything else.
+        try:
+            await handle_callback(Bot(token=token), _adapter.store, callback)
+        except Exception as exc:
+            logger.error("callback_query failed: %s", type(exc).__name__)
         return {"ok": True}
 
     message = data.get("message") or data.get("edited_message")
@@ -475,21 +503,39 @@ async def telegram_webhook(request: Request):
         return {"ok": True}
 
     bot = Bot(token=token)
+    log_message("in", chat_id, text)
+
+    # Luigi's commands and price answers; a stranger's /approve is swallowed, never queued as a job.
+    try:
+        if admin_here:
+            handled = await handle_admin_message(bot, _adapter.store, message)
+        else:
+            handled = await refuse_admin_command(bot, message)
+        if handled:
+            return {"ok": True}
+    except Exception as exc:
+        logger.error("admin message failed: %s", type(exc).__name__)
+        return {"ok": True}
 
     if text.startswith("/start"):
-        await bot.send_message(
-            chat_id=chat_id,
-            text=(
-                "Benvenuto in " + b("studio.name") + "!\n\n"
-                "Dimmi cosa ti serve e lo costruiamo per te.\n\n"
-                "Esempi:\n"
-                "• Ho bisogno di un sito per il mio ristorante\n"
-                "• Crea una fattura PDF da 500€\n"
-                "• Voglio un chatbot per il mio sito\n\n"
-                "Per domande sulla knowledge base: /ask <domanda>\n"
-                "Scrivi la tua richiesta e penso io al resto."
-            ),
-        )
+        from gateway.privacy import start_message
+
+        await _reply(bot, chat_id, start_message())
+        return {"ok": True}
+
+    # Privacy notice: information only, never a job. "/privacy@BotName" is how groups address it.
+    if text.split()[0].split("@")[0].lower() == "/privacy":
+        from gateway.privacy import privacy_messages
+
+        for part in privacy_messages():  # more than one message once the notice outgrows Telegram's limit
+            await _reply(bot, chat_id, part)
+        return {"ok": True}
+
+    # RIESAMINA: the customer asks a human to review a refusal. Never a job.
+    from gateway.review_request import handle_review_request, is_review_request
+
+    if is_review_request(text):
+        await _reply(bot, chat_id, await handle_review_request(_adapter.store, chat_id))
         return {"ok": True}
 
     # /ask <question> or ?<question> → RAG knowledge-base query
@@ -511,14 +557,14 @@ async def telegram_webhook(request: Request):
         else:
             answer = "RAG_API_URL not configured — knowledge base unavailable."
         try:
-            await bot.send_message(chat_id=chat_id, text=answer)
+            await _reply(bot, chat_id, answer)
         except Exception as exc:
             logger.warning("Telegram send failed (chat_id=%s): %s", chat_id, exc)
         return {"ok": True}
 
     normalized = _normalize(text)
     if not normalized:
-        await bot.send_message(chat_id=chat_id, text="Invia un messaggio di testo con la tua richiesta.")
+        await _reply(bot, chat_id, "Invia un messaggio di testo con la tua richiesta.")
         return {"ok": True}
 
     result = _adapter.submit(
@@ -529,14 +575,25 @@ async def telegram_webhook(request: Request):
 
     try:
         if result["status"] == "error":
-            await bot.send_message(
-                chat_id=chat_id,
-                text="Non riesco a elaborare questa richiesta. Prova con una diversa.",
+            await _reply(
+                bot,
+                chat_id,
+                "Non riesco a elaborare questa richiesta. Prova con una diversa.",
             )
+        elif _sync_reply_enabled():
+            # Scale-to-zero host: the container is frozen once we return, so the
+            # background worker would never run. Classify inline and send the real
+            # answer now, instead of a Job ID the user never hears back about.
+            from gateway.worker import QueueWorker
+
+            job = _adapter.get_status(result["job_id"])
+            _, reply = await QueueWorker(queue_dir=_queue_dir).process_job(job)
+            await _reply(bot, chat_id, reply, parse_mode="Markdown")
         else:
-            await bot.send_message(
-                chat_id=chat_id,
-                text=f"Ricevuto! La tua richiesta è in elaborazione.\n\nJob ID: `{result['job_id']}`",
+            await _reply(
+                bot,
+                chat_id,
+                f"Ricevuto! La tua richiesta è in elaborazione.\n\nJob ID: `{result['job_id']}`",
                 parse_mode="Markdown",
             )
     except Exception as exc:

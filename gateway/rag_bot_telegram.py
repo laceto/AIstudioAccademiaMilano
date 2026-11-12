@@ -5,7 +5,7 @@ Dedicated bot for querying the AI Studio repo knowledge base.
 Every message is answered by the RAG pipeline — no production pipeline.
 
 Setup:
-  export RAG_BOT_TOKEN=...      # from @BotFather (/newbot)
+  export TELEGRAM_RAG_BOT_TOKEN=...   # from @BotFather (/newbot)
   export RAG_API_URL=http://localhost:8000   # or deployed RAG service
   python -m gateway.rag_bot_telegram
 
@@ -40,6 +40,11 @@ logging.basicConfig(
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
+
+# httpx logs request URLs at INFO and Telegram's carry the bot token (see gateway/convlog.py).
+from gateway.convlog import silence_http_loggers  # noqa: E402
+
+silence_http_loggers()
 
 
 async def _rag_answer(query: str) -> str:

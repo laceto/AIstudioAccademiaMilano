@@ -6,7 +6,7 @@ A four-agent team that continuously scans GitHub for emerging AI tools, ranks th
 
 ```
 Scout
-  Searches GitHub for trending AI repos by topic
+  Searches GitHub for AI repos by topic + github.com/trending
     |
     v
 Analyst
@@ -50,6 +50,6 @@ streamlit run deliverables/github-research/streamlit_research_app.py
 
 | Run | Trigger | Output |
 |-----|---------|--------|
-| Daily | Cron 07:00 UTC | Top-10 alert if any Tier-S repo is new |
-| Weekly | Monday 08:00 UTC | Full digest markdown committed to `process/research/` |
+| Daily | By hand only (Run workflow, mode `daily`) | Top-10 alert if any Tier-S repo is new |
+| Weekly | Wednesday 19:17 UTC (20:17 Italy, 21:17 summer time) | Full digest markdown committed to `process/research/` |
 | On-demand | `python main.py` | Immediate report in working dir |

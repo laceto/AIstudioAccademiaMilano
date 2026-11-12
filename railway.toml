@@ -1,5 +1,5 @@
 [build]
-dockerfilePath = "gateway/Dockerfile"
+dockerfilePath = "scripts/rag/Dockerfile"
 
 [deploy]
 restartPolicyType = "ON_FAILURE"

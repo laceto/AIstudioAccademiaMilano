@@ -1,0 +1,180 @@
+import os
+import pytest
+import requests
+from unittest.mock import patch
+from templates.finance.real_estate import (
+    compute_mortgage_payment,
+    compute_roi_metrics,
+    project_10yr,
+    sensitivity_grid,
+)
+from scripts.market_data import get_omi_benchmark, summarise_listings, geocode_city
+
+
+def _base_metrics(**overrides):
+    kwargs = dict(
+        purchase_price=300_000,
+        notary_pct=3.0,
+        down_payment_pct=20,
+        mortgage_rate_pct=3.5,
+        loan_term_years=25,
+        monthly_rent=1_200,
+        vacancy_pct=5,
+        annual_property_tax=800,
+        annual_maintenance=1_200,
+        annual_insurance=400,
+        mgmt_fee_pct=0,
+        rental_tax_rate_pct=21,
+        agent_commission_pct=3.0,
+        renovation=0,
+    )
+    kwargs.update(overrides)
+    return compute_roi_metrics(**kwargs)
+
+
+# 1. Zero down payment + zero notary → total_upfront=0 → cash_on_cash=0, no ZeroDivisionError
+def test_zero_total_upfront_no_zero_division():
+    m = _base_metrics(down_payment_pct=0, notary_pct=0.0, agent_commission_pct=0.0)
+    assert m.total_upfront == 0.0
+    assert m.cash_on_cash == 0.0
+
+
+# 2. Mortgage rate = 0 → monthly payment * n == loan exactly (no floating-point drift beyond 1 cent)
+def test_zero_rate_exact_repayment():
+    loan = 100_000
+    term = 10
+    payment = compute_mortgage_payment(loan, 0.0, term)
+    assert abs(payment * term * 12 - loan) < 0.01
+
+
+# 3. Short term + high rate → loan balance never goes negative inside the projection
+def test_loan_balance_never_negative():
+    loan = 100_000
+    rate = 9.0
+    term = 10
+    monthly_mortgage = compute_mortgage_payment(loan, rate, term)
+    df = project_10yr(
+        purchase_price=150_000,
+        loan_amount=loan,
+        mortgage_rate_pct=rate,
+        monthly_mortgage=monthly_mortgage,
+        annual_opex=0,
+        monthly_rent=0,
+        vacancy_pct=0,
+        appreciation_pct=0.0,
+        rent_growth_pct=0.0,
+        opex_inflation_pct=0.0,
+        rental_tax_rate_pct=0.0,
+    )
+    assert (df["Loan Balance (€)"] >= 0).all()
+
+
+# 4. Sensitivity grid with sub-zero rate column → cell shows "N/A", no crash
+def test_sensitivity_negative_rate_shows_na():
+    grid = sensitivity_grid(
+        purchase_price=200_000,
+        loan_amount=160_000,
+        loan_term_years=25,
+        total_upfront=40_000,
+        monthly_rent=1_000,
+        vacancy_pct=5,
+        annual_opex=2_400,
+        base_mortgage_rate=0.5,
+        rate_deltas=[-1.0, 0.0],
+    )
+    assert grid["-0.5%"].iloc[0] == "N/A"
+
+
+# 5. Equity off-by-one fix: year-1 equity must reflect year-1 (post-amortisation) balance
+def test_equity_uses_post_amortisation_balance():
+    loan = 120_000
+    rate = 0.0
+    term = 10
+    monthly_payment = compute_mortgage_payment(loan, rate, term)
+    df = project_10yr(
+        purchase_price=200_000,
+        loan_amount=loan,
+        mortgage_rate_pct=rate,
+        monthly_mortgage=monthly_payment,
+        annual_opex=0,
+        monthly_rent=0,
+        vacancy_pct=0,
+        appreciation_pct=0.0,
+        rent_growth_pct=0.0,
+        opex_inflation_pct=0.0,
+        rental_tax_rate_pct=0.0,
+    )
+    expected_balance_yr1 = loan - monthly_payment * 12
+    assert df.loc[df["Year"] == 1, "Loan Balance (€)"].iloc[0] == pytest.approx(expected_balance_yr1, abs=0.50)
+    expected_equity_yr1 = 200_000 - expected_balance_yr1
+    assert df.loc[df["Year"] == 1, "Equity (€)"].iloc[0] == pytest.approx(expected_equity_yr1, abs=0.50)
+
+
+# ── market_data.py tests ──────────────────────────────────────────────────────
+
+# TC-1: unknown city or invalid fascia → None, no KeyError
+def test_omi_benchmark_unknown_inputs():
+    assert get_omi_benchmark("Atlantis", "C") is None
+    assert get_omi_benchmark("Milano", "X") is None
+
+
+# TC-2: sale_mid and rent_mid are always between min and max for all cities/zones
+def test_omi_benchmark_mid_values_in_range():
+    b = get_omi_benchmark("Milano", "C")
+    assert b is not None
+    assert b["sale_min"] <= b["sale_mid"] <= b["sale_max"]
+    assert b["rent_min"] <= b["rent_mid"] <= b["rent_max"]
+
+
+# TC-3: true median for both odd and even-length listing lists
+def test_summarise_listings_true_median():
+    odd = [{"price": p, "size": 100} for p in [100, 200, 300]]    # true median = 2.0 €/sqm
+    even = [{"price": p, "size": 100} for p in [100, 200, 300, 400]]  # true median = 2.5 €/sqm
+    r_odd = summarise_listings(odd)
+    r_even = summarise_listings(even)
+    assert r_odd["price_per_sqm_median"] == pytest.approx(2.0)
+    assert r_even["price_per_sqm_median"] == pytest.approx(2.5)
+
+
+# TC-4: geocode network timeout → returns (None, "timeout"), no exception raised
+def test_geocode_city_timeout_returns_none():
+    with patch("scripts.market_data.requests.get", side_effect=requests.exceptions.Timeout):
+        result = geocode_city("Milano")
+    assert result[0] is None
+    assert result[1] == "timeout"
+
+
+# TC-5: search_idealista tuple contract — all error branches return (list, str)
+def test_search_idealista_tuple_contract():
+    from scripts.market_data import search_idealista, _token_cache
+    import scripts.market_data as md
+
+    # No-credentials path (env vars absent)
+    with patch.dict(os.environ, {}, clear=True):
+        # Ensure env vars are absent
+        os.environ.pop("IDEALISTA_API_KEY", None)
+        os.environ.pop("IDEALISTA_SECRET", None)
+        _token_cache.clear()
+        result = search_idealista(45.46, 9.19)
+    assert isinstance(result, tuple) and len(result) == 2
+    assert result[0] == []
+    assert result[1] == "no_credentials"
+
+    # 429 rate-limited path
+    with patch("scripts.market_data._get_idealista_token", return_value="fake_token"), \
+         patch("scripts.market_data.requests.post") as mock_post:
+        mock_post.return_value.status_code = 429
+        result = search_idealista(45.46, 9.19)
+    assert result == ([], "rate_limited")
+
+    # Timeout path
+    with patch("scripts.market_data._get_idealista_token", return_value="fake_token"), \
+         patch("scripts.market_data.requests.post", side_effect=requests.exceptions.Timeout):
+        result = search_idealista(45.46, 9.19)
+    assert result == ([], "timeout")
+
+
+# TC-6: summarise_listings([]) → None, not an exception
+def test_summarise_listings_empty():
+    assert summarise_listings([]) is None
+    assert summarise_listings([{"no_price": 1}]) is None

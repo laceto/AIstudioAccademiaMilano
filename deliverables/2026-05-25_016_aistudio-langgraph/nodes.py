@@ -18,6 +18,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 
+from . import chiara_claude_code as _cc
 from .llm_factory import get_llm
 from .state import PRICING_TABLE, StudioState
 
@@ -125,8 +126,8 @@ def _chiara_invoice(state: StudioState, config: RunnableConfig, provider: str):
     llm = get_llm(provider, "fast", max_tokens=512, temperature=0)
     prompt = ChatPromptTemplate.from_messages([
         ("system", 'Extract invoice fields. Return ONLY JSON with these exact keys: '
-                   '{"invoice_number":"INV-001","client_name":"...","amount":99.90,'
-                   '"service":"...","date":"YYYY-MM-DD"}'),
+                   '{{"invoice_number":"INV-001","client_name":"...","amount":99.90,'
+                   '"service":"...","date":"YYYY-MM-DD"}}'),
         ("human", "{request}"),
     ])
     p = (prompt | llm | JsonOutputParser()).invoke({"request": state["request"]})
@@ -171,9 +172,9 @@ def _chiara_landing(state: StudioState, config: RunnableConfig, provider: str):
     llm = get_llm(provider, "fast", max_tokens=1024, temperature=0.3)
     prompt = ChatPromptTemplate.from_messages([
         ("system", 'Extract page metadata. Return ONLY JSON with these exact keys: '
-                   '{"TITLE":"...","DESCRIPTION":"...","SITE_NAME":"...","LANG":"it",'
+                   '{{"TITLE":"...","DESCRIPTION":"...","SITE_NAME":"...","LANG":"it",'
                    '"CANONICAL_URL":"https://example.com","OG_IMAGE_URL":"https://example.com/og.jpg",'
-                   '"OG_LOCALE":"it_IT"}'),
+                   '"OG_LOCALE":"it_IT"}}'),
         ("human", "{request}"),
     ])
     tokens: dict = (prompt | llm | JsonOutputParser()).invoke({"request": state["request"]})
@@ -234,7 +235,17 @@ def chiara_implement(state: StudioState, config: RunnableConfig) -> dict:
         strategy     = _CHIARA_STRATEGIES.get(product_type, _chiara_llm_codegen)
         via          = "template" if product_type in _CHIARA_STRATEGIES else "llm-codegen"
 
-        content, filename, skills = strategy(state, config, provider)
+        built = None
+        if _cc.enabled_for(product_type):  # CHIARA_ENGINE=claude_code, code products only (050)
+            try:
+                built = _cc.build(state)
+            except _cc.EngineUnavailable as exc:
+                via = f"{via} (claude-code fallback: {exc})"
+        if built is not None:
+            content, filename, skills = built.content, built.filename, built.skills
+            via = f"claude-code ({built.summary})"
+        else:
+            content, filename, skills = strategy(state, config, provider)
         iteration = state.get("qa_iteration", 0)
 
         return {
@@ -421,7 +432,9 @@ Return ONLY valid JSON:
 # ── Marco: Finance ─────────────────────────────────────────────────────────────
 def marco_invoice(state: StudioState) -> dict:
     product_type = state.get("product_type", "unknown_product")
-    price        = PRICING_TABLE.get(product_type)
+    approved     = state.get("approved_price")
+    # A price a human approved beats the catalogue (and lets an unknown product through).
+    price        = f"{float(approved):.2f}" if approved is not None else PRICING_TABLE.get(product_type)
 
     if price is None:
         return {

@@ -2,8 +2,12 @@
 Learning Loop — AI Studio Accademia Milano
 
 Runs after every completed request. Reads the latest audit log,
-extract new skills / MCP / hook patterns, updates global_settings.json
-and .claude/settings.json, then commits if risk_score < 3.
+extract new skills / MCP / hook patterns, updates config/global_settings.json,
+then commits if the audit log's risk_score < 3 (that score belongs to the delivery,
+not to any hook).
+
+Hook records written to global_settings.json are NOT wired into .claude/settings.json:
+they are bookkeeping, and a skill is only promoted if its scripts/preload_<skill>.py exists.
 
 Auto-promotion: skills that reach the skill_preload threshold (default 3)
 are materialized as SKILL.md files in ~/.claude/skills/.
@@ -163,6 +167,15 @@ def update_mcp(settings: dict, audit: dict) -> int:
     return changes
 
 
+# What audit logs write for an agent that did its job. Counted across process/audit/: success 132,
+# ok 50, pass 19, completed 4. Anything else (pending, escalated, blocked, fail_then_fixed, ...) is not.
+_SUCCESS_STATUSES = frozenset({"success", "ok", "pass", "completed"})
+
+
+def is_success_status(status) -> bool:
+    return str(status or "").strip().lower() in _SUCCESS_STATUSES
+
+
 def update_agent_stats(settings: dict, audit: dict) -> int:
     changes = 0
     intent = audit.get("intent", "unknown")
@@ -180,39 +193,152 @@ def update_agent_stats(settings: dict, audit: dict) -> int:
             (s["avg_sec"] * n + agent_entry.get("duration_sec", 0)) / (n + 1), 1
         )
         s["count"] = n + 1
-        if agent_entry["status"] != "success":
-            s["success_rate"] = round((s["success_rate"] * n) / (n + 1), 3)
+        # A running mean over every entry. The old code only ever lowered the rate (on a failure) and
+        # never raised it, so one early failure kept it down for good.
+        outcome = 1.0 if is_success_status(agent_entry.get("status")) else 0.0
+        s["success_rate"] = round((s["success_rate"] * n + outcome) / (n + 1), 3)
     return changes
 
 
-def check_pattern_hooks(settings: dict, audit: dict) -> int:
-    """Promote recurring skill patterns to hooks using tiered thresholds."""
+# ── Lessons (044) ────────────────────────────────────────────────────────────
+# From Harness² (google-research/harness2): after a run, record what was learned as
+# cue / lesson / evidence / confidence and carry it forward, instead of counters only.
+
+_CONFIDENCE_RANK = {"low": 0, "medium": 1, "high": 2}
+LESSONS_MD = "process/lessons_learned.md"
+
+
+def _lesson_key(agent: str, cue: str, lesson: str) -> tuple:
+    def norm(s):
+        return " ".join(str(s).lower().split())
+    return norm(agent), norm(cue), norm(lesson)
+
+
+def update_lessons(settings: dict, audit: dict) -> int:
+    """Merge learning_flags.lessons into settings["lessons"]; returns the number of entries touched."""
+    changes = 0
+    request_id = str(audit.get("request_id", "unknown"))
+    intent = audit.get("intent", "unknown")
+    stored = settings.setdefault("lessons", [])
+    index = {_lesson_key(x["agent"], x["cue"], x["lesson"]): x for x in stored}
+    for raw in (audit.get("learning_flags") or {}).get("lessons") or []:
+        if not isinstance(raw, dict):
+            print(f"[learning_loop] Lesson skipped (not a mapping): {raw!r}")
+            continue
+        cue, lesson, evidence = (str(raw.get(k) or "").strip() for k in ("cue", "lesson", "evidence"))
+        if not (cue and lesson and evidence):
+            print(f"[learning_loop] Lesson skipped (cue, lesson and evidence are required): {raw!r}")
+            continue
+        agent = str(raw.get("agent") or "studio").strip()
+        confidence = str(raw.get("confidence") or "").strip().lower()
+        if confidence not in _CONFIDENCE_RANK:
+            confidence = "low"
+        key = _lesson_key(agent, cue, lesson)
+        entry = index.get(key)
+        if entry is None:
+            entry = {
+                "agent": agent, "cue": cue, "lesson": lesson, "confidence": confidence,
+                "evidence": [evidence], "requests": [request_id], "intents": [intent], "seen": 1,
+            }
+            stored.append(entry)
+            index[key] = entry
+            print(f"[learning_loop] New lesson ({agent}): {cue}")
+        elif request_id in entry["requests"]:
+            continue
+        else:
+            entry["seen"] += 1
+            entry["requests"].append(request_id)
+            if intent not in entry["intents"]:
+                entry["intents"].append(intent)
+            if evidence not in entry["evidence"]:
+                entry["evidence"].append(evidence)
+            if _CONFIDENCE_RANK[confidence] > _CONFIDENCE_RANK[entry["confidence"]]:
+                entry["confidence"] = confidence
+        changes += 1
+    return changes
+
+
+def write_lessons_md(settings: dict, path=LESSONS_MD) -> int:
+    """Write the lessons digest agents read before scoping. Returns 1 if the file changed."""
+    lessons = settings.get("lessons") or []
+    if not lessons:
+        return 0
+    lines = [
+        "# Lessons learned",
+        "",
+        "Generated by `scripts/learning_loop.py` from `learning_flags.lessons` in `process/audit/`.",
+        "Do not edit by hand: add a lesson to the audit log of the delivery that taught it.",
+        "",
+    ]
+    by_agent = {}
+    for x in lessons:
+        by_agent.setdefault(x["agent"], []).append(x)
+    for agent in sorted(by_agent, key=str.lower):
+        lines += [f"## {agent}", ""]
+        ordered = sorted(by_agent[agent], key=lambda x: (-_CONFIDENCE_RANK[x["confidence"]], -x["seen"]))
+        for x in ordered:
+            lines.append(f"- **{x['cue']}** → {x['lesson']}")
+            lines.append(
+                f"  _confidence {x['confidence']}, seen {x['seen']}× "
+                f"(requests {', '.join(x['requests'])})_. Evidence: {' / '.join(x['evidence'])}"
+            )
+        lines.append("")
+    text = "\n".join(lines)
+    path = Path(path)
+    if path.exists() and path.read_text(encoding="utf-8") == text:
+        return 0
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    print(f"[learning_loop] Lessons digest -> {path}")
+    return 1
+
+
+def check_pattern_hooks(settings: dict, audit: dict, scripts_dir: Path | None = None) -> int:
+    """Promote recurring skill patterns to hooks using tiered thresholds.
+
+    A skill that has been used `threshold` times is promoted only if the script the hook would run,
+    scripts/preload_<skill>.py, actually exists. Nothing creates those scripts: Claude Code skills such as
+    `breakdown` or `agentic-router` never had one, and a record pointing at a missing file can never work.
+    The check is `>=` (not `==`) so a script written after the threshold was passed is still picked up,
+    once: an existing hook id is never duplicated.
+
+    The record only lives in config/global_settings.json; nothing wires it into .claude/settings.json.
+    """
     changes = 0
     counters = settings.setdefault("pattern_counters", {})
+    scripts_dir = Path(scripts_dir) if scripts_dir else Path(__file__).resolve().parent
 
     for skill in audit.get("skills_used") or []:
         counters[skill] = counters.get(skill, 0) + 1
         threshold = get_threshold_for_skill(skill)
-        if counters[skill] == threshold:
-            hook_id = f"auto_preload_{skill}"
-            existing_ids = [h["id"] for h in settings.get("hooks", [])]
-            if hook_id not in existing_ids:
-                new_hook = {
-                    "id": hook_id,
-                    "event": "PreToolUse",
-                    "matcher": skill,
-                    "description": (
-                        f"Auto-promoted: pre-load {skill} context after {threshold} uses"
-                    ),
-                    "command": f'"{sys.executable}" scripts/preload_{skill}.py 2>&1',
-                    "added": datetime.now().strftime("%Y-%m-%d"),
-                    "promoted_from_pattern": True,
-                    "times_fired": 0,
-                    "risk_score": threshold,
-                }
-                settings.setdefault("hooks", []).append(new_hook)
-                print(f"[learning_loop] New hook promoted: {hook_id}")
-                changes += 1
+        if counters[skill] < threshold:
+            continue
+        hook_id = f"auto_preload_{skill}"
+        if hook_id in [h["id"] for h in settings.get("hooks", [])]:
+            continue
+        script = scripts_dir / f"preload_{skill}.py"
+        if not script.exists():
+            if counters[skill] == threshold:  # say it once, not at every session
+                print(
+                    f"[learning_loop] {skill} reached {threshold} uses but {script.name} does not exist "
+                    f"- no hook promoted"
+                )
+            continue
+        new_hook = {
+            "id": hook_id,
+            "event": "PreToolUse",
+            "matcher": skill,
+            "description": f"Auto-promoted: pre-load {skill} context after {threshold} uses",
+            # portable, like the hooks in .claude/settings.json: no absolute interpreter path
+            "command": f'cd "$CLAUDE_PROJECT_DIR" && python scripts/preload_{skill}.py 2>&1',
+            "added": datetime.now().strftime("%Y-%m-%d"),
+            "promoted_from_pattern": True,
+            "times_fired": 0,
+            "promotion_threshold": threshold,  # how many uses promoted it: not a risk assessment
+        }
+        settings.setdefault("hooks", []).append(new_hook)
+        print(f"[learning_loop] New hook promoted: {hook_id}")
+        changes += 1
     return changes
 
 
@@ -466,6 +592,7 @@ def commit_changes(settings_path: str, audit_dir: str, request_id: str) -> None:
         ".claude/settings.json",
         "config/requirements_registry.yaml",
         "process/intent_registry.yaml",
+        LESSONS_MD,
     ]
     for f in files:
         subprocess.run(["git", "add", f], check=False)
@@ -593,6 +720,8 @@ def main():
         changes += update_skills(settings, audit)
         changes += update_mcp(settings, audit)
         changes += update_agent_stats(settings, audit)
+        changes += update_lessons(settings, audit)
+        changes += write_lessons_md(settings)
         changes += check_pattern_hooks(settings, audit)
         changes += promote_skills_to_files(settings, skills_dir)
         changes += check_template_candidates(settings)

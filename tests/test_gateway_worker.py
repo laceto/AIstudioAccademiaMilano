@@ -38,12 +38,14 @@ class TestBuildReply:
     def _job(self, tmp_worker):
         return {"job_id": "abc12345", "text": "test request", "channel": "api", "metadata": {}}
 
-    def test_known_product_classified(self, tmp_worker):
+    def test_known_product_waits_for_the_owner(self, tmp_worker):
         cls = {"product_type": "chatbot_app", "confidence": 0.95, "summary": "Chatbot", "needs_review": False}
         status, reply = tmp_worker._build_reply(self._job(tmp_worker), cls)
-        assert status == "classified"
+        assert status == "needs_review"
         assert "19.90" in reply
         assert "Chatbot App" in reply
+        assert "in lavorazione" not in reply
+        assert "titolare" in reply and "conferma" in reply
 
     def test_unknown_product_needs_review(self, tmp_worker):
         cls = {"product_type": "unknown_product", "confidence": 0.5, "summary": "Flying car", "needs_review": True}
@@ -61,7 +63,7 @@ class TestBuildReply:
         _, reply = tmp_worker._build_reply(self._job(tmp_worker), cls)
         assert "abc12345" in reply
 
-    def test_all_known_products_classified(self, tmp_worker):
+    def test_all_known_products_wait_for_the_owner(self, tmp_worker):
         known = [
             "static_landing_page", "premium_landing_page", "commercial_landing_page",
             "pdf_document", "invoice_pdf", "strategic_report", "chatbot_app",
@@ -72,7 +74,7 @@ class TestBuildReply:
         for product in known:
             cls = {"product_type": product, "confidence": 0.95, "summary": "x", "needs_review": False}
             status, _ = tmp_worker._build_reply(job, cls)
-            assert status == "classified", f"{product} should be classified"
+            assert status == "needs_review", f"{product} should wait for the owner"
 
 
 # ── _process job lifecycle ────────────────────────────────────────────────────
