@@ -75,6 +75,101 @@ The catalogue has 19 priced products; anything else is blocked for the founder t
 
 Examples: a bakery website, invoice PDFs with Gmail delivery, a Streamlit chatbot, a RAG system over a codebase, an Alpaca paper-trading bot with dashboard, a Milan weather dashboard, a bank statement analyst, a calendar sentinel with Telegram alerts, and a psychology-vertical SOAP note generator (pilot).
 
+## Internal processes and procedures
+
+The studio runs on written procedures that agents and the founder follow. Each row names where it lives in the repo.
+
+### Delivery procedure and definition of done
+
+| Step | Rule | Where |
+|------|------|-------|
+| Classify | Map the request to one of 17 intents (skills and delivery options per intent) or to a price key; no match means `unknown_product: null`, which blocks delivery and escalates to the founder | `CLAUDE.md`, `process/intent_registry.yaml`, `process/User_Request_to_Delivery.md` |
+| Framework gate | Any LangGraph, LangChain or multi-agent request must load the matching framework skills before code is written; a hook injects the reminder on every prompt | `scripts/agentic_skill_router.py` |
+| Break down, then build | Non-trivial code is decomposed first and implemented leaf by leaf; tests are written first and must fail before the implementation | `CLAUDE.md` (Testing), `breakdown` skill |
+| Done means three artifacts | An audit log, a deliverable folder and a row in the Delivered Requests table; new pricing is also written to `config/global_settings.json` in the same commit | `CLAUDE.md` (Delivery checklist, Delivery ID policy) |
+| IDs | The audit filename is the canonical ID; IDs are globally unique and increase by one; internal tooling without an audit uses `—` | `process/audit/` |
+| Pre-push check | Last audit number is correct and the ID appears exactly once in the table | `CLAUDE.md` |
+| Ship | One fresh `claude/<slug>` branch per feature, never a push to `main`; commit, push, open the PR and merge it without asking again, except for destructive operations, commits touching `.env` or credentials, or work the founder paused | `CLAUDE.md` (Active Branch) |
+
+### Risk review (before any build goes live)
+
+Five risk agents review every new build, deployment, infrastructure change or client handover. The owner is the founder.
+
+| Agent | What it checks | Automatic hold when |
+|-------|----------------|---------------------|
+| Technical Auditor | Code quality, security, rollback, architecture fit, hallucination exposure, pinned dependencies | A vulnerability, an exposed secret or no rollback path |
+| Financial Controller | Margin, infrastructure ceiling, API spend per transaction, client concentration above 40%, payment terms | Cost exceeds the quote by more than 20%, or no payment terms |
+| Operational Monitor | Monitoring, uptime, failure handling, integrations tested, logging, alerts | No logging, no failure handling, or critical integrations untested |
+| Reputation Guardian | Output quality, a full end-to-end demo, fit with what was promised, brand, edge cases | The demo fails, or outputs contain errors or misleading claims |
+| Compliance Agent | Personal data basis, API terms of service, AI-content disclosure, copyright, deletable client data, documentation | Personal data without a legal basis, or a confirmed terms violation |
+
+The result is GREEN (all pass), AMBER (issues; ships only with founder sign-off) or RED (on hold). The founder then decides: ship, ship with conditions, or hold. Follow-ups: within 48 hours uptime, logs and invoice are confirmed; within 7 days client feedback and new regulatory flags are checked. Every review is meant to be filed as `risk_review_<project>_<date>.md`.
+
+### Learning loop and mistake log
+
+- **Trigger:** every session end and every confirmed delivery run `scripts/learning_loop.py` through hooks.
+- **What it learns:** new skills, agent capabilities, recurring patterns promoted to hooks (thresholds: security 1 occurrence, external API write 2, skill preload 3), new MCP endpoints, and written lessons (cue, lesson, evidence, confidence) from each audit log.
+- **Change control:** each settings change gets a risk score. Below 3 it is committed automatically; 3 to 4 needs the founder's approval; 5 or more is blocked until he signs off. The score that decides is the one in the delivery's audit log.
+- **Output:** `config/global_settings.json` is updated and `process/lessons_learned.md` is regenerated; Gianni and Chiara read it before starting.
+- **Mistake log:** every agent must record a mistake the moment it is found, one entry per incident (`ML-NNN`), reviewed weekly by the founder. It covers systems and processes, not people.
+
+### Hooks that run on every session
+
+| Event | What runs |
+|-------|-----------|
+| SessionStart | Activates the pre-commit secret scanner; copies the repo's agents and skills into the user's Claude config |
+| UserPromptSubmit | Retrieves the top 5 relevant chunks from the repo index and injects them; injects the agentic-framework skill reminder |
+| PreToolUse (Gmail) | Checks the OAuth token before any Gmail call |
+| PostToolUse (GitHub push) | Runs the learning loop for a completed delivery |
+| Stop | Runs the learning loop, collects the day's delta from the audit logs, and writes a crash-recovery checkpoint to `project_state.md` |
+
+### Scheduled and automatic operations
+
+| What | When | Where |
+|------|------|-------|
+| Tests and CI | Every push and pull request | `ci.yml` |
+| Gateway smoke test | Every change under `gateway/**`; deployed variant by hand | `gateway-smoke.yml` |
+| Learning loop commit | Every push | `studio-ops.yml` |
+| Wiki checks (syntax and execution of code examples, internal links) | Every push and pull request, plus Sundays 10:00 UTC | `wiki-maintenance.yml` |
+| Repo index rebuild for retrieval | Daily 06:00 UTC and on push | `rag-maintenance.yml`, `rag-bootstrap.yml` |
+| GitHub AI research report and issue | Wednesdays 19:17 UTC | `research_schedule.yml` |
+| Weekly content drop (Valentina) | Mondays 09:00 UTC | `digital_presence.yml` |
+| Pipeline run | By hand or when a GitHub issue is opened | `pipeline.yml` |
+| Stuck-job sweep | Every 10 minutes (Cloud Scheduler); jobs stuck in `running` become `failed` and are never re-run automatically | `gateway/recovery.py` |
+| Gmail tidy | Hourly (Cloud Scheduler), dry run until switched live | `mailagent/` |
+| Research digest for Gianni | Weekly; the Scheduler job is documented but was not yet created when delivery 040 was recorded | `process/runbook_research_digest.md` |
+
+### Security and data-handling procedures
+
+- **Secrets:** API keys live in environment variables, Streamlit secrets or Secret Manager, never in code. A pre-commit scanner blocks staged `.env` files and known credential patterns; bypass only for a confirmed false positive.
+- **Credentials:** OAuth tokens are scoped to the session and never saved or logged (`scripts/credential_manager.py`); Apple Calendar uses only app-specific passwords.
+- **Untrusted input:** Lorenzo and `scripts/injection_detector.py` scan web pages, API responses and pasted content for prompt injection before any agent acts on them.
+- **Entry points:** gateway `/submit` and `/status` need an `X-API-Key` and answer 503 when no key is configured; webhooks are signed (HMAC-SHA1 on Twilio); rate limiting runs before the key check.
+- **Advisory output:** a validator enforces the mandatory disclaimer.
+- **Retention and privacy:** jobs expire after 90 days (30 for refusals) through Firestore TTL; `/privacy` gives the notice; the founder answers access and erasure requests within one month using a runbook, and `/cancella` deletes exactly the named data and records the erasure without personal details.
+- **Refusals:** clearly illegal requests are refused by a phrase filter and then the model; the customer can ask for review (`RIESAMINA`), which alerts the founder without creating a job.
+- **Authority:** only the founder's numeric Telegram ID can approve, price, reject or send results, once per job. IT Staff is advisory only.
+
+### Operational runbooks
+
+| Runbook | Covers |
+|---------|--------|
+| `process/runbook_cloudrun.md` | Deploy the Telegram channels to Cloud Run in six steps (project, secrets, build, deploy, webhooks, test), known trade-offs, rollback to the laptop |
+| `process/runbook_local_telegram_stack.md` | Run the whole Telegram stack on a laptop without a public URL; clear stale webhooks first; troubleshooting |
+| `process/runbook_mailagent_cloudrun.md` | Gmail tidy: dry run first, go live with `--live`, undo by moving mail back, failure table |
+| `process/runbook_privacy_requests.md` | Identify the customer, find the data in Firestore, give access or erase it, log the erasure |
+| `process/runbook_research_digest.md` | Weekly GitHub digest and the Scheduler command |
+| `scripts/check_telegram.py` | Doctor for Telegram bots: detects webhook and polling conflicts and duplicate tokens |
+| `scripts/deploy_cloudrun.sh` | One-command deploy with a `--dry-run` preview |
+
+### Planning, reporting and white-label procedures
+
+- **Requirements:** Gianni runs a requirements checker before scoping; the intent registry lists skills and delivery options per intent.
+- **Reporting:** `scripts/log_analytics.py` computes delivery and revenue metrics from the audit logs; a delta collector summarizes each day; `sync_issues.py` keeps the issue table in step.
+- **Planning documents:** a 90-day onboarding plan, a 90-day community roadmap, a platform profile setup checklist (Valentina) and role assignments for the launch.
+- **White label:** a suit schema and `scripts/suit_manager.py` (`list`, `show`, `create`) replicate the studio for other verticals; S001 is the original studio and S002 a reinsurance branch.
+- **Simulations:** written walk-throughs of the text-input and PDF-email flows used to rehearse the pipeline.
+
 ## Platform built internally
 
 | Capability | What it does | Status |
@@ -111,6 +206,7 @@ The studio is pre-revenue. The studio wiki records €0 collected, blocked on th
 - **Unproven against real services:** the mail agents, calendar sentinel, Drive router and Claude Code build engine were tested offline only; their own delivery notes say so.
 - **Not deployed:** the API-key-protected gateway (ISS-031), the separate admin bot (ISS-029), WhatsApp and the Streamlit form (ISS-021).
 - **Switched off on purpose:** Chiara's Claude Code build engine, until the founder decides where generated code may run (ISS-032).
+- **Process written down more than exercised:** the mistake log has one entry, and the `process/risk_reviews/` folder that the risk-review procedure names does not exist yet, so no risk-review record has been filed there.
 - **Unit economics:** Marco computes cost and margin per request, but this summary does not report them; they were not checked here.
 
 ## Next steps that gate revenue
