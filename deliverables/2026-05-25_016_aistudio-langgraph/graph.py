@@ -181,6 +181,8 @@ def run_pipeline(
         "deliverable_path":    None,
         "skills_used":         None,
         "qa_iteration":        0,
+        "deliverable_b64":     None,
+        "cost_report":         None,
         "risk_reports":        [],
         "risk_passed":         True,
         "aggregate_risk_score": 0.0,

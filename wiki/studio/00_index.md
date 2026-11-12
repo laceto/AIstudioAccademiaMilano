@@ -8,6 +8,7 @@ One-founder AI enterprise. Every request produces a deployed output.
 | [02 Agents](02_agents.md) | Full agent roster — roles, when to invoke, authority |
 | [03 Templates](03_templates.md) | Reusable template library — how to use each |
 | [04 Pricing](04_pricing.md) | Pricing table, rules, and escalation protocol |
+| [05 Telegram request flow](05_telegram_request_flow.md) | What happens from a Telegram message to delivery, step by step |
 
 ## Quick Facts
 
