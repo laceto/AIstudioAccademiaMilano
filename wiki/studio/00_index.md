@@ -8,6 +8,7 @@ One-founder AI enterprise. Every request produces a deployed output.
 | [02 Agents](02_agents.md) | Full agent roster — roles, when to invoke, authority |
 | [03 Templates](03_templates.md) | Reusable template library — how to use each |
 | [04 Pricing](04_pricing.md) | Pricing table, rules, and escalation protocol |
+| [Investor summary](../../docs/investor-summary.md) | What the studio is, numbers, agents, stack, gaps and next steps |
 | [05 Telegram request flow](05_telegram_request_flow.md) | What happens from a Telegram message to delivery, step by step |
 
 ## Quick Facts
@@ -19,6 +20,6 @@ One-founder AI enterprise. Every request produces a deployed output.
 | Domain | aistudiomilano.xyz |
 | GitHub | github.com/laceto/AIstudioAccademiaMilano |
 | Pipeline | 6-agent (Stacy → Gianni → Chiara → Stacy QA → Marco → Francesca) |
-| Requests delivered | 13 (+ 1 internal) |
+| Delivery rows (CLAUDE.md) | 56: 24 priced, 28 internal, 3 awaiting a price, 1 without a recorded price |
 | Templates available | 5 |
-| Agents active | 22 |
+| Agents active | 24 defined in `.claude/agents/`, plus the founder |

@@ -1,7 +1,7 @@
 # Deliverables Catalogue
 
 Every shipped product. Auto-updated by `scripts/learning_loop.py` after each delivery.
-Last updated: 2026-11-06
+Last updated: 2026-11-12
 
 | ID | Date | Product | Stack | Price | Path |
 |----|------|---------|-------|-------|------|
@@ -32,10 +32,40 @@ Last updated: 2026-11-06
 | 048 | 2026-11-05 | Smoke test all the way to a deliverable — `scripts/gateway_deliver.py` approves the smoke job as Luigi would and runs it through the real pipeline worker in the runner; deliverable, `result.json` and `steps.txt` as the artifact `deliverable` and in the run Summary (opt-in `run_pipeline`) | GitHub Actions, LangGraph, FastAPI | €0.00 (internal) | `deliverables/2026-11-05_048_smoke-deliverable/` |
 | 049 | 2026-11-05 | GitHub research also scans trending — `scripts/github_research/trending.py` reads github.com/trending, keeps AI repos, enriches them via the REST API; trending bucket in the Scout, growth from the current pace, "Trending on GitHub" report section, trending note in Gianni's digest | Python, GitHub REST API | €0.00 (internal) | `deliverables/2026-11-05_049_research-trending/` |
 | 050 | 2026-11-06 | Chiara builds with Claude Code — with `CHIARA_ENGINE=claude_code`, code products are built by the Claude Code CLI headless (several files, tests written and run), packed into one text bundle (`scripts/unpack_bundle.py` restores the files); clean env, separate `builder` user, pytest-only Bash, budget and timeout; falls back to the usual strategy on any error; off by default | LangGraph, Claude Code CLI, Cloud Run | €0.00 (internal) | `deliverables/2026-11-06_050_chiara-claude-code/` |
+| 012 | 2026-05-24 | Discord Bot — AI chat + 4 slash commands + announcer webhook (Claude + OpenWeatherMap) | — | €19.90 | `deliverables/2026-05-24_012_discord-bot/` |
+| 015 | 2026-05-25 | Logo Generator — circle/square/minimal styles | — | 0.00 (internal) | `deliverables/2026-05-25_015_logo-generator/` |
+| 016 | 2026-05-25 | AI Studio LangGraph assistant — multi-agent graph con nodi dipartimento paralleli | — | 0.00 (internal) | `deliverables/2026-05-25_016_aistudio-langgraph/` |
+| 017 | 2026-05-25 | Lawyer LangGraph + Mindful Bot — white-label legal + psychology entry product | — | 0.00 (internal) | `deliverables/2026-05-25_017_mindful-bot/` |
+| 018 | 2026-05-25 | SOAP Note Generator — psychology vertical Streamlit app (pilota Diletta) | — | 0.00 (internal) | `deliverables/2026-05-25_018_soap-note-generator/` |
+| 019 | 2026-05-25 | Studio Digital Twin — LangGraph parallel simulation della pipeline a 6 agenti | — | 0.00 (internal) | `deliverables/2026-05-25_019_studio-digital-twin/` |
+| 020 | 2026-05-26 | Mind Dashboard — daily AI briefing da testo journal grezzo | — | €9.90 | `deliverables/2026-05-26_020_mind-dashboard/` |
+| 021 | 2026-05-26 | Micro-Syllabus & Flashcard Generator — piano 7 giorni + 10 carte Anki (OpenAI gpt-4o) | — | €14.90 | `deliverables/2026-05-26_021_micro-syllabus/` |
+| 022 | 2026-05-26 | Family Archivist — HTML single-file per pensionati, voice/text → story_archive.md | — | €14.90 | `deliverables/2026-05-26_022_family-archivist/` |
+| 023 | 2026-05-26 | Mediterranean Meal Planner — menu settimanale + lista spesa (OpenAI gpt-4o) | — | €14.90 | `deliverables/2026-05-26_023_meal-planner/` |
+| 024 | 2026-05-26 | The Niccolò Chronicles — WhatsApp time-capsule → Niccolo_Age_5_Month_<Month>.md | — | €14.90 | `deliverables/2026-05-26_024_niccolo-chronicles/` |
+| 025 | 2026-05-27 | Chat-to-Insights RSS Pipeline — parser sessioni Claude + WhatsApp + audit log | — | 0.00 (internal) | `deliverables/2026-05-27_025_chat-analysis/` |
+| 026 | 2026-05-27 | Trading Agent Team Dashboard + API — 4 agenti, JSON store, Streamlit, FastAPI | — | €24.90 | `deliverables/2026-05-27_026_trading-agent-dashboard/` |
+| 027 | 2026-05-27 | DIY Electrical Brainstorm — affinity groups + API landscape cantina 3×4 | — | €4.90 | `deliverables/2026-05-27_027_diy-electrical-brainstorm/` |
+| 028 | 2026-05-27 | Team Showcase — Streamlit app del full coding team | — | 0.00 (internal) | `deliverables/2026-05-27_028_team-showcase/` |
+| 029 | 2026-06-03 | Reinsurance Branch Office — LangGraph 3-workflow (claim/treaty/report) + Streamlit | — | 0.00 (internal) | `deliverables/2026-06-03_029_reinsurance-office/` |
+| 030 | 2026-06-05 | Real-estate ROI dashboard — Streamlit app con simulazione ROI (nessun prezzo registrato nell'audit log) | — | — (non registrato) | `deliverables/2026-06-05_030_real-estate-dashboard/` |
+| 031 | 2026-06-10 | Medical Receipt Vault — FastAPI + Streamlit, GPT-4o OCR, SQLite, Excel/PDF 730 export | — | 0.00 (internal) | `deliverables/2026-06-10_031_medical-receipt-app/` |
+| 032 | 2026-09-04 | Festa compleanno Niccolò — piano operativo parchetto via Zanoia (merenda, torta, intrattenimento, lista spesa e negozi) | — | null (pending Luigi — proposta 4.90) | `deliverables/2026-09-04_032_festa-compleanno-niccolo/` |
+| 033 | 2026-09-09 | YouTube Playlist Builder — YouTube Data API v3 + OAuth2, CLI con `--dry-run`, quota budgeting (50 + 50N unità) | — | null (pending Luigi — proposta 14.90) | `deliverables/2026-09-09_033_youtube-playlist/` |
+| 039 | 2026-10-16 | Email to-do agent — scansione Gmail N volte al giorno, to-do e proposte di calendario con approvazione, architettura multi-account a provider (Hotmail/Outlook in lista), 16 test offline; non ancora provato su una casella reale | — | 0.00 (internal) | `deliverables/2026-10-16_039_email-todo-agent/` |
+| 040 | 2026-10-16 | Pipeline v2 — tutti i ruoli nella pipeline: Lorenzo (scansione injection), Devil's Advocate + Financial Controller + IT Staff prima della build, 6 revisori in parallelo, Core Architect su trigger, Valentina (bozza), aggregatore con soglia critica; accanto a v1 con `PIPELINE_VERSION`; digest settimanale del team ricerca letto da Gianni (`POST /research/run`, Firestore `research/latest`); 56 test offline; non provato con un modello vero né con GitHub; il job Cloud Scheduler del digest non è stato creato (comando in `process/runbook_research_digest.md`) | — | 0.00 (internal) | `deliverables/2026-10-16_040_studio-pipeline-v2/` |
+| 041 | 2026-10-16 | Bot admin separato — `TELEGRAM_ADMIN_BOT_TOKEN` opzionale: schede, comandi, avvisi e risultati da rivedere su un bot solo di Luigi (`/webhook/telegram-admin`), il bot clienti senza poteri admin; messaggi ai clienti sempre dal bot clienti; deploy e doctor aggiornati; non ancora deployato | — | 0.00 (internal) | `deliverables/2026-10-16_041_admin-bot/` |
+| 042 | 2026-10-16 | Gmail tidy su Cloud Run — `mailagent tidy`: newsletter/notifiche/promozioni da header (`List-Unsubscribe`, `Precedence`, `no-reply@`, categoria Promozioni) → etichetta + archivio in `batchModify`, lista `protect`, mai stellate né mail < 60 min; retry 429/5xx, log JSON, FastAPI `/process` privato, Dockerfile, `deploy_mailagent.sh` (Secret Manager + Scheduler orario), dry run di default; 22 test offline; non deployato, non provato sulla casella reale | — | 0.00 (internal) | `deliverables/2026-10-16_042_mailagent-cloudrun/` |
+| 043 | 2026-10-16 | Drive Semantic Router — FastAPI + sentence-transformers (MiniLM, CPU) + ChromaDB: smista `05_In_Arrivo_Da_Smistare` nelle cartelle di categoria e rinomina `YYYY-MM-DD_Categoria_Descrizione.ext`; OCR via Drive, APScheduler, log JSON, Dockerfile, deploy Azure App Service F1 + Key Vault; `DRY_RUN` di default; 27 test offline; non provato con il modello vero, Drive reale né Azure | — | null (pending Luigi — proposta 29.90) | `deliverables/2026-10-16_043_drive-semantic-router/` |
+| 051 | 2026-11-11 | Calendar Sentinel — `calendarsentinel`: polling di un Google Calendar con syncToken (scope read-only), avviso Telegram quando compare un evento nuovo (modifiche ignorate, cancellazioni dimenticate), primo giro come baseline silenzioso, retry se Telegram fallisce, `--dry-run`/`--test-message`; 17 test offline; non provato su calendario e bot veri | — | €14.90 | `deliverables/2026-11-11_051_calendar-sentinel/` |
+| 052 | 2026-06-06 | MoR Evaluation — Lemon Squeezy vs Payhip (ISS-025): raccomandazione Payhip Free + tabelle commissioni (consegnata a giugno come 030, rinumerata: 030 era già usato) | — | €4.90 | `deliverables/2026-06-06_052_merchant-of-record-evaluation/` |
+| 053 | 2026-10-16 | Downloads agent — LangGraph: scansione di Downloads, piano per tipo, approvazione (interrupt), spostamento senza cancellare, undo, checkpoint SQLite, pianificabile con Task Scheduler; riassunto di ogni documento con Ollama locale (gemma2:2b) e report HTML; cartella `data/Download`; 34 test offline (consegnato come 040, rinumerato: 040 era già usato dalla pipeline v2) | — | 0.00 (internal) | `deliverables/2026-10-16_053_downloads-agent/` |
+
 ## Revenue Summary
 
 | Status | Amount |
 |--------|--------|
-| Invoiced (billable requests 001–013) | €135.40 |
-| R&D / internal / courtesy (008, 014, warranty) | €0.00 |
+| Priced deliveries (24 numbered rows in the CLAUDE.md table, at list price) | €329.10 |
+| R&D / internal / courtesy (25 numbered rows + 3 unnumbered) | €0.00 |
+| Awaiting a price from Luigi (032, 033, 043); no price recorded for 030 | pending |
 | Collected | €0.00 _(blocked: ISS-011 Partita IVA pending)_ |

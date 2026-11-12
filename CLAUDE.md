@@ -192,6 +192,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `deliverables/2026-10-16_041_admin-bot/` | Guida al bot admin separato (`TELEGRAM_ADMIN_BOT_TOKEN`): cosa cambia, come attivarlo, limiti |
 | `scripts/run_local_stack.py` | Avvia lo stack Telegram in locale (RAG API + 2 bot polling + worker) |
 | `process/runbook_local_telegram_stack.md` | Runbook: far girare i canali Telegram su laptop, senza URL pubblico |
+| `docs/investor-summary.md` | Sintesi per investitori: cos'è, numeri contati dal repo, agenti, prodotti, stack, lacune e prossimi passi |
 | `docs/cloud-run-setup.md` | Stato del setup Cloud Run (progetto `aistudio-milano`, regione `europe-west8`), cosa è fatto e cosa resta da fare |
 | `process/runbook_cloudrun.md` | Runbook: deploy dei canali Telegram su Cloud Run (webhook, scale-to-zero, free tier) |
 | `deploy/cloudbuild.*.yaml` | Cloud Build: nomina esplicitamente il Dockerfile giusto per ciascun servizio |
@@ -370,6 +371,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 009 | 2026-05-23 | LinkedIn Post Generator from GitHub activity | 4.90 |
 | 010 | 2026-05-23 | Profile Setup & Publishing — bio + first post for 9 platforms | 14.90 |
 | 011 | 2026-05-24 | Milan Weather Dashboard (Streamlit + OpenWeatherMap) | 9.90 |
+| 012 | 2026-05-24 | Discord Bot — AI chat + 4 slash commands + announcer webhook (Claude + OpenWeatherMap) | 19.90 |
 | 013 | 2026-05-24 | techa Streamlit deploy (LangGraph trading agents + TA-Lib, HF Spaces / Cloud Run) | 19.90 |
 | —   | 2026-05-23 | GitHub AI Research Department (Scout/Analyst/Curator/Reporter) — internal tooling | 0.00 |
 | 014 | 2026-05-24 | Dispenser input v1 — QR/Streamlit form, Stripe, WhatsApp+Telegram delivery | 0.00 (internal) |
@@ -388,6 +390,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 027 | 2026-05-27 | DIY Electrical Brainstorm — affinity groups + API landscape cantina 3×4 | 4.90 |
 | 028 | 2026-05-27 | Team Showcase — Streamlit app del full coding team | 0.00 (internal) |
 | 029 | 2026-06-03 | Reinsurance Branch Office — LangGraph 3-workflow (claim/treaty/report) + Streamlit | 0.00 (internal) |
+| 030 | 2026-06-05 | Real-estate ROI dashboard — Streamlit app con simulazione ROI (nessun prezzo registrato nell'audit log) | — (non registrato) |
 | —   | 2026-06-05 | Input Gateway — FastAPI `/submit`, PipelineAdapter, Streamlit form, Telegram+WhatsApp bots, QueueWorker | 0.00 (internal) |
 | —   | 2026-06-05 | Crash-Recovery Checkpoint — scripts/checkpoint_state.py + Stop hook (ISS-022) | 0.00 (internal) |
 | 031 | 2026-06-10 | Medical Receipt Vault — FastAPI + Streamlit, GPT-4o OCR, SQLite, Excel/PDF 730 export | 0.00 (internal) |
