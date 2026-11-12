@@ -1198,6 +1198,11 @@
           "count": 5,
           "avg_sec": 0.0,
           "success_rate": 1.0
+        },
+        "drive_semantic_router": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1269,6 +1274,11 @@
           "count": 5,
           "avg_sec": 0.0,
           "success_rate": 1.0
+        },
+        "drive_semantic_router": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1333,6 +1343,11 @@
         },
         "internal_tooling": {
           "count": 5,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
+        },
+        "drive_semantic_router": {
+          "count": 1,
           "avg_sec": 0.0,
           "success_rate": 1.0
         }
@@ -1401,6 +1416,11 @@
           "count": 5,
           "avg_sec": 0.0,
           "success_rate": 1.0
+        },
+        "drive_semantic_router": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 0.0
         }
       }
     },
@@ -1508,6 +1528,11 @@
         },
         "internal_tooling": {
           "count": 5,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
+        },
+        "drive_semantic_router": {
+          "count": 1,
           "avg_sec": 0.0,
           "success_rate": 1.0
         }
