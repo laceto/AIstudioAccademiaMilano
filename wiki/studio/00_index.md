@@ -20,6 +20,6 @@ One-founder AI enterprise. Every request produces a deployed output.
 | Domain | aistudiomilano.xyz |
 | GitHub | github.com/laceto/AIstudioAccademiaMilano |
 | Pipeline | 6-agent (Stacy → Gianni → Chiara → Stacy QA → Marco → Francesca) |
-| Requests delivered | 54 (23 priced, 28 internal, 3 awaiting a price) |
+| Delivery rows (CLAUDE.md) | 56: 24 priced, 28 internal, 3 awaiting a price, 1 without a recorded price |
 | Templates available | 5 |
 | Agents active | 24 defined in `.claude/agents/`, plus the founder |

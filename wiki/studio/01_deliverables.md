@@ -65,7 +65,7 @@ Last updated: 2026-11-12
 
 | Status | Amount |
 |--------|--------|
-| Priced deliveries (23 requests, list price; see CLAUDE.md table) | €309.20 |
-| R&D / internal / courtesy (28 requests) | €0.00 |
-| Awaiting a price from Luigi (032, 033, 043) | pending |
+| Priced deliveries (24 numbered rows in the CLAUDE.md table, at list price) | €329.10 |
+| R&D / internal / courtesy (25 numbered rows + 3 unnumbered) | €0.00 |
+| Awaiting a price from Luigi (032, 033, 043); no price recorded for 030 | pending |
 | Collected | €0.00 _(blocked: ISS-011 Partita IVA pending)_ |
