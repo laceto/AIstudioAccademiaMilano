@@ -13,16 +13,59 @@
 overrides: {}
 
 categories:
+  - name: Investimenti e risparmio   # Fineco: apertura/chiusura short selling o leva = operazione di trading (non una spesa)
+    transfer: true
+    bank: fineco
+    patterns: ['short selling', 'apertura leva', 'chiusura leva']
+
+  # Costi e tasse del trading: interessi sulla leva e sul lending, Tobin tax e, in short selling, il dividendo
+  # pagato a chi ha prestato i titoli.
+  - name: Banca e finanza (Fineco)
+    bank: fineco
+    patterns: ['interessi leva', 'interessi lending', 'tobin tax', 'add\.? ?div\.? ?short']
+
+  # Fineco, la descrizione INIZIA con: "Ced.su" cedola, "Div.su" dividendo, "Rit.div.su" / "Rit.ced.su" ritenuta.
+  # Prima di tutto il resto: il nome del titolo (Enel, Eni, Generali, Finecobank…) farebbe scattare altre regole.
+  - name: Banca e finanza (Fineco)
+    bank: fineco
+    patterns: ['^rit\.? ?(div|ced)\.? ?su\b']
+
+  - name: Banca e finanza (Fineco)
+    bank: fineco
+    patterns: ['^ced\.? ?su\b']
+
+  - name: Banca e finanza (Fineco)
+    bank: fineco
+    patterns: ['^div\.? ?su\b']
+
+  - name: Investimenti e risparmio   # giroconti verso Fineco = risparmio/investimento; prima della regola generica dei giroconti
+    transfer: true
+    patterns: ['fineco']
+
+  - name: Giroconto per spese mensili   # soldi girati su ING per le spese correnti; le spese vere sono nell'estratto ING
+    transfer: true
+    direction: out
+    patterns: ['giro ?conto.*\bing\b', '(bonifico|trasferimento).*(a|verso) ing\b']
+
   - name: Giroconti tra conti
     transfer: true
     patterns: ['giroconto', 'giro ?conto', 'trasferimento (fondi|tra conti)', 'bonifico da ing', 'bonifico (a|verso) credem',
                'conto credem', 'conto arancio']
 
-  - name: Rendite finanziarie
+  - name: Banca e finanza (Fineco)
+    bank: fineco
     direction: in
     patterns: ['cedol', 'dividend']
 
-  - name: Commissioni e costi bancari   # before the investment rule: the stamp duty on a dossier is a cost
+  - name: Banca e finanza (altri conti)
+    direction: in
+    patterns: ['cedol', 'dividend']
+
+  - name: Banca e finanza (Fineco)
+    bank: fineco
+    patterns: ['imposta di bollo']
+
+  - name: Banca e finanza (altri conti)   # before the investment rule: the stamp duty on a dossier is a cost
     patterns: ['imposta di bollo']
 
   - name: Investimenti e risparmio
@@ -44,7 +87,12 @@ categories:
   - name: 'Casa: acquisto, lavori, notaio'
     patterns: ['notai', 'notarile', 'rogito', 'compravendita', 'caparra', 'agenzia immobiliare', 'ristruttur', 'impresa edile']
 
-  - name: Commissioni e costi bancari
+  - name: Banca e finanza (Fineco)
+    bank: fineco
+    patterns: ['commission', '\bcomm\.', 'canone (gestione|mensile|conto)', 'rimborso canone', 'spese (tenuta|di gestione|conto)',
+               'imposta di bollo', 'bolli c/c', '\bbollo\b', 'competenze (di chiusura|conto)', 'interessi debitori']
+
+  - name: Banca e finanza (altri conti)
     patterns: ['commission', '\bcomm\.', 'canone (gestione|mensile|conto)', 'rimborso canone', 'spese (tenuta|di gestione|conto)',
                'imposta di bollo', 'bolli c/c', '\bbollo\b', 'competenze (di chiusura|conto)', 'interessi debitori']
 
