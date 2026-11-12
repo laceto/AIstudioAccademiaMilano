@@ -88,6 +88,26 @@ def _chat(value):
     return int(text) if text.lstrip("-").isdigit() else text
 
 
+class AdminBot:
+    """The bot Luigi talks to, plus the bot customers talk to.
+
+    Everything is delegated to the admin bot (cards, answers, buttons); `.customer` is the bot to use
+    for anything that must reach a customer. With one bot (no admin bot configured) both are the same.
+    """
+
+    def __init__(self, admin, customer=None):
+        self._admin = admin
+        self.customer = customer if customer is not None else admin
+
+    def __getattr__(self, name):
+        return getattr(self._admin, name)
+
+
+def _customer_bot(bot):
+    """The bot that writes to customers: `bot.customer` for an AdminBot, the bot itself otherwise."""
+    return getattr(bot, "customer", bot)
+
+
 async def _say(bot, chat_id, text: str, **kwargs) -> None:
     log_message("out", chat_id, text)
     await bot.send_message(chat_id=chat_id, text=text, **kwargs)
@@ -142,7 +162,7 @@ async def _tell_the_user(bot, job: dict) -> bool | None:
     if job.get("channel") != "telegram" or not chat_id:
         return None
     try:
-        await _say(bot, _chat(chat_id), user_message(job))
+        await _say(_customer_bot(bot), _chat(chat_id), user_message(job))
         return True
     except Exception as exc:  # the bot may be blocked; the decision already stands
         logger.warning("[approval] could not tell the user about job %s: %s", job.get("job_id"), type(exc).__name__)
@@ -211,7 +231,7 @@ async def _send_to_customer(bot, store, admin_id, chat_id, message: dict, cb_id:
         return
 
     try:
-        await bot.send_document(
+        await _customer_bot(bot).send_document(
             chat_id=_chat(target),
             document=result["content"].encode("utf-8"),
             filename=safe_filename(result.get("filename")),

@@ -18,6 +18,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 
+from . import chiara_claude_code as _cc
 from .llm_factory import get_llm
 from .state import PRICING_TABLE, StudioState
 
@@ -234,7 +235,17 @@ def chiara_implement(state: StudioState, config: RunnableConfig) -> dict:
         strategy     = _CHIARA_STRATEGIES.get(product_type, _chiara_llm_codegen)
         via          = "template" if product_type in _CHIARA_STRATEGIES else "llm-codegen"
 
-        content, filename, skills = strategy(state, config, provider)
+        built = None
+        if _cc.enabled_for(product_type):  # CHIARA_ENGINE=claude_code, code products only (050)
+            try:
+                built = _cc.build(state)
+            except _cc.EngineUnavailable as exc:
+                via = f"{via} (claude-code fallback: {exc})"
+        if built is not None:
+            content, filename, skills = built.content, built.filename, built.skills
+            via = f"claude-code ({built.summary})"
+        else:
+            content, filename, skills = strategy(state, config, provider)
         iteration = state.get("qa_iteration", 0)
 
         return {

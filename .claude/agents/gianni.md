@@ -44,6 +44,7 @@ Blockers: <none | list>
 
 ## Rules
 
+- Before scoping, read `process/lessons_learned.md` (if present) and apply the lessons under `## Gianni` and `## studio` whose cue matches this request; name the ones you applied in the spec
 - One clarifying question at a time
 - Never send Chiara into the dark — spec must be unambiguous
 - Flag every gap in `intent_to_skill_map` for the learning loop

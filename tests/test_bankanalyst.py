@@ -1,0 +1,832 @@
+"""Offline tests for bankanalyst (delivery 045): synthetic Credem and ING statements built with fpdf2."""
+import os
+from datetime import date
+from decimal import Decimal
+
+import pytest
+
+pytest.importorskip("pdfplumber")
+fpdf = pytest.importorskip("fpdf")
+openpyxl = pytest.importorskip("openpyxl")
+
+from bankanalyst.amounts import parse_amount, parse_date  # noqa: E402
+from bankanalyst.classify import Classifier, load_rules  # noqa: E402
+from bankanalyst.models import Transaction  # noqa: E402
+from bankanalyst.parse import parse_statement  # noqa: E402
+from bankanalyst.report import analyze, dedupe, quarter_of, write_excel  # noqa: E402
+
+
+# ── synthetic statements ──────────────────────────────────────────────────────
+
+def _pdf(path, header_lines, columns, rows, footer_lines):
+    """columns: [(title, x, width, align)]; rows: list of cell lists (None = empty), or str = continuation."""
+    pdf = fpdf.FPDF(orientation="L")
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=9)
+    for line in header_lines:
+        pdf.set_x(10)
+        pdf.cell(0, 6, line, new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+    y = pdf.get_y()
+    for title, x, w, align in columns:
+        pdf.set_xy(x, y)
+        pdf.cell(w, 6, title, align=align)
+    pdf.ln(7)
+    for row in rows:
+        y = pdf.get_y()
+        if isinstance(row, str):  # continuation of the description
+            desc_col = next(c for c in columns if c[0].lower().startswith("descr"))
+            pdf.set_xy(desc_col[1], y)
+            pdf.cell(desc_col[2], 5, row)
+        else:
+            for (title, x, w, align), value in zip(columns, row):
+                if value:
+                    pdf.set_xy(x, y)
+                    pdf.cell(w, 5, value, align=align)
+        pdf.ln(5)
+    pdf.ln(3)
+    for line in footer_lines:
+        pdf.set_x(10)
+        pdf.cell(0, 6, line, new_x="LMARGIN", new_y="NEXT")
+    pdf.output(str(path))
+    return path
+
+
+def make_ing(path, closing="2.580,81"):
+    cols = [("Data contabile", 10, 28, "L"), ("Data valuta", 40, 28, "L"),
+            ("Uscite", 70, 25, "R"), ("Entrate", 97, 25, "R"),
+            ("Causale", 125, 40, "L"), ("Descrizione operazione", 167, 120, "L")]
+    rows = [
+        ["02/01/2026", "02/01/2026", "54,30", None, "PAGAMENTO CARTA", "ESSELUNGA MILANO VIALE PIAVE"],
+        ["10/01/2026", "10/01/2026", None, "2.150,00", "ACCREDITO BONIFICO", "Stipendio ACME SRL"],
+        "mese di dicembre",
+        ["15/02/2026", "15/02/2026", "12,99", None, "PAGAMENTO CARTA", "NETFLIX.COM"],
+        ["20/03/2026", "20/03/2026", "500,00", None, "GIROCONTO", "Giroconto verso conto Credem"],
+        ["30/03/2026", "31/03/2026", "1,90", None, "COMMISSIONI", "Canone mensile"],
+    ]
+    return _pdf(path, ["ING Bank N.V. - Milan Branch", "Conto Corrente Arancio - Estratto conto",
+                       "Saldo iniziale 1.000,00"], cols, rows,
+                ["Totale uscite 569,19   Totale entrate 2.150,00", f"Saldo finale {closing}", "Pagina 1 di 1"])
+
+
+def make_credem(path):
+    cols = [("Data", 10, 25, "L"), ("Valuta", 37, 25, "L"),
+            ("Dare", 64, 25, "R"), ("Avere", 91, 25, "R"),
+            ("Descrizione operazioni", 120, 160, "L")]
+    rows = [
+        ["03/04/2026", "03/04/2026", "62,00", None, "PAGAMENTO POS ENI STATION 1234"],
+        ["21/04/2026", "21/04/2026", None, "500,00", "BONIFICO DA ING BANK giroconto"],
+        ["05/05/2026", "05/05/2026", "88,40", None, "ADDEBITO SDD ENEL ENERGIA"],
+        "bolletta luce aprile",
+        ["12/07/2026", "12/07/2026", "250,00", None, "PRELIEVO BANCOMAT ATM CREDEM"],
+        ["18/07/2026", "18/07/2026", "37,20", None, "PAGAMENTO POS MISTERO SNC"],
+    ]
+    return _pdf(path, ["CREDEM - Credito Emiliano S.p.A.", "Estratto conto corrente",
+                       "Saldo iniziale 2.000,00"], cols, rows, ["Saldo finale 2.062,40"])
+
+
+def make_credem_real(path, stripes=False):
+    """Layout of the real Credem statements: summary page, then a table where each movement is a block
+    (description above and below the row holding dates and amount), then a 'conto scalare' to ignore.
+    With stripes, every other movement has a shaded background and one description has a blank line
+    in it, as on the real pages: only the stripes tell where that movement ends."""
+    pdf = fpdf.FPDF(unit="pt", format="A4")
+    pdf.set_auto_page_break(False)
+    pdf.set_font("Helvetica", size=8)
+
+    def at(x, y, text, w=0, align="L"):
+        pdf.set_xy(x, y)
+        pdf.cell(w, 6, text, align=align)
+
+    pdf.add_page()
+    at(220, 40, "Estratto conto")
+    at(40, 100, "DATA")
+    at(40, 110, "04/04/2026")
+    at(40, 200, "SALDO PRECEDENTE")
+    at(380, 200, "1.000,00")
+    at(40, 212, "SALDO FINE PERIODO")
+    at(380, 212, "3.918,55")
+    at(40, 240, "Legenda")
+    at(40, 250, "Entrate Uscite")
+    at(40, 780, "CREDITO EMILIANO SPA, Capogruppo del Gruppo Bancario Credito Emiliano - Credem")
+
+    pdf.add_page()
+    at(40, 40, "segue - Estratto conto al 31 marzo 2026")
+    at(40, 60, "Elenco movimenti")
+    pdf.set_font("Helvetica", size=6)
+    for x, word in [(40, "DATA CONTABILE"), (93, "DATA VALUTA"), (147, "DESCRIZIONE OPERAZIONE"),
+                    (398, "IMPORTO A DEBITO"), (478, "IMPORTO A CREDITO")]:
+        at(x, 76, word)
+    pdf.set_font("Helvetica", size=8)
+
+    def money(y, amount, credit=False):
+        at(477 if credit else 397, y, amount, w=78, align="R")
+
+    at(147, 88, "SALDO PRECEDENTE")
+    money(88, "1.000,00", credit=True)
+    y = 106
+    blocks = [
+        (["PAGOBANCOMAT 30/12/25,ORE 19:13,TESS.000000001"], "02/01/2026", "30/12/2025", "", "21,96", False,
+         ["caseificio esempio"]),
+        ([], "10/01/2026", "10/01/2026", "CARTA EGO", "26,99", False, []),
+        (["BONIFICO A CREDITO", "", "inps"] if stripes else ["BONIFICO A CREDITO", "inps"],
+         "21/02/2026", "21/02/2026", "", "57,50", True, ["rif. 123"]),
+        (["EMOLUMENTI ACME Italia SpA"], "28/01/2026", "28/01/2026", "stipendio 01-2026",
+         "3.010,00", True, ["rif. 0000000000000001"]),
+        (["PRELIEVO BANCOMAT"], "12/02/2026", "11/02/2026", "", "100,00", False,
+         ["11/02/26,ore 12:36,tess.000000001 unicredit s.p.a."]),
+    ]
+    for n, (above, booking, value, inline, amount, credit, below) in enumerate(blocks):
+        if stripes and n % 2 == 0:
+            pdf.set_fill_color(229, 236, 232)
+            pdf.rect(38, y - 4, 54, 5.2 * (len(above) + 1 + len(below)) + 6, style="F")
+        for text in above:
+            at(147, y, text)
+            y += 5.2
+        at(40, y, booking)
+        at(93, y, value)
+        if inline:
+            at(147, y, inline)
+        money(y, amount, credit)
+        y += 5.2
+        for text in below:
+            at(147, y, text)
+            y += 5.2
+        y += 8
+    at(147, y, "SALDO FINE PERIODO")
+    money(y, "3.918,55", credit=True)
+
+    pdf.add_page()
+    at(40, 40, "Conto Scalare")
+    at(40, 60, "DATA VALUTA SALDI PER VALUTA GIORNI NUMERI DEBITORI NUMERI CREDITORI")
+    at(40, 72, "22/01/2026 1.958,17 1 1.958,17")
+    pdf.output(str(path))
+    return path
+
+
+@pytest.mark.parametrize("stripes", [False, True])
+def test_parse_credem_real_layout(tmp_path, stripes):
+    st = parse_statement(make_credem_real(tmp_path / "Estratto_Conto_con_Allungo_31mar2026.pdf", stripes))
+    assert st.bank == "credem"
+    assert [t.amount for t in st.transactions] == [
+        Decimal("-21.96"), Decimal("-26.99"), Decimal("57.50"), Decimal("3010.00"), Decimal("-100.00")]
+    d = [t.description for t in st.transactions]
+    assert d[0] == "PAGOBANCOMAT 30/12/25,ORE 19:13,TESS.000000001 caseificio esempio"
+    assert d[1] == "CARTA EGO"
+    assert d[2] == "BONIFICO A CREDITO inps rif. 123"
+    assert d[3].startswith("EMOLUMENTI") and "stipendio 01-2026" in d[3] and d[3].endswith("0000000000000001")
+    assert d[4].startswith("PRELIEVO BANCOMAT 11/02/26")
+    assert st.transactions[0].value_date == date(2025, 12, 30)
+    assert st.opening == Decimal("1000.00") and st.closing == Decimal("3918.55")
+    assert st.reconciliation() == "ok"
+    assert st.warnings == []
+
+
+DEJAVU = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+
+def make_ing_real(path, currency="EUR"):
+    """Layout of the real ING (Conto Corrente Arancio) statements: header over three lines, amount followed
+    by a separate '€', description starting on the amount row and continuing below, some continuation
+    lines starting with a date, opening and closing balance as dated rows, then a conto scalare."""
+    pdf = fpdf.FPDF(unit="pt", format="A4")
+    pdf.set_auto_page_break(False)
+    if currency == "€":  # the core fonts are latin-1 only
+        pdf.add_font("DejaVu", fname=DEJAVU)
+        pdf.set_font("DejaVu", size=7)
+    else:
+        pdf.set_font("Helvetica", size=7)
+
+    def at(x, y, text, w=0, align="L"):
+        pdf.set_xy(x, y)
+        pdf.cell(w, 6, text, align=align)
+
+    pdf.add_page()
+    at(56, 40, "ESTRATTO CONTO CONTO CORRENTE ARANCIO")
+    at(56, 52, "Estratto conto Trimestrale al 31/12/2026")
+    at(56, 74, "DATA")
+    for x, word in [(124, "DATA VALUTA"), (199, "USCITE"), (268, "ENTRATE"), (337, "DESCRIZIONE")]:
+        at(x, 80, word)
+    at(56, 86, "OPERAZIONE")
+
+    def row(y, booking, value, amount, credit, desc):
+        at(63, y, booking)
+        if value:
+            at(134, y, value)
+        pdf.set_xy(200 if not credit else 262, y)
+        pdf.cell(47, 6, amount, align="R")
+        at(249 if not credit else 311, y, currency)  # "EUR" is wider than "€": keep it clear of the description
+        at(334, y, desc)
+
+    y = 105
+    row(y, "30/09/2026", None, "647,67", True, "SALDO INIZIALE")
+    y += 22.3
+    blocks = [
+        ("01/10/2026", "28/09/2026", "87,11", False, "PAGAMENTO CARTA - OPERAZIONE MASTERCARD DEL",
+         ["28/09/2026 ALLE ORE 11:19 CON CARTA", "XXXXXXXXXXXX0000 DIV=EUR IMPORTO IN DIVISA=87.11 /",
+          "IMPORTO IN EURO=87.11 PRESSO ESSELUNGA -", "TRANSAZIONE C-LESS"]),
+        ("03/10/2026", "03/10/2026", "1.100,00", True, "ACCREDITO BONIFICO - BONIFICO N. 1",
+         ["ORDINANTE MARIO ROSSI NOTE: SPESE FAMILIARI"]),
+        ("05/10/2026", "05/10/2026", "2,00", False, "COMMISSIONE", []),
+    ]
+    for booking, value, amount, credit, desc, below in blocks:
+        row(y, booking, value, amount, credit, desc)
+        for text in below:
+            y += 10.2
+            at(334, y, text)
+        y += 22.3
+    row(y, "31/12/2026", None, "1.658,56", True, "SALDO FINALE")
+
+    pdf.add_page()
+    at(56, 60, "DATA SALDI IMPORTI PER N° GG NUMERI TASSO INTERESSI NUMERI TASSO")
+    at(56, 80, "01/10/2026 647,67 647,67 1 0,00 0,0000 647,67")
+    pdf.output(str(path))
+    return path
+
+
+@pytest.mark.parametrize("currency", ["EUR", "€"])
+def test_parse_ing_real_layout(tmp_path, currency):
+    if currency == "€" and not os.path.exists(DEJAVU):
+        pytest.skip("DejaVu font not installed")
+    st = parse_statement(make_ing_real(tmp_path / "5_0000000000_000000_100.pdf", currency))
+    assert st.bank == "ing"
+    assert [t.amount for t in st.transactions] == [Decimal("-87.11"), Decimal("1100.00"), Decimal("-2.00")]
+    d = [t.description for t in st.transactions]
+    assert d[0] == ("PAGAMENTO CARTA - OPERAZIONE MASTERCARD DEL 28/09/2026 ALLE ORE 11:19 CON CARTA "
+                    "XXXXXXXXXXXX0000 DIV=EUR IMPORTO IN DIVISA=87.11 / IMPORTO IN EURO=87.11 PRESSO ESSELUNGA - "
+                    "TRANSAZIONE C-LESS")
+    assert d[1] == "ACCREDITO BONIFICO - BONIFICO N. 1 ORDINANTE MARIO ROSSI NOTE: SPESE FAMILIARI"
+    assert d[2] == "COMMISSIONE"
+    assert st.opening == Decimal("647.67") and st.closing == Decimal("1658.56")
+    assert st.reconciliation() == "ok"
+    assert st.warnings == []
+
+
+def make_fineco(path):
+    """Layout of the real Fineco statements: BIC FEBIITM on the first page, header over two lines
+    (DATA DATA USCITE ENTRATE DESCRIZIONE / OPERAZIONE VALUTA), dates as dd.mm.yy, unsigned amounts in the
+    USCITE / ENTRATE columns, balances printed as '+1.000,00 Saldo iniziale in euro' left of the columns."""
+    pdf = fpdf.FPDF(unit="pt", format="A4")
+    pdf.set_auto_page_break(False)
+    pdf.set_font("Helvetica", size=7)
+
+    def at(x, y, text, w=0, align="L"):
+        pdf.set_xy(x, y)
+        pdf.cell(w, 6, text, align=align)
+
+    pdf.add_page()
+    at(56, 30, "Estratto conto Ottobre - Novembre - Dicembre 2026")
+    at(56, 42, "PAGINA 1 DI 2")
+    at(56, 54, "NUMERO CONTO COORDINATE BANCARIE IBAN BIC SEPA BIC SWIFT")
+    at(56, 66, "000000000001 IT00 X000 0000 0000 0000 0000 001 FEBIITM1 FEBIITM2")
+    at(56, 90, "Movimenti Numero Conto: 000000000001 Situazione al: 31.12.2026")
+    for x, word in [(56, "DATA"), (96, "DATA"), (230, "USCITE"), (300, "ENTRATE"), (360, "DESCRIZIONE")]:
+        at(x, 102, word)
+    at(56, 110, "OPERAZIONE")
+    at(96, 110, "VALUTA")
+
+    def row(y, booking, value, amount, credit, desc):
+        at(56, y, booking)
+        at(96, y, value)
+        pdf.set_xy(215 if not credit else 285, y)
+        pdf.cell(45, 6, amount, align="R")
+        at(360, y, desc)
+
+    at(160, 126, "+1.000,00 Saldo iniziale in euro")
+    row(142, "02.10.26", "02.10.26", "39,90", False, "Compravendita Titoli Acea Qta/Val.nom. 25,000000")
+    row(154, "05.10.26", "05.10.26", "2.500,00", True, "Bonifico Disposto da Mario Rossi")
+    row(166, "07.10.26", "01.10.26", "4,62", False, "Rit.div.su 23,000 Novo Nordisk -B-")
+    at(160, 182, "+3.455,48 Saldo finale in euro")
+    at(56, 200, "FinecoBank S.p.A. - Sede legale 20131 Milano P.zza Durante, 11")
+
+    pdf.add_page()
+    at(56, 30, "PAGINA 2 DI 2")
+    at(56, 60, "Informazioni utili sul conto")
+    pdf.output(str(path))
+    return path
+
+
+def test_parse_fineco_layout(tmp_path):
+    st = parse_statement(make_fineco(tmp_path / "Documento.pdf"))
+    assert st.bank == "fineco"
+    assert [t.booking_date for t in st.transactions] == [date(2026, 10, 2), date(2026, 10, 5), date(2026, 10, 7)]
+    assert [t.value_date for t in st.transactions] == [date(2026, 10, 2), date(2026, 10, 5), date(2026, 10, 1)]
+    assert [t.amount for t in st.transactions] == [Decimal("-39.90"), Decimal("2500.00"), Decimal("-4.62")]
+    assert st.transactions[0].description == "Compravendita Titoli Acea Qta/Val.nom. 25,000000"
+    assert not any(t.sign_uncertain for t in st.transactions)
+    assert st.opening == Decimal("1000.00") and st.closing == Decimal("3455.48")
+    assert st.reconciliation() == "ok"
+    assert st.warnings == []
+
+
+@pytest.fixture
+def pdf_dir(tmp_path):
+    d = tmp_path / "estratti"
+    d.mkdir()
+    make_ing(d / "ing_q1.pdf")
+    make_credem(d / "credem_q2q3.pdf")
+    return d
+
+
+@pytest.fixture
+def statements(pdf_dir):
+    return [parse_statement(p) for p in sorted(pdf_dir.glob("*.pdf"))]
+
+
+# ── amounts / dates ───────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("raw,expected", [
+    ("1.234,56", Decimal("1234.56")), ("54,30", Decimal("54.30")), ("1.234,56-", Decimal("-1234.56")),
+    ("-12,00", Decimal("-12.00")), ("€ 9,90", Decimal("9.90")), ("+3,00", Decimal("3.00")),
+])
+def test_parse_amount(raw, expected):
+    assert parse_amount(raw) == expected
+
+
+@pytest.mark.parametrize("raw", ["2026", "12.34", "abc", "1,2", "01/02/2026"])
+def test_parse_amount_rejects(raw):
+    assert parse_amount(raw) is None
+
+
+def test_parse_date():
+    assert parse_date("02/01/2026") == date(2026, 1, 2)
+    assert parse_date("02.01.26") == date(2026, 1, 2)
+    assert parse_date("31/02/2026") is None
+    assert parse_date("54,30") is None
+
+
+# ── parsing ───────────────────────────────────────────────────────────────────
+
+def test_parse_ing(tmp_path):
+    st = parse_statement(make_ing(tmp_path / "ing.pdf"))
+    assert st.bank == "ing"
+    assert [t.amount for t in st.transactions] == [
+        Decimal("-54.30"), Decimal("2150.00"), Decimal("-12.99"), Decimal("-500.00"), Decimal("-1.90")]
+    assert st.transactions[1].description.endswith("mese di dicembre")
+    assert st.transactions[0].booking_date == date(2026, 1, 2)
+    assert st.transactions[4].value_date == date(2026, 3, 31)
+    assert "PAGAMENTO CARTA" in st.transactions[0].description
+    assert st.opening == Decimal("1000.00") and st.closing == Decimal("2580.81")
+    assert st.reconciliation() == "ok"
+    assert not any(t.sign_uncertain for t in st.transactions)
+
+
+def test_parse_credem(tmp_path):
+    st = parse_statement(make_credem(tmp_path / "credem.pdf"))
+    assert st.bank == "credem"
+    assert len(st.transactions) == 5
+    assert st.transactions[1].amount == Decimal("500.00")
+    assert "bolletta luce aprile" in st.transactions[2].description
+    assert st.reconciliation() == "ok"
+
+
+def test_reconciliation_flags_mismatch(tmp_path):
+    st = parse_statement(make_ing(tmp_path / "ing.pdf", closing="1.800,00"))
+    assert st.reconciliation().startswith("diff")
+
+
+def test_generic_without_columns_marks_sign_uncertain(tmp_path):
+    p = tmp_path / "other.pdf"
+    pdf = fpdf.FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=10)
+    for line in ["Banca Qualunque", "05/06/2026 Pagamento POS BAR CENTRALE 3,50",
+                 "07/06/2026 Accredito bonifico stipendio 1.000,00", "08/06/2026 Rimborso spese 20,00-"]:
+        pdf.cell(0, 6, line, new_x="LMARGIN", new_y="NEXT")
+    pdf.output(str(p))
+    st = parse_statement(p)
+    assert st.bank == "generic"
+    assert [t.amount for t in st.transactions] == [Decimal("-3.50"), Decimal("1000.00"), Decimal("-20.00")]
+    assert [t.sign_uncertain for t in st.transactions] == [True, True, False]
+    assert st.reconciliation() == "n.d."
+
+
+# ── classification ────────────────────────────────────────────────────────────
+
+def _tx(desc, amount):
+    return Transaction(bank="ing", booking_date=date(2026, 1, 1), value_date=None,
+                       description=desc, amount=Decimal(amount), source="x.pdf", page=1)
+
+
+def test_classifier_default_rules():
+    c = Classifier(load_rules())
+    assert c.classify(_tx("PAGAMENTO CARTA ESSELUNGA", "-10")) == "Spesa alimentare"
+    assert c.classify(_tx("Stipendio ACME SRL", "2000")) == "Stipendio e redditi"
+    assert c.classify(_tx("Giroconto verso conto Credem", "-500")) == "Giroconti tra conti"
+    assert c.classify(_tx("PRELIEVO BANCOMAT ATM", "-50")) == "Prelievi contanti"
+    assert c.classify(_tx("NETFLIX.COM", "-12.99")) == "Abbonamenti e digitale"
+    assert c.classify(_tx("PAGAMENTO POS MISTERO SNC", "-1")) == "Da classificare"
+
+
+def test_giroconto_to_fineco_is_saving_and_investing():
+    c = Classifier(load_rules())
+    for desc in ("Giroconto a FinecoBank", "GIROCONTO verso conto Fineco"):
+        assert c.classify(_tx(desc, "-300")) == "Investimenti e risparmio"
+    assert "Investimenti e risparmio" in load_rules().transfers
+    assert c.classify(_tx("Giroconto verso conto Credem", "-500")) == "Giroconti tra conti"
+
+
+def test_giroconto_to_ing_is_monthly_expenses_funding():
+    c = Classifier(load_rules())
+    for desc in ("Giroconto a ING Bank", "GIROCONTO verso conto ING", "Bonifico a ING Direct"):
+        assert c.classify(_tx(desc, "-1500")) == "Giroconto per spese mensili"
+    assert "Giroconto per spese mensili" in load_rules().transfers
+    assert c.classify(_tx("Giroconto verso conto Credem", "-500")) == "Giroconti tra conti"
+    assert c.classify(_tx("PAGAMENTO KING BURGER", "-9")) != "Giroconto per spese mensili"
+
+
+def test_rule_direction_and_custom_file(tmp_path):
+    rules = tmp_path / "rules.yaml"
+    rules.write_text(
+        "categories:\n"
+        "  - name: Rimborsi\n    direction: in\n    patterns: ['rimborso']\n"
+        "  - name: Spese mediche\n    patterns: ['rimborso', 'farmacia']\n", encoding="utf-8")
+    c = Classifier(load_rules(rules))
+    assert c.classify(_tx("Rimborso ticket", "30")) == "Rimborsi"
+    assert c.classify(_tx("Rimborso ticket", "-30")) == "Spese mediche"
+
+
+def test_personal_rules_layer_on_defaults(tmp_path):
+    rules = tmp_path / "mie_regole.yaml"
+    rules.write_text("overrides:\n  'asilo esempio': Famiglia e istruzione\n"
+                     "categories:\n  - name: Giroconti tra conti\n    patterns: ['a favore di mario rossi giro']\n",
+                     encoding="utf-8")
+    loaded = load_rules(rules)
+    c = Classifier(loaded)
+    assert c.classify(_tx("BONIFICO A DEBITO a favore di mario rossi giro gennaio", "-1500")) == "Giroconti tra conti"
+    assert "Giroconti tra conti" in loaded.transfers
+    assert c.classify(_tx("BONIFICO A DEBITO a favore di asilo esempio srl", "-677")) == "Famiglia e istruzione"
+    assert c.classify(_tx("PAGAMENTO MAESTRO ESSELUNGA -ITA", "-70")) == "Spesa alimentare"  # defaults still apply
+
+
+def _stmt(*rows):
+    from bankanalyst.models import Statement
+    txs = [Transaction(bank="ing", booking_date=d, value_date=None, description=desc, amount=Decimal(a),
+                       source="x.pdf", page=1) for d, desc, a in rows]
+    return Statement(path="x.pdf", bank="ing", transactions=txs)
+
+
+def test_monthly_budget_window_average_and_exclusions():
+    from bankanalyst.report import monthly_budget
+    st = _stmt(
+        (date(2025, 1, 10), "PAGAMENTO ESSELUNGA", "-50"),          # outside the 3-month window
+        (date(2026, 1, 10), "PAGAMENTO ESSELUNGA", "-100"),
+        (date(2026, 3, 5), "PAGAMENTO ESSELUNGA", "-300"),
+        (date(2026, 1, 27), "ACCREDITO STIPENDIO GENNAIO", "1500"),
+        (date(2026, 2, 3), "GIROCONTO A CONTO ARANCIO", "-700"),   # transfer: never in the budget
+        (date(2026, 3, 9), "BOH QUALCOSA", "-30"),                  # unclassified: shown, not hidden
+    )
+    b = monthly_budget(analyze([st]), months=3)
+    assert (b.first, b.last, b.months) == ("2026-01", "2026-03", 3)
+    rows = {r.category: r for r in b.rows}
+    assert "Giroconti tra conti" not in rows
+    food = rows["Spesa alimentare"]
+    assert food.window_total == Decimal("-400")
+    assert food.monthly == Decimal("-133.33")            # 400 / 3 calendar months, February counts as zero
+    assert food.monthly_all == Decimal("-30.00")         # 450 over the 15 months Jan 2025 - Mar 2026
+    assert food.active_months == 2
+    assert rows["Stipendio e redditi"].kind == "entrata" and rows["Stipendio e redditi"].monthly == Decimal("500.00")
+    assert rows["Da classificare"].monthly == Decimal("-10.00")
+    assert b.income == Decimal("500.00") and b.expenses == Decimal("-143.33")
+    assert [r.category for r in b.rows if r.kind == "uscita"][0] == "Spesa alimentare"  # largest expense first
+
+
+_FLAG_RULES = (
+    "categories:\n"
+    "  - name: Contributo famiglia\n    flag: true\n    direction: in\n    patterns: ['ordinante ida']\n"
+    "  - name: Retta scuola da Credem\n    flag: true\n    bank: credem\n    patterns: ['happy child']\n"
+    "  - name: Famiglia e istruzione\n    patterns: ['happy child']\n")
+
+
+def _tx_bank(bank, desc, amount):
+    return Transaction(bank=bank, booking_date=date(2026, 1, 1), value_date=None,
+                       description=desc, amount=Decimal(amount), source="x.pdf", page=1)
+
+
+def test_fineco_short_selling_is_a_trade():
+    c = Classifier(load_rules())
+    for desc, amount in (("Apertura Short Selling Amplifon Qta/Val.nom. 200,000000", "-5942.40"),
+                         ("Chiusura Short Selling Generali Qta/Val.nom. 30,000000", "1444.80"),
+                         ("Apertura Short Selling Nexi Qta/Val.nom. 550,000000", "-3558.72"),
+                         ("Chiusura Short Selling A2a Qta/Val.nom. 700,000000", "1895.25")):
+        assert c.classify(_tx_bank("fineco", desc, amount)) == "Investimenti e risparmio"
+    assert "Investimenti e risparmio" in load_rules().transfers   # a trade is not spending or income
+    assert c.classify(_tx_bank("ing", "short selling", "-10")) != "Investimenti e risparmio"  # Fineco only
+
+
+def test_fineco_leverage_trades_coupons_and_dividends():
+    c = Classifier(load_rules())
+    f = lambda d, a: c.classify(_tx_bank("fineco", d, a))   # noqa: E731
+    assert f("Apertura Leva Tenaris Qta/Val.nom. 100,000000", "916") == "Investimenti e risparmio"
+    assert f("Chiusura Leva Tenaris Qta/Val.nom. 100,000000", "-916") == "Investimenti e risparmio"
+    assert f("Ced.su 4.000,000 Btp-1st46 3,25%", "65") == "Banca e finanza (Fineco)"
+    assert f("Div.su 100,000 Enel", "25.50") == "Banca e finanza (Fineco)"                    # not "Casa e utenze"
+    assert f("Div.su 60,000 Finecobank", "44.40") == "Banca e finanza (Fineco)"               # not "Investimenti" via 'fineco'
+    assert f("Rit.div.su 100,000 Eni", "-7.02") == "Banca e finanza (Fineco)"
+    assert f("Rit.div.su 40,000 Generali", "-14.87") == "Banca e finanza (Fineco)"
+    assert f("Rit.ced.su 4.000,000 Btp-1st46 3,25%", "-8.12") == "Banca e finanza (Fineco)"
+    assert "Investimenti e risparmio" in load_rules().transfers
+    assert not {"Banca e finanza (Fineco)", "Banca e finanza (altri conti)"} & load_rules().transfers   # real income / tax
+    assert c.classify(_tx_bank("ing", "Div.su 100,000 Enel", "25")) != "Banca e finanza (Fineco)"        # Fineco only
+
+
+def test_fineco_interessi_leva_and_short_dividends_are_trading_costs():
+    c = Classifier(load_rules())
+    rules = load_rules()
+    for desc, amount in (("Interessi Leva Tenaris Qta/Val.nom. 100,000000", "-2.46"),
+                         ("Add.div.short su 40,000 Moncler", "-56.00"),
+                         ("Add.div.short su 35,000 Generali", "-57.40")):   # not "Assicurazioni"
+        assert c.classify(_tx_bank("fineco", desc, amount)) == "Banca e finanza (Fineco)"
+    assert "Banca e finanza (Fineco)" not in rules.transfers | rules.flags            # a real cost: counts as spending
+    assert c.classify(_tx_bank("ing", "Interessi Leva", "-1")) != "Banca e finanza (Fineco)"
+
+
+def test_fineco_lending_interest_and_tobin_tax_are_trading_costs():
+    c = Classifier(load_rules())
+    for desc in ("Interessi lending su titoli", "Tobin tax Italia Acquisto", "TOBIN TAX"):
+        assert c.classify(_tx_bank("fineco", desc, "-3.5")) == "Banca e finanza (Fineco)"
+    assert c.classify(_tx_bank("ing", "Tobin tax", "-3.5")) != "Banca e finanza (Fineco)"
+
+
+def test_banca_e_finanza_split_between_fineco_and_other_accounts():
+    c = Classifier(load_rules())
+    assert c.classify(_tx_bank("fineco", "Imposta di bollo dossier titoli", "-34.2")) == "Banca e finanza (Fineco)"
+    assert c.classify(_tx_bank("fineco", "Commissioni di negoziazione", "-5")) == "Banca e finanza (Fineco)"
+    assert c.classify(_tx_bank("ing", "COMM. BONIFICO ISTANTANEO", "-0.58")) == "Banca e finanza (altri conti)"
+    assert c.classify(_tx_bank("credem", "Imposta di bollo dossier titoli", "-34.2")) == "Banca e finanza (altri conti)"
+
+
+def test_rule_bank_filter_and_flag_loading(tmp_path):
+    rules = tmp_path / "mie_regole.yaml"
+    rules.write_text(_FLAG_RULES, encoding="utf-8")
+    loaded = load_rules(rules)
+    c = Classifier(loaded)
+    assert c.classify(_tx_bank("credem", "BONIFICO happy child srl", "-670")) == "Retta scuola da Credem"
+    assert c.classify(_tx_bank("ing", "BONIFICO happy child srl", "-670")) == "Famiglia e istruzione"  # other bank: not flagged
+    assert loaded.flags == {"Contributo famiglia", "Retta scuola da Credem"}
+
+
+def test_flagged_categories_leave_totals_and_budget(tmp_path):
+    from bankanalyst.report import monthly_budget
+    rules = tmp_path / "mie_regole.yaml"
+    rules.write_text(_FLAG_RULES, encoding="utf-8")
+    st = _stmt((date(2026, 1, 5), "ACCREDITO ORDINANTE IDA ROSSI SPESE", "1000"),
+               (date(2026, 1, 10), "PAGAMENTO ESSELUNGA", "-100"),
+               (date(2026, 1, 27), "ACCREDITO STIPENDIO GENNAIO", "1500"))
+    res = analyze([st], rules)
+    q = res.totals["2026-Q1"]
+    assert q["flaggati"] == Decimal("1000")
+    assert q["entrate"] == Decimal("1500") and q["uscite"] == Decimal("-100") and q["netto"] == Decimal("1400")
+    assert res.pivot["Contributo famiglia"]["2026-Q1"] == Decimal("1000")   # still visible per category
+    b = monthly_budget(res, months=1)
+    assert "Contributo famiglia" not in {r.category for r in b.rows}
+    assert b.income == Decimal("1500.00")
+
+
+def test_flag_beats_transfer_and_excel_shows_flag(tmp_path):
+    rules = tmp_path / "mie_regole.yaml"
+    rules.write_text("categories:\n  - name: Giroconto per spese mensili\n    transfer: true\n    flag: true\n"
+                     "    patterns: ['giro ing']\n", encoding="utf-8")
+    st = _stmt((date(2026, 1, 5), "BONIFICO luigi aceto giro ING", "-1500"),
+               (date(2026, 1, 10), "PAGAMENTO ESSELUNGA", "-100"))
+    res = analyze([st], rules)
+    q = res.totals["2026-Q1"]
+    assert q["flaggati"] == Decimal("-1500") and q["giroconti"] == Decimal("0")
+    wb = openpyxl.load_workbook(write_excel(res, tmp_path / "r.xlsx"))
+    head = [c.value for c in wb["Riepilogo"][1]]
+    assert "Flaggati (esclusi)" in head
+    assert wb["Riepilogo"].cell(2, head.index("Flaggati (esclusi)") + 1).value == -1500
+    mov_head = [c.value for c in wb["Movimenti"][1]]
+    flags = [r[mov_head.index("Flag")].value for r in wb["Movimenti"].iter_rows(min_row=2)]
+    assert flags == ["sì", None]
+
+
+def test_monthly_budget_shorter_history_than_window():
+    from bankanalyst.report import monthly_budget
+    b = monthly_budget(analyze([_stmt((date(2026, 2, 1), "PAGAMENTO ESSELUNGA", "-60"),
+                                      (date(2026, 3, 1), "PAGAMENTO ESSELUNGA", "-60"))]), months=12)
+    assert b.months == 2                                  # only the months that exist, not 12
+    assert {r.category: r for r in b.rows}["Spesa alimentare"].monthly == Decimal("-60.00")
+
+
+def test_rule_amount_matches_only_that_amount(tmp_path):
+    """Same merchant, two uses: a fixed price (cigarettes) vs. any other amount (lunch)."""
+    rules = tmp_path / "mie_regole.yaml"
+    rules.write_text("categories:\n"
+                     "  - name: Tabacchi\n    amount: -5.50\n    patterns: ['tess.000000001 bar esempio']\n"
+                     "  - name: Ristoranti e bar\n    patterns: ['tess.000000001 bar esempio']\n", encoding="utf-8")
+    c = Classifier(load_rules(rules))
+    desc = "PAGOBANCOMAT 02/10/24,ORE 17:24,TESS.000000001 bar esempio"
+    assert c.classify(_tx(desc, "-5.50")) == "Tabacchi"
+    assert c.classify(_tx(desc, "-5.5")) == "Tabacchi"
+    assert c.classify(_tx(desc, "-13.00")) == "Ristoranti e bar"
+    assert c.classify(_tx(desc, "5.50")) == "Ristoranti e bar"  # sign matters: only the payment is cigarettes
+
+
+@pytest.mark.parametrize("desc,amount,expected", [
+    # Seen on real Credem statements: each was misfiled by an earlier version of the rules.
+    ("BONIFICO A CREDITO universita' di esempio cup h00x00000000000 compenso", "589.86", "Stipendio e redditi"),
+    ("BONIFICO A CREDITO inps assegno unico per 1 figli/o", "57.50", "Assegni e contributi pubblici"),
+    ("COMM. BONIFICO ISTANTANEO", "-0.58", "Banca e finanza (altri conti)"),
+    ("BOLLI C/C E DEPOSITI A RISPARMIO", "-8.55", "Banca e finanza (altri conti)"),
+    ("RICARICA-RIMBORSO CANONE", "5", "Banca e finanza (altri conti)"),
+    ("CARTA EGO", "-26.99", "Carta di credito (addebito mensile)"),
+    ("BONIFICO A DEBITO a favore di studio notarile atto compravendita", "-2622.61", "Casa: acquisto, lavori, notaio"),
+    ("BONIFICO A DEBITO a favore di lara rossi rca megane 25/26", "-385", "Assicurazioni"),
+    ("PAGOBANCOMAT 04/11/24,ORE 09:08,TESS.000000001 tabaccheria di rossi", "-5.5", "Tabacchi"),
+    # ING card payments: the merchant follows PRESSO in a long description.
+    ("PAGAMENTO CARTA - OPERAZIONE MASTERCARD DEL 01/02/2025 IMPORTO IN EURO=59.14 PRESSO DISTRIBUTORE AREA SERV",
+     "-59.14", "Trasporti e auto"),
+    ("PAGAMENTO CARTA - OPERAZIONE MASTERCARD PRESSO BERTAME KITCHEN GARAGE - TRANSAZIONE C-LESS", "-107",
+     "Ristoranti e bar"),
+    ("CEDOLE/DIVIDENDI/PREMI ESTR. - INCASSO CEDOLA DEL TITOLO BTP", "17.5", "Banca e finanza (altri conti)"),
+    ("IMPOSTA DI BOLLO TRADING - IMPOSTA DI BOLLO TOL DOSSIER LUG-SET 2024", "-1", "Banca e finanza (altri conti)"),
+])
+def test_default_rules_on_real_descriptions(desc, amount, expected):
+    assert Classifier(load_rules()).classify(_tx(desc, amount)) == expected
+
+
+def test_overrides_win(tmp_path):
+    rules = tmp_path / "rules.yaml"
+    rules.write_text("overrides:\n  'MISTERO SNC': Ristoranti e bar\ncategories: []\n", encoding="utf-8")
+    c = Classifier(load_rules(rules))
+    assert c.classify(_tx("PAGAMENTO POS MISTERO SNC", "-1")) == "Ristoranti e bar"
+
+
+# ── report ────────────────────────────────────────────────────────────────────
+
+def test_quarter_of():
+    assert quarter_of(date(2026, 1, 1)) == "2026-Q1"
+    assert quarter_of(date(2026, 12, 31)) == "2026-Q4"
+
+
+def test_dedupe_overlapping_statements(tmp_path):
+    a = parse_statement(make_ing(tmp_path / "a.pdf"))
+    b = parse_statement(make_ing(tmp_path / "b.pdf"))
+    assert len(dedupe(a.transactions + b.transactions)) == len(a.transactions)
+
+
+def test_analyze_quarters_and_transfers(statements):
+    res = analyze(statements)
+    assert set(res.quarters) == {"2026-Q1", "2026-Q2", "2026-Q3"}
+    q1 = res.totals["2026-Q1"]
+    # Transfers between own accounts are excluded from income and spending.
+    assert q1["entrate"] == Decimal("2150.00")
+    assert q1["uscite"] == Decimal("-69.19")
+    assert res.totals["2026-Q2"]["entrate"] == Decimal("0")
+    assert res.pivot["Giroconti tra conti"]["2026-Q1"] == Decimal("-500.00")
+    assert len(res.unclassified) == 1
+    assert all(c["esito"] == "ok" for c in res.checks)
+
+
+def test_write_excel(statements, tmp_path):
+    out = write_excel(analyze(statements), tmp_path / "report.xlsx")
+    wb = openpyxl.load_workbook(out)
+    assert wb.sheetnames == ["Riepilogo", "Per categoria", "Budget mensile", "Movimenti", "Da classificare",
+                             "Controlli"]
+    budget = wb["Budget mensile"]
+    assert [c.value for c in budget[1]][:2] == ["Categoria", "Tipo"]
+    assert budget.cell(budget.max_row, 1).value == "Saldo"
+    mov = wb["Movimenti"]
+    assert mov.max_row == 1 + 10
+    assert [c.value for c in mov[1]][:4] == ["Banca", "Data", "Valuta", "Trimestre"]
+
+
+ING_CARD = ("PAGAMENTO CARTA - OPERAZIONE MASTERCARD DEL 15/09/2026 ALLE ORE 00:00 CON CARTA XXXXXXXXXXXX1934 "
+            "DIV=EUR IMPORTO IN DIVISA=25.49 / IMPORTO IN EURO=25.49 PRESSO {}")
+
+
+@pytest.mark.parametrize("tail,expected", [
+    ("AMZN MKTP IT*NM81K1ZJ4", "AMZN MKTP IT*NM81K1ZJ4"),
+    ("FELTRINELLI LIBRERIE - TRANSAZIONE C-LESS", "FELTRINELLI LIBRERIE"),   # the contactless suffix is not the shop
+    ("  ESSELUNGA  MILANO  ", "ESSELUNGA MILANO"),
+])
+def test_merchant_is_what_follows_presso(tail, expected):
+    from bankanalyst.report import merchant
+    assert merchant(ING_CARD.format(tail)) == expected
+
+
+def test_merchant_empty_when_there_is_no_presso():
+    from bankanalyst.report import merchant
+    assert merchant("BONIFICO A DEBITO a favore di mario rossi") == ""
+    assert merchant("Compravendita Titoli Finecobank") == ""
+
+
+def test_excel_movements_have_a_merchant_column(tmp_path):
+    st = _stmt((date(2026, 1, 5), ING_CARD.format("FELTRINELLI LIBRERIE - TRANSAZIONE C-LESS"), "-4.65"),
+               (date(2026, 1, 6), "BONIFICO A DEBITO a favore di mario rossi", "-10"))
+    wb = openpyxl.load_workbook(write_excel(analyze([st]), tmp_path / "r.xlsx"))
+    head = [c.value for c in wb["Movimenti"][1]]
+    col = head.index("Esercente")
+    assert [r[col].value for r in wb["Movimenti"].iter_rows(min_row=2)] == ["FELTRINELLI LIBRERIE", None]
+    assert wb["Movimenti"].cell(2, 6).value == -4.65 and head[5] == "Importo"   # money column did not move
+
+
+def test_split_by_bank_keeps_each_banks_own_movements(statements):
+    from bankanalyst.report import split_by_bank
+    res = analyze(statements)
+    parts = split_by_bank(res)
+    assert set(parts) == {"ing", "credem"}
+    assert sum(len(p.transactions) for p in parts.values()) == len(res.transactions)
+    for bank, p in parts.items():
+        assert {t.bank for t in p.transactions} == {bank}
+        assert {c["banca"] for c in p.checks} == {bank}
+        assert sum(v["movimenti"] for v in p.totals.values()) == len(p.transactions)
+    # nothing lost or invented: the banks' totals add up to the combined ones
+    for key in ("entrate", "uscite", "giroconti", "flaggati"):
+        assert sum(v[key] for p in parts.values() for v in p.totals.values()) == sum(v[key] for v in res.totals.values())
+    assert sum(len(p.unclassified) for p in parts.values()) == len(res.unclassified)
+
+
+def test_cli_writes_one_excel_per_bank(pdf_dir, tmp_path, capsys):
+    from bankanalyst.cli import main
+    out = tmp_path / "r.xlsx"
+    assert main([str(pdf_dir), "--out", str(out)]) == 0
+    text = capsys.readouterr().out
+    assert "2026-Q1" in text and "Da classificare: 1" in text
+    assert not out.exists()                                    # no combined file by default
+    for bank in ("ing", "credem"):
+        f = tmp_path / f"r_{bank}.xlsx"
+        assert f.exists() and f.name in text
+        mov = openpyxl.load_workbook(f)["Movimenti"]
+        assert {r[0].value for r in mov.iter_rows(min_row=2)} == {bank}
+
+
+def test_cli_combined_flag_keeps_the_single_file(pdf_dir, tmp_path):
+    from bankanalyst.cli import main
+    out = tmp_path / "r.xlsx"
+    assert main([str(pdf_dir), "--out", str(out), "--combined"]) == 0
+    assert out.exists()
+    assert (tmp_path / "r_ing.xlsx").exists()                  # per-bank files are still written
+
+
+def test_pdfs_found_once_whatever_the_case(tmp_path):
+    """On Windows rglob('*.pdf') and rglob('*.PDF') both match every file: each must be read once."""
+    from bankanalyst.cli import _pdfs
+    (tmp_path / "credem").mkdir()
+    (tmp_path / "ing").mkdir()
+    for name in ("credem/a.pdf", "ing/b.PDF", "ing/note.txt"):
+        (tmp_path / name).write_bytes(b"%PDF-1.4")
+    found = _pdfs([str(tmp_path), str(tmp_path / "ing" / "b.PDF")])
+    assert sorted(p.name for p in found) == ["a.pdf", "b.PDF"]
+
+
+# ── LLM batch classification (kitai) ─────────────────────────────────────────
+
+def test_llm_labels_only_known_categories_and_unique_descriptions():
+    from bankanalyst.llm_classify import build_items, parse_labels
+    items = build_items([_tx("POS MISTERO SNC", "-1"), _tx("pos  mistero snc", "-2"), _tx("ALTRO POS", "-3")])
+    assert len(items) == 2  # same normalized description sent once
+    def reply(it, cat):
+        return {"custom_id": f"custom_id_{it['id']}",
+                "response": {"body": {"choices": [{"message": {"content": '{"category": "%s"}' % cat}}]}}}
+    labels = parse_labels([reply(items[0], "Salute"), reply(items[1], "Inventata")], items, {"Salute", "Shopping"})
+    assert labels == {items[0]["content"]: "Salute"}  # invented category dropped
+
+
+def test_analyze_applies_extra_labels_only_to_unclassified():
+    from bankanalyst.llm_classify import normalize
+    st = _stmt((date(2026, 1, 1), "POS MISTERO SNC", "-10"), (date(2026, 1, 2), "ESSELUNGA", "-20"))
+    res = analyze([st], None, extra_labels={normalize("POS MISTERO SNC"): "Salute",
+                                            normalize("ESSELUNGA"): "Shopping"})
+    assert {t.description: t.category for t in res.transactions} == {"POS MISTERO SNC": "Salute",
+                                                                     "ESSELUNGA": "Spesa alimentare"}
+    assert res.unclassified == []
+
+
+def test_classify_with_batch_uses_cache_and_skips_api(tmp_path):
+    import json
+    from bankanalyst.llm_classify import classify_with_batch, normalize
+    cache = tmp_path / "cache.json"
+    cache.write_text(json.dumps({normalize("POS MISTERO SNC"): "Salute"}), encoding="utf-8")
+    labels = classify_with_batch([_tx("POS MISTERO SNC", "-1")], {"Salute"}, cache_path=cache, client=None)
+    assert labels == {normalize("POS MISTERO SNC"): "Salute"}  # all cached: no client needed
+
+
+def test_classify_with_batch_full_flow_with_fake_client(tmp_path, monkeypatch):
+    import kitai.batch as kb
+    from bankanalyst.llm_classify import classify_with_batch, normalize
+    sent = {}
+    monkeypatch.setattr(kb, "submit_batch_job", lambda c, tasks, endpoint: sent.update(tasks=tasks) or "job1")
+    monkeypatch.setattr(kb, "poll_until_complete", lambda c, ids, poll_interval: ids)
+    monkeypatch.setattr(kb, "download_batch_results", lambda c, j: [
+        {"custom_id": t["custom_id"],
+         "response": {"body": {"choices": [{"message": {"content": '{"category": "Salute"}'}}]}}}
+        for t in sent["tasks"]])
+    cache = tmp_path / "c.json"
+    labels = classify_with_batch([_tx("POS MISTERO SNC", "-1")], {"Salute"}, cache_path=cache, client=object())
+    assert labels == {normalize("POS MISTERO SNC"): "Salute"} and cache.exists()
+    assert "-1" not in str(sent["tasks"][0]["body"]["messages"][1])  # only the description is sent
+
+
+def test_personal_merchant_rules():
+    from pathlib import Path
+    p = Path("estratti_conto/mie_regole.yaml")
+    if not p.exists():
+        pytest.skip("regole personali assenti")
+    c = Classifier(load_rules(p))
+    assert c.classify(_tx("CA TURATI - TRANSAZIONE", "-9")) == "Pausa pranzo ufficio"
+    assert c.classify(_tx("COCCIUTO", "-9")) == "Pausa pranzo ufficio"
+    assert c.classify(_tx("KAMMI", "-9")) == "Shopping"
+    assert c.classify(_tx("DAGOPHOTO", "-9")) == "Shopping"
+    assert c.classify(_tx("BERTAME", "-300")) == "Officina auto"

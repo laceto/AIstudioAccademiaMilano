@@ -154,3 +154,12 @@ agent_deploy_streamlit:
   - google_cloud_run
   - docker_host
   - github_repo
+bank_statement_analyst:
+  skills:
+  - pdf_table_extraction
+  - italian_amount_parsing
+  - rule_based_transaction_classification
+  - excel_report_generation
+  delivery_options:
+  - github_repo
+  - local_cli

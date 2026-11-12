@@ -30,6 +30,7 @@ If the intent is not in the table → `unknown_product: null` → **block, escal
 | family archivist | `family_archivist` | 14.90 | — |
 | meal planner, ricette | `mediterranean_meal_planner` | 14.90 | — |
 | niccolò chronicles, time capsule | `niccolo_chronicles` | 14.90 | — |
+| estratto conto, analisi conto, movimenti bancari | `bank_statement_analyst` | 14.90 | — |
 | qualsiasi altro | `unknown_product` | **null** | **BLOCK** |
 
 ---
@@ -137,6 +138,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 - Output advisory: disclaimer obbligatorio (validato da `validate_advisory_output()`)
 - Apple Calendar: solo app-specific password (appleid.apple.com) — mai password principale
 - Twilio webhook: HMAC-SHA1 attivo in produzione
+- Gateway `/submit` e `/status`: `X-API-Key` obbligatoria (`GATEWAY_API_KEY`); senza chiave configurata rispondono 503, mai aperti in produzione
 - Google `credentials.json` e `token.json`: locali, mai committati
 - **Pre-commit secret scan** (`scripts/git-hooks/pre-commit`): blocca `.env` staged e pattern di credenziali noti. Auto-attivato dal hook `SessionStart` in `.claude/settings.json` (`git config core.hooksPath scripts/git-hooks`). Bypass solo con `--no-verify` per falsi positivi confermati.
 
@@ -164,6 +166,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
   "family_archivist":          "14.90",
   "mediterranean_meal_planner":"14.90",
   "niccolo_chronicles":        "14.90",
+  "bank_statement_analyst":    "14.90",
   "unknown_product":           null
 }
 ```
@@ -183,8 +186,10 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `credentials/registry.md` | Guida step-by-step per tutte le credenziali |
 | `.env.example` | Template variabili d'ambiente — copia in `.env` e compila |
 | `scripts/learning_loop.py` | Auto-aggiorna settings dopo ogni request |
+| `process/lessons_learned.md` | Lezioni apprese dalle consegne (044), generato dal learning loop: Gianni e Chiara lo leggono prima di iniziare |
 | `scripts/git-hooks/pre-commit` | Blocca `.env` + pattern segreti noti |
-| `scripts/check_telegram.py` | Doctor canali Telegram: `getMe` + `getWebhookInfo` per bot, rileva conflitti webhook/polling |
+| `scripts/check_telegram.py` | Doctor canali Telegram: `getMe` + `getWebhookInfo` per bot, rileva conflitti webhook/polling e token duplicati (pipeline, RAG, admin) |
+| `deliverables/2026-10-16_041_admin-bot/` | Guida al bot admin separato (`TELEGRAM_ADMIN_BOT_TOKEN`): cosa cambia, come attivarlo, limiti |
 | `scripts/run_local_stack.py` | Avvia lo stack Telegram in locale (RAG API + 2 bot polling + worker) |
 | `process/runbook_local_telegram_stack.md` | Runbook: far girare i canali Telegram su laptop, senza URL pubblico |
 | `docs/cloud-run-setup.md` | Stato del setup Cloud Run (progetto `aistudio-milano`, regione `europe-west8`), cosa è fatto e cosa resta da fare |
@@ -207,13 +212,21 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `gateway/safety.py` | Rifiuto delle richieste chiaramente illegali: filtro a frasi che gira prima del modello; elenco da estendere con prudenza |
 | `gateway/review_request.py` | `RIESAMINA` dal cliente: avvisa Luigi senza creare un job |
 | `deliverables/2026-10-09_038_erasure-and-refusals/` | Guida a `/cancella`, ai rifiuti automatici e a RIESAMINA |
+| `mailagent/server.py`, `mailagent/classifier.py`, `scripts/deploy_mailagent.sh` | Gmail tidy su Cloud Run (042): classificatore a header, `POST /process`, deploy con Secret Manager + Scheduler; runbook `process/runbook_mailagent_cloudrun.md` |
+| `gateway/research_digest.py`, `process/runbook_research_digest.md` | Digest settimanale GitHub AI per Gianni (pipeline v2): salvataggio, lettura difensiva, endpoint `/research/run` sul worker, comando Scheduler |
+| `driverouter/` | Drive Semantic Router (043): `classifier.py` (MiniLM + ChromaDB), `main.py` (FastAPI, Drive, scheduler), `Dockerfile`, `deploy_azure.sh` (F1 + Key Vault); guida in `deliverables/2026-10-16_043_drive-semantic-router/` |
+| `bankanalyst/` | Analista estratti conto (045): PDF Credem/ING → movimenti → categorie (`rules.yaml`) → Excel per trimestre con quadratura saldi; guida in `deliverables/2026-10-16_045_bank-statement-analyst/` |
+| `scripts/gateway_smoke.py`, `.github/workflows/gateway-smoke.yml` | Smoke test del gateway (046): richiesta simulata → `/submit` → `/status`; locale nel runner a ogni push su `gateway/**`, su Cloud Run solo a mano |
+| `gateway/auth.py` | Chiave del gateway (047): `X-API-Key` su `/submit` e `/status`, fail-closed; guida in `deliverables/2026-11-05_047_protect-gateway/` |
+| `scripts/gateway_deliver.py` | Smoke test fino al deliverable (048): approva + worker nel runner, output nell'artifact `deliverable`; guida in `deliverables/2026-11-05_048_smoke-deliverable/` |
+| `deliverables/2026-05-25_016_aistudio-langgraph/chiara_claude_code.py`, `scripts/unpack_bundle.py` | Motore Claude Code di Chiara (050), spento di default (`CHIARA_ENGINE`); bundle → file con `python -m scripts.unpack_bundle`; guida in `deliverables/2026-11-06_050_chiara-claude-code/` |
 | `scripts/post_delivery_update.py` | Post-commit: crea audit stub, patcha tabella CLAUDE.md |
 | `scripts/digital_presence_pipeline.py` | Bridge D009+D010: GitHub activity → post → multi-platform |
 | `scripts/rag/embed_repo.py` | Indicizza tutti i file via kitai batch + FAISS |
 | `scripts/rag/retrieve_repo.py` | Retrieval ibrido BM25+FAISS |
 | `scripts/rag/inject_context.py` | Hook UserPromptSubmit — inietta top-5 chunk prima di ogni risposta |
 | `scripts/rag/synthesize.py` | Sintesi async via kitai.batch (50% più economico, output Pydantic) |
-| `scripts/github_research/main.py` | GitHub AI Research CLI (Scout→Analyst→Curator→Reporter) |
+| `scripts/github_research/main.py` | GitHub AI Research CLI (Scout→Analyst→Curator→Reporter); lo Scout legge anche github.com/trending (`trending.py`, 049) |
 | `process/intent_registry.yaml` | Tutti gli intent noti → skills → opzioni di delivery |
 | `process/audit/` | Un file Markdown con YAML frontmatter per ogni request completata |
 | `agents/README.md` | Definizioni dei ruoli agente + spec attuariali |
@@ -253,7 +266,10 @@ learning_flags:
   new_skills: [list]
   new_mcp: [list]
   risk_score: 1-5
+  lessons: [{agent, cue, lesson, evidence, confidence}]  # opzionale, vedi sotto
 ```
+
+**Lezioni (044, idea da Harness²).** Se una consegna ha insegnato qualcosa, scrivilo in `learning_flags.lessons`: `cue` (quando vale), `lesson` (cosa fare), `evidence` (cosa si è osservato, obbligatoria), `confidence` (high/medium/low), `agent` (chi la applica). Il learning loop le unisce in `config/global_settings.json` (`lessons`) e rigenera `process/lessons_learned.md`, che Gianni e Chiara leggono prima di iniziare. Niente lezioni generiche: solo ciò che è successo davvero.
 
 ---
 
@@ -383,7 +399,19 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 037 | 2026-10-09 | Retention dei dati, informativa privacy e recupero dei job bloccati — `expire_at` a 90 giorni con TTL Firestore e protezione dalla cancellazione, backfill, sweep dei job `running` (Cloud Scheduler ogni 10 min), `/start` e `/privacy` | 0.00 (internal) |
 | 038 | 2026-10-09 | Cancellazione su richiesta e rifiuto delle richieste fraudolente — `/cancella` con scheda di conferma e registro delle cancellazioni; rifiuto automatico (filtro a frasi + modello), RIESAMINA per il cliente e Riesamina per Luigi, conservazione 30 giorni per i rifiuti; `/privacy` in più messaggi; learning loop: hook solo se lo script esiste | 0.00 (internal) |
 | 039 | 2026-10-16 | Email to-do agent — scansione Gmail N volte al giorno, to-do e proposte di calendario con approvazione, architettura multi-account a provider (Hotmail/Outlook in lista), 16 test offline; non ancora provato su una casella reale | 0.00 (internal) |
-| 040 | 2026-10-16 | Downloads agent — LangGraph: scansione di Downloads, piano per tipo, approvazione (interrupt), spostamento senza cancellare, undo, checkpoint SQLite, pianificabile con Task Scheduler; riassunto di ogni documento con Ollama locale (gemma2:2b) e report HTML; cartella `data/Download`; 34 test offline | 0.00 (internal) |
+| 040 | 2026-10-16 | Pipeline v2 — tutti i ruoli nella pipeline: Lorenzo (scansione injection), Devil's Advocate + Financial Controller + IT Staff prima della build, 6 revisori in parallelo, Core Architect su trigger, Valentina (bozza), aggregatore con soglia critica; accanto a v1 con `PIPELINE_VERSION`; digest settimanale del team ricerca letto da Gianni (`POST /research/run`, Firestore `research/latest`); 56 test offline; non provato con un modello vero né con GitHub; il job Cloud Scheduler del digest non è stato creato (comando in `process/runbook_research_digest.md`) | 0.00 (internal) |
+| 041 | 2026-10-16 | Bot admin separato — `TELEGRAM_ADMIN_BOT_TOKEN` opzionale: schede, comandi, avvisi e risultati da rivedere su un bot solo di Luigi (`/webhook/telegram-admin`), il bot clienti senza poteri admin; messaggi ai clienti sempre dal bot clienti; deploy e doctor aggiornati; non ancora deployato | 0.00 (internal) |
+| 042 | 2026-10-16 | Gmail tidy su Cloud Run — `mailagent tidy`: newsletter/notifiche/promozioni da header (`List-Unsubscribe`, `Precedence`, `no-reply@`, categoria Promozioni) → etichetta + archivio in `batchModify`, lista `protect`, mai stellate né mail < 60 min; retry 429/5xx, log JSON, FastAPI `/process` privato, Dockerfile, `deploy_mailagent.sh` (Secret Manager + Scheduler orario), dry run di default; 22 test offline; non deployato, non provato sulla casella reale | 0.00 (internal) |
+| 043 | 2026-10-16 | Drive Semantic Router — FastAPI + sentence-transformers (MiniLM, CPU) + ChromaDB: smista `05_In_Arrivo_Da_Smistare` nelle cartelle di categoria e rinomina `YYYY-MM-DD_Categoria_Descrizione.ext`; OCR via Drive, APScheduler, log JSON, Dockerfile, deploy Azure App Service F1 + Key Vault; `DRY_RUN` di default; 27 test offline; non provato con il modello vero, Drive reale né Azure | null (pending Luigi — proposta 29.90) |
+| 044 | 2026-10-16 | Lezioni apprese nel learning loop (idea da Harness², google-research/harness2) — `learning_flags.lessons` (cue/lesson/evidence/confidence) negli audit, unite in `global_settings.json` senza duplicati, digest `process/lessons_learned.md` letto da Gianni e Chiara; 13 test offline; demo Harness² non eseguita (permessi) | 0.00 (internal) |
+| 045 | 2026-10-16 | Analista estratti conto — `bankanalyst`: PDF Credem e ING → movimenti (colonne Dare/Avere lette dalla posizione), quadratura saldo iniziale + movimenti = saldo finale, classificazione a regole YAML (18 categorie, override, giroconti tra conti esclusi dai totali), doppioni tra estratti sovrapposti tolti, Excel per trimestre (Riepilogo, Per categoria, Movimenti, Da classificare, Controlli); rifatto sul layout Credem vero (blocchi delimitati dalle righe a sfondo alternato, stop a SALDO FINE PERIODO): 5 estratti Q4 2024–Q4 2025, 471 movimenti, 5/5 in quadratura; regole personali sovrapposte a quelle di base (fuori dal repo); poi ING vero (descrizione sotto l'importo, righe che iniziano con una data, "€" separato): 4 estratti Q4 2024–Q3 2025, 995 movimenti, 4/4 in quadratura; Credem+ING 1.466 movimenti, giroconti appaiati; 42 test offline | 14.90 |
+| 046 | 2026-11-05 | Gateway smoke test (GitHub Action) — `gateway-smoke.yml` + `scripts/gateway_smoke.py`: richiesta di progetto simulata su `/submit`; job `local` (gateway nel runner, worker acceso → `needs_review`) a ogni push/PR su `gateway/**`, job `deployed` (Cloud Run: health, submit, status) solo a mano; riepilogo nella Summary; 7 test offline; il job deployed non è ancora stato provato | 0.00 (internal) |
+| 047 | 2026-11-05 | Gateway protetto — `POST /submit` e `GET /status` vogliono `X-API-Key` (`GATEWAY_API_KEY`, ≥ 32 caratteri, fail-closed 503 se manca, apertura solo locale con `GATEWAY_ALLOW_OPEN_SUBMIT=1`), rate limit prima della chiave; catalogo `/` senza ordini dal browser, bottoni → bot Telegram (`TELEGRAM_BOT_USERNAME`); deploy genera la chiave in Secret Manager; smoke test con la chiave; 24 test nuovi; non ancora deployato | 0.00 (internal) |
+| 048 | 2026-11-05 | Smoke test fino al deliverable — `scripts/gateway_deliver.py`: nel runner approva il job come Luigi (`admin.decide`, prezzo 0) e lo fa girare nel worker vero (`/run`); deliverable + `result.json` + `steps.txt` come artifact `deliverable` e nella Summary; opzione `run_pipeline` (solo a mano, costa LLM); 6 test offline; non provato con una chiave LLM vera | 0.00 (internal) |
+| 049 | 2026-11-05 | Ricerca GitHub anche in trending — `scripts/github_research/trending.py`: legge github.com/trending (default settimanale, `--trending daily/monthly/off`, `--trending-language`), tiene i repo AI (filtro a parole intere), li descrive via REST `/repos`; bucket `trending` in `search_all_topics` (CLI, digest di Gianni, alert giornaliero), growth = max(storico, ritmo nel periodo), sezione "Trending on GitHub" nel report, `(trending +N this week)` nel digest; best effort, mai bloccante; 22 test offline; pagina vera non provata (403 dal container) | 0.00 (internal) |
+| 050 | 2026-11-06 | Chiara costruisce con Claude Code — `CHIARA_ENGINE=claude_code`: per i prodotti di codice `claude -p` headless in una cartella vuota (più file, test scritti e fatti girare), ritestato da Chiara senza chiavi, bundle di testo `<prodotto>_bundle.txt` con riepilogo (file, test, costo) + `scripts/unpack_bundle.py`; fallback alla strategia di sempre su ogni errore; env pulito, utente `builder`, Bash solo pytest, niente web/MCP, `--bare`, budget e timeout; immagine del worker con la CLI solo se acceso; 44 test offline; CLI vera provata con chiave finta, build con un modello vero e Docker no; spento finché Luigi non decide sul worker (ISS-032) | 0.00 (internal) |
+| 051 | 2026-11-11 | Calendar Sentinel — `calendarsentinel`: polling di un Google Calendar con syncToken (scope read-only), avviso Telegram quando compare un evento nuovo (modifiche ignorate, cancellazioni dimenticate), primo giro come baseline silenzioso, retry se Telegram fallisce, `--dry-run`/`--test-message`; 17 test offline; non provato su calendario e bot veri | 14.90 |
+| 053 | 2026-10-16 | Downloads agent — LangGraph: scansione di Downloads, piano per tipo, approvazione (interrupt), spostamento senza cancellare, undo, checkpoint SQLite, pianificabile con Task Scheduler; riassunto di ogni documento con Ollama locale (gemma2:2b) e report HTML; cartella `data/Download`; 34 test offline (consegnato come 040, rinumerato: 040 era già usato dalla pipeline v2) | 0.00 (internal) |
 
 ---
 
@@ -413,3 +441,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | ISS-025 | P1 | Valutare Lemon Squeezy vs Payhip come merchant-of-record (EU VAT) | OPEN |
 | ISS-026 | P3 | HF Spaces paid deployment lane per chatbot/agent/techa deliverable | OPEN |
 | ISS-027 | P3 | Gumroad secondary-channel publisher per PDF, planner, flashcard, journal | OPEN |
+| ISS-029 | P2 | Bot admin separato (041): creare il bot in @BotFather, `TELEGRAM_ADMIN_BOT_TOKEN` in `.env` + Start, deploy (`deploy_cloudrun.sh --dry-run` poi reale), provare la scheda su Telegram; poi pulizia git: togliere il commit 72569fb e l'audit `040_admin-bot` persi su `claude/mailagent-filing-rules`, rinumerare l'audit 040 su `mailagent-filing-rules` (quello di `downloads-agent` è diventato 053 con #220) | OPEN (codice mergiato in #222, non deployato) |
+| ISS-030 | P2 | Drive Semantic Router (043): prezzo, client OAuth Google + refresh token, build immagine, `deploy_azure.sh --dry-run` poi reale, giro `DRY_RUN` sulla cartella vera per tarare `MIN_SIMILARITY`, cron esterno (F1 si addormenta) | OPEN |
+| ISS-031 | P1 | Gateway protetto (047): `TELEGRAM_BOT_USERNAME` in `.env`, deploy (`deploy_cloudrun.sh --dry-run` poi reale), copiare `GATEWAY_API_KEY` da Secret Manager nel secret GitHub, smoke test `deployed` | OPEN (codice pronto, non deployato) |
+| ISS-032 | P2 | Motore Claude Code di Chiara (050): decidere se accenderlo su Cloud Run (il codice generato gira nel worker, che ha rete e metadata server col service account di Firestore) o con un servizio di build separato senza ruoli; prima prova sul laptop con `CHIARA_CLAUDE_CODE_ALLOW_SAME_USER=1`; Marco deve contare il costo della build nel margine | OPEN (codice mergiato, spento) |

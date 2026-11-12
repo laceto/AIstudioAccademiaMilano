@@ -80,3 +80,16 @@ data/mailagent/
 # downloads_agent works on personal files (tax returns, bank statements, medical data, credentials)
 data/Download/
 credentials/mailagent_*_token.json
+
+# Estratti conto bancari e analisi (045): dati personali, mai nel repo.
+# Nel repo solo la struttura della cartella: guida, segnaposto e regole d'esempio.
+estratti_conto/**
+!estratti_conto/*/
+!estratti_conto/*/.gitkeep
+!estratti_conto/README.md
+!estratti_conto/mie_regole.example.yaml
+# Documenti bancari (estratti conto, sintesi, spese, regole personali): dati personali, tutto fuori dal repo.
+documenti_bancari/
+analisi_estratti_conto*.xlsx
+credentials/calendar_sentinel_token.json
+data/calendar_sentinel_state.json

@@ -16,6 +16,8 @@ and then checks the combination against how this repo is wired:
                             refuses getUpdates with 409 while a webhook lives.
   TELEGRAM_RAG_BOT_TOKEN  → RAG bot, answered by scripts/rag/api_server.py
                             at POST /webhook/telegram. Needs a webhook.
+  TELEGRAM_ADMIN_BOT_TOKEN → Luigi's admin bot (optional), answered by gateway.api
+                            at POST /webhook/telegram-admin. Needs a webhook.
 
 Usage:
     python scripts/check_telegram.py
@@ -50,7 +52,9 @@ if _ENV_FILE.exists():
 BOTS = {
     "pipeline": ("TELEGRAM_BOT_TOKEN", "gateway.bot_telegram (polling)", False),
     "rag": ("TELEGRAM_RAG_BOT_TOKEN", "scripts.rag.api_server /webhook/telegram", True),
+    "admin": ("TELEGRAM_ADMIN_BOT_TOKEN", "gateway.api /webhook/telegram-admin", True),
 }
+OPTIONAL = {"admin"}  # without a token the customer bot still carries Luigi's approvals
 
 
 def _call(token: str, method: str) -> dict:
@@ -87,6 +91,9 @@ def check(role: str, expect_webhook: set[str], errors: list[str], warnings: list
     print(f"\n── {role} bot  ({env_var})")
     print(f"   consumed by: {consumer}")
 
+    if role in OPTIONAL and (not token or token.startswith("your-")):
+        print("   token:       not set (optional) — Luigi's approvals use the pipeline bot")
+        return
     if not token or token.startswith("your-"):
         print("   token:       MISSING")
         errors.append(f"{env_var} is not set — the {role} bot cannot run at all.")
@@ -137,6 +144,25 @@ def check(role: str, expect_webhook: set[str], errors: list[str], warnings: list
         )
 
 
+def duplicate_token_errors() -> list[str]:
+    """One token, two owners: whichever registers a webhook last silently wins and the other goes dead.
+
+    This took the pipeline bot down on 2026-05-29 (pipeline = RAG); the admin bot must not share either.
+    """
+    tokens = {role: os.environ.get(env_var, "").strip() for role, (env_var, _, _) in BOTS.items()}
+    errors = []
+    roles = list(BOTS)
+    for i, a in enumerate(roles):
+        for b in roles[i + 1:]:
+            if tokens[a] and not tokens[a].startswith("your-") and tokens[a] == tokens[b]:
+                errors.append(
+                    f"{BOTS[a][0]} and {BOTS[b][0]} hold the SAME token. One bot cannot serve both "
+                    f"the {a} and the {b} roles — whichever registers a webhook last silently wins "
+                    f"and the other goes dead."
+                )
+    return errors
+
+
 def _ensure_utf8(stream) -> None:
     """Make a text stream UTF-8 so the report prints on Windows consoles (cp1252)."""
     reconfigure = getattr(stream, "reconfigure", None)
@@ -163,15 +189,7 @@ def main() -> int:
     for role in BOTS:
         check(role, set(args.expect_webhook), errors, warnings)
 
-    # The regression that took the pipeline bot down on 2026-05-29: one token, two owners.
-    pipeline_token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-    rag_token = os.environ.get("TELEGRAM_RAG_BOT_TOKEN", "").strip()
-    if pipeline_token and pipeline_token == rag_token:
-        errors.append(
-            "TELEGRAM_BOT_TOKEN and TELEGRAM_RAG_BOT_TOKEN hold the SAME token. "
-            "One bot cannot serve both the pipeline and the RAG API — whichever "
-            "registers a webhook last silently wins and the other goes dead."
-        )
+    errors.extend(duplicate_token_errors())
 
     print()
     for w in warnings:

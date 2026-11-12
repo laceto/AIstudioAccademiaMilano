@@ -352,3 +352,57 @@ def test_ttl_survives_a_failing_list_and_still_tries_to_enable(tmp_path):
     assert res.returncode == 0, res.stderr
     assert "ttls update expire_at" in log
 
+
+
+# ── 047: gateway API key and bot username ────────────────────────────────────
+
+
+def test_gateway_api_key_from_env_is_stored_and_returned(tmp_path):
+    res, log = _run(tmp_path, "resolve_secret GATEWAY_API_KEY", env={"FAKE_ENV_GATEWAY_API_KEY": "k" * 40})
+    assert res.returncode == 0, res.stderr
+    assert res.stdout == "k" * 40
+    assert (tmp_path / "GATEWAY_API_KEY.secret").read_text() == "k" * 40
+    assert "k" * 40 not in log  # never on a command line
+
+
+def test_gateway_api_key_is_reused_then_generated(tmp_path):
+    (tmp_path / "GATEWAY_API_KEY.secret").write_text("already-there")
+    res, log = _run(tmp_path, "resolve_secret GATEWAY_API_KEY")
+    assert res.stdout == "already-there" and "versions add" not in log
+    (tmp_path / "GATEWAY_API_KEY.secret").unlink()
+    res, log = _run(tmp_path, '_random_secret() { printf "%s" "generated-key"; }\nresolve_secret GATEWAY_API_KEY')
+    assert res.stdout == "generated-key" and "secrets create GATEWAY_API_KEY" in log
+
+
+def test_webhook_secret_wrapper_still_works(tmp_path):
+    res, _ = _run(tmp_path, "resolve_webhook_secret", env={"FAKE_ENV_TELEGRAM_WEBHOOK_SECRET": "w-123"})
+    assert res.stdout == "w-123"
+
+
+def test_gateway_env_vars_passes_the_bot_username(tmp_path):
+    res, _ = _run(tmp_path, "gateway_env_vars", env={"FAKE_ENV_TELEGRAM_BOT_USERNAME": "StudioMilanoBot"})
+    assert "|TELEGRAM_BOT_USERNAME=StudioMilanoBot" in res.stdout
+
+
+def test_worker_env_vars_carry_the_chiara_engine_settings(tmp_path):
+    res, _ = _run(
+        tmp_path, "worker_env_vars",
+        env={
+            "FAKE_ENV_CHIARA_ENGINE": "claude_code", "FAKE_ENV_CHIARA_CLAUDE_CODE_BUDGET_USD": "1.50",
+            "FAKE_ENV_CHIARA_CLAUDE_CODE_PRODUCTS": "chatbot_app,weather_dashboard",
+            "FAKE_ENV_CHIARA_CLAUDE_CODE_TIMEOUT": "400", "FAKE_ENV_CHIARA_CLAUDE_CODE_MODEL": "sonnet",
+            "FAKE_ENV_CHIARA_CLAUDE_CODE_ALLOW_SAME_USER": "1",
+            "FAKE_ENV_ANTHROPIC_API_KEY": "k-should-not-appear",
+        },
+    )
+    out = res.stdout
+    assert "CHIARA_ENGINE=claude_code" in out and "CHIARA_CLAUDE_CODE_BUDGET_USD=1.50" in out
+    assert "CHIARA_CLAUDE_CODE_PRODUCTS=chatbot_app,weather_dashboard" in out  # commas survive the ^|^ delimiter
+    assert "CHIARA_CLAUDE_CODE_TIMEOUT=400" in out and "CHIARA_CLAUDE_CODE_MODEL=sonnet" in out
+    assert "ALLOW_SAME_USER" not in out  # laptop-only switch never reaches Cloud Run
+    assert "should-not-appear" not in out
+
+
+def test_deploy_builds_the_worker_with_the_engine_only_when_enabled():
+    script = (Path(__file__).resolve().parent.parent / "scripts" / "deploy_cloudrun.sh").read_text(encoding="utf-8")
+    assert "_CHIARA_CLAUDE_CODE=" in script and "CHIARA_ENGINE" in script

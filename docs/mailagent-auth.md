@@ -14,7 +14,7 @@ The existing `GOOGLE_TOKEN_JSON` file (`google_token.json`) is not reused: it wa
 Gmail read-only plus Calendar events, so it gets its own token file.
 
 ## Scopes requested
-`gmail.readonly`, `calendar.events`, `calendar.readonly`. The agent cannot send, delete or label mail.
+`gmail.modify`, `calendar.events`, `calendar.readonly`. `gmail.modify` lets the agent read mail and apply labels / take mail out of the inbox (filing rules). It cannot send mail, and it cannot permanently delete it. A token made before 2026-10-16 had `gmail.readonly` only: re-run `python -m mailagent auth <id>` once (the agent tells you when it needs this).
 
 ## First sign-in (once per account)
 1. In Google Cloud Console, for the project that owns the client above, enable the **Gmail API** and the **Google Calendar API**.

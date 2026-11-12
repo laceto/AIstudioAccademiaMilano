@@ -34,6 +34,8 @@ Notes: the same refresh-token expiry rules apply (personal-account refresh token
 - [ ] G2. `FirestoreStore` with the same methods as `JsonStore` (Cloud Run disk is ephemeral; reuse the `FIRESTORE_*` conventions in `gateway/jobstore.py`). Select with `MAILAGENT_STORE=file|firestore`.
 - [ ] G3. Digest + approval over Telegram: after each scan send Luigi new to-dos and the pending event proposals with Approve/Reject buttons (pattern: `gateway/notify.py`, `gateway/admin_telegram.py`, his ID only). Until then approval is `python -m mailagent approve <id>`.
 - [ ] G4. Conflict check before proposing (`find_conflicts`) and show it on the proposal card.
-- [ ] G5. Cloud Run **job** (not service) + Cloud Scheduler: one cron per `scan_hours()` slot (`python -m mailagent schedule` prints them), tokens in Secret Manager, `Dockerfile.mailagent`, cloudbuild yaml, runbook.
+- [~] G5. (2026-10-16, tidy part done in 042: `mailagent/server.py` + `scripts/deploy_mailagent.sh`, private service + hourly Scheduler, token in Secret Manager. The `scan` still needs G2 first.) Cloud Run **job** (not service) + Cloud Scheduler: one cron per `scan_hours()` slot (`python -m mailagent schedule` prints them), tokens in Secret Manager, `Dockerfile.mailagent`, cloudbuild yaml, runbook.
 - [ ] G6. Retention for stored to-dos (email subjects/senders are personal data): reuse `gateway/retention.py` idea, add expiry on done/rejected items.
+- [ ] G8. Tidy live: `python -m mailagent tidy --dry-run` on the real inbox, fill `protect:`, deploy, then `--live` (`process/runbook_mailagent_cloudrun.md`).
+- [ ] G9. Optional: Gmail `watch` -> Pub/Sub push instead of the hourly Scheduler (renew every 7 days, history ids).
 - [ ] G7. Mark a to-do done / snooze (`python -m mailagent done <id>`). (Noise senders: `ignore_senders` / `ignore_subjects` per account already exist.)

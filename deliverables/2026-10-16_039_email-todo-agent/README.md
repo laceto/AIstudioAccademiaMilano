@@ -27,3 +27,11 @@ Built and tested offline: core, Gmail, Google Calendar, CLI. **Not yet run again
 Firestore store, no Telegram digest, not deployed. See the to-do list for the order.
 
 Auth: where tokens and keys live, scopes, first sign-in: `docs/mailagent-auth.md`.
+
+## Filing rules
+Per account in `config/mailagent_accounts.yaml`: `rules: [{subject_contains|sender_contains, label, archive}]`. A matching mail gets the Gmail label, leaves the inbox (unless `archive: false`) and never reaches the model. `scan --dry-run` only reports what it would file.
+
+One-time sweep of mail already in the inbox: `python -m mailagent sweep --dry-run`, then `python -m mailagent sweep` (uses the same rules; every candidate is re-checked against the rule before filing).
+
+## Tidy (delivery 042)
+Newsletters, notifications and promotions filed by header, no model, also on Cloud Run: `python -m mailagent tidy --dry-run`. See `deliverables/2026-10-16_042_mailagent-cloudrun/README.md`.

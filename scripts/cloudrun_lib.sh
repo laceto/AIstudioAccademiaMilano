@@ -38,7 +38,7 @@ gateway_env_vars() {
   local store k v extra out
   store="$(env_val JOB_STORE)"
   out="^|^GATEWAY_SYNC_REPLY=1|JOB_STORE=${store:-firestore}"
-  for k in NOTIFY_EMAILS NOTIFY_TELEGRAM_CHAT_IDS SMTP_USER SMTP_HOST SMTP_PORT NOTIFY_FROM PRIVACY_CONTACT PIPELINE_STALE_SECONDS; do
+  for k in NOTIFY_EMAILS NOTIFY_TELEGRAM_CHAT_IDS SMTP_USER SMTP_HOST SMTP_PORT NOTIFY_FROM PRIVACY_CONTACT PIPELINE_STALE_SECONDS TELEGRAM_BOT_USERNAME; do
     v="$(env_val "$k")"
     [ -n "$v" ] && out="$out|$k=$v"
   done
@@ -56,7 +56,11 @@ worker_env_vars() {
   local provider k v out
   provider="$(env_val PIPELINE_PROVIDER)"
   out="^|^JOB_STORE=firestore|PIPELINE_PROVIDER=${provider:-openai}"
-  for k in NOTIFY_TELEGRAM_CHAT_IDS PIPELINE_RUN_TIMEOUT PIPELINE_STALE_SECONDS; do
+  # CHIARA_* drive Chiara's Claude Code engine (050). CHIARA_CLAUDE_CODE_ALLOW_SAME_USER is left out on
+  # purpose: it is for a laptop only, Cloud Run always runs the engine as the builder user.
+  for k in NOTIFY_TELEGRAM_CHAT_IDS PIPELINE_RUN_TIMEOUT PIPELINE_STALE_SECONDS \
+           CHIARA_ENGINE CHIARA_CLAUDE_CODE_PRODUCTS CHIARA_CLAUDE_CODE_BUDGET_USD \
+           CHIARA_CLAUDE_CODE_TIMEOUT CHIARA_CLAUDE_CODE_MODEL CHIARA_CLAUDE_CODE_USER; do
     v="$(env_val "$k")"
     [ -n "$v" ] && out="$out|$k=$v"
   done
@@ -105,21 +109,28 @@ _random_secret() {
   fi
 }
 
+# resolve_secret NAME
+#
+# A secret the deploy owns: NAME from .env, else the one already in Secret Manager, else a
+# fresh random one. Stored in Secret Manager (new version only if it changed) and printed on
+# stdout, and nothing else is. Used for TELEGRAM_WEBHOOK_SECRET and GATEWAY_API_KEY.
+resolve_secret() {
+  local name="$1" value
+  value="$(env_val "$name")"
+  if [ -z "$value" ]; then
+    value="$(gcloud secrets versions access latest --secret="$name" 2>/dev/null || true)"
+  fi
+  [ -n "$value" ] || value="$(_random_secret)"
+  upsert_secret "$name" "$value" >/dev/null
+  printf '%s' "$value"
+}
+
 # resolve_webhook_secret
 #
 # The value registered with Telegram's setWebhook as secret_token and checked by the gateway on
-# every update (header X-Telegram-Bot-Api-Secret-Token). Order: TELEGRAM_WEBHOOK_SECRET from .env,
-# else the one already in Secret Manager, else a fresh random one. It is stored in Secret Manager
-# (new version only if it changed) and printed on stdout, and nothing else is.
+# every update (header X-Telegram-Bot-Api-Secret-Token).
 resolve_webhook_secret() {
-  local value
-  value="$(env_val TELEGRAM_WEBHOOK_SECRET)"
-  if [ -z "$value" ]; then
-    value="$(gcloud secrets versions access latest --secret=TELEGRAM_WEBHOOK_SECRET 2>/dev/null || true)"
-  fi
-  [ -n "$value" ] || value="$(_random_secret)"
-  upsert_secret TELEGRAM_WEBHOOK_SECRET "$value" >/dev/null
-  printf '%s' "$value"
+  resolve_secret TELEGRAM_WEBHOOK_SECRET
 }
 
 # ensure_firestore_ttl [COLLECTION_GROUP] [FIELD]
@@ -163,11 +174,11 @@ ensure_delete_protection() {
   fi
 }
 
-# ensure_scheduler_job NAME LOCATION URI SERVICE_ACCOUNT_EMAIL AUDIENCE SCHEDULE
+# ensure_scheduler_job NAME LOCATION URI SERVICE_ACCOUNT_EMAIL AUDIENCE SCHEDULE [DESCRIPTION]
 #
 # Create the Cloud Scheduler HTTP job, or reset an existing one to the same settings. It POSTs to URI
 # with an OIDC token minted for SERVICE_ACCOUNT_EMAIL (audience = the private service's URL), so the
-# call is authorised exactly like Cloud Tasks'. Used for the stuck-job sweep (pipeline-worker /sweep).
+# call is authorised exactly like Cloud Tasks'. Used for the stuck-job sweep (pipeline-worker /sweep) and mailagent /process.
 # Prints "NAME — created | updated".
 ensure_scheduler_job() {
   local name="$1" location="$2" uri="$3" sa="$4" audience="$5" schedule="$6"
@@ -175,7 +186,7 @@ ensure_scheduler_job() {
     --location="$location" --schedule="$schedule" --uri="$uri" --http-method=POST
     --oidc-service-account-email="$sa" --oidc-token-audience="$audience"
     --time-zone=Etc/UTC --attempt-deadline=120s
-    --description="Fail pipeline jobs stuck in running (POST /sweep)"
+    --description="${7:-Fail pipeline jobs stuck in running (POST /sweep)}"
   )
   if gcloud scheduler jobs describe "$name" --location="$location" >/dev/null 2>&1; then
     gcloud scheduler jobs update http "$name" "${flags[@]}" >/dev/null || return 1

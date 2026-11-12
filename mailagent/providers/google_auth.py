@@ -14,7 +14,7 @@ from typing import Any
 from ..config import AccountConfig
 
 SCOPES = [
-    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.modify",
     "https://www.googleapis.com/auth/calendar.events",
     "https://www.googleapis.com/auth/calendar.readonly",
 ]
@@ -28,14 +28,28 @@ def _token_file(cfg: AccountConfig) -> str:
     return cfg.options.get("token_file", f"credentials/mailagent_{cfg.id}_token.json")
 
 
+def missing_scopes(info: dict) -> list[str]:
+    """Scopes the token was actually granted live in the saved JSON; asking for more at load time proves nothing."""
+    return [s for s in SCOPES if s not in (info.get("scopes") or [])]
+
+
+def _check_scopes(cfg: AccountConfig, info: dict) -> None:
+    if missing := missing_scopes(info):
+        raise AuthError(f"[{cfg.id}] token lacks scope(s) {', '.join(s.rsplit('/', 1)[-1] for s in missing)}; re-run `python -m mailagent auth {cfg.id}`")
+
+
 def load_credentials(cfg: AccountConfig) -> Any:
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
 
     env = cfg.options.get("token_env")
     if env and os.environ.get(env):
-        creds = Credentials.from_authorized_user_info(json.loads(os.environ[env]), SCOPES)
+        info = json.loads(os.environ[env])
+        _check_scopes(cfg, info)
+        creds = Credentials.from_authorized_user_info(info, SCOPES)
     elif os.path.exists(_token_file(cfg)):
+        with open(_token_file(cfg), encoding="utf-8") as fh:
+            _check_scopes(cfg, json.load(fh))
         creds = Credentials.from_authorized_user_file(_token_file(cfg), SCOPES)
     else:
         raise AuthError(f"[{cfg.id}] no token: set {env or 'options.token_env'} or run `python -m mailagent auth {cfg.id}`")

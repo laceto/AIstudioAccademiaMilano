@@ -1,4 +1,4 @@
-# Downloads agent (D040)
+# Downloads agent (053, già D040)
 
 LangGraph agent that keeps the `data/Download` folder of this repo tidy. It never deletes anything.
 The folder holds personal files, so `data/Download/` is git-ignored; change it with `--root`.

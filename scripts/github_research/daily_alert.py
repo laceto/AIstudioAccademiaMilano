@@ -33,6 +33,7 @@ def main():
         max_per_topic=5,
         token=token,
         delay=1.5,
+        trending="daily",
     )
 
     seen: dict = {}
