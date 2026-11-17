@@ -14,6 +14,7 @@ class Transaction:
     page: int
     sign_uncertain: bool = False  # sign guessed from the wording, not from a Dare/Avere column
     category: str = ""
+    note: str = ""  # causale written by hand (causali in the personal rules file)
 
 
 @dataclass

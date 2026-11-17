@@ -830,3 +830,60 @@ def test_personal_merchant_rules():
     assert c.classify(_tx("KAMMI", "-9")) == "Shopping"
     assert c.classify(_tx("DAGOPHOTO", "-9")) == "Shopping"
     assert c.classify(_tx("BERTAME", "-300")) == "Officina auto"
+
+
+# ── causali: a note on one movement (bank + date + amount) ───────────────────
+
+_NOTE_RULES = (
+    "causali:\n"
+    "  - data: 2026-11-17\n    banca: credem\n    importo: -250.00\n"
+    "    causale: Pulizie (Valeria), pagate in contanti\n    categoria: Casa e utenze\n"
+    "  - data: 2026-12-01\n    banca: credem\n    importo: -40\n    causale: Ancora nessun estratto\n")
+
+
+def _credem(*rows):
+    from bankanalyst.models import Statement
+    txs = [Transaction(bank="credem", booking_date=d, value_date=None, description=desc, amount=Decimal(a),
+                       source="c.pdf", page=1) for d, desc, a in rows]
+    return Statement(path="c.pdf", bank="credem", transactions=txs)
+
+
+def test_causale_attaches_to_one_movement_and_sets_category(tmp_path):
+    rules = tmp_path / "mie_regole.yaml"
+    rules.write_text(_NOTE_RULES, encoding="utf-8")
+    st = _credem(
+        (date(2026, 11, 18), "PRELIEVO BANCOMAT ATM CREDEM", "-250"),   # booked the day after: still matches
+        (date(2026, 11, 20), "PRELIEVO BANCOMAT ATM CREDEM", "-250"),   # same amount: one note, one movement
+        (date(2026, 11, 17), "PRELIEVO BANCOMAT ATM CREDEM", "-100"),   # other amount: untouched
+    )
+    r = analyze([st], rules)
+    by = {(t.booking_date, t.amount): t for t in r.transactions}
+    noted = by[(date(2026, 11, 18), Decimal("-250"))]
+    assert noted.note == "Pulizie (Valeria), pagate in contanti"
+    assert noted.category == "Casa e utenze"
+    assert by[(date(2026, 11, 20), Decimal("-250"))].note == ""
+    assert by[(date(2026, 11, 20), Decimal("-250"))].category == "Prelievi contanti"
+    assert by[(date(2026, 11, 17), Decimal("-100"))].note == ""
+    assert [n.causale for n in r.pending_notes] == ["Ancora nessun estratto"]
+
+
+def test_causale_needs_same_bank_and_near_date(tmp_path):
+    rules = tmp_path / "mie_regole.yaml"
+    rules.write_text(_NOTE_RULES, encoding="utf-8")
+    ing = _stmt((date(2026, 11, 17), "PRELIEVO BANCOMAT", "-250"))
+    far = _credem((date(2026, 12, 20), "PRELIEVO BANCOMAT", "-250"))
+    r = analyze([ing, far], rules)
+    assert all(t.note == "" for t in r.transactions)
+    assert len(r.pending_notes) == 2
+
+
+def test_causale_in_excel(tmp_path):
+    rules = tmp_path / "mie_regole.yaml"
+    rules.write_text(_NOTE_RULES, encoding="utf-8")
+    r = analyze([_credem((date(2026, 11, 17), "PRELIEVO BANCOMAT", "-250"))], rules)
+    wb = openpyxl.load_workbook(write_excel(r, tmp_path / "out.xlsx"))
+    ws = wb["Movimenti"]
+    header = [c.value for c in ws[1]]
+    assert ws.cell(2, header.index("Causale") + 1).value == "Pulizie (Valeria), pagate in contanti"
+    pending = wb["Causali in attesa"]
+    assert [c.value for c in pending[2]][:4] == ["credem", "01/12/2026", -40, "Ancora nessun estratto"]

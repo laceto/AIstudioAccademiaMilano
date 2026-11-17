@@ -81,6 +81,11 @@ def main(argv: list[str] | None = None) -> int:
         net = budget.income + budget.expenses
         print(f"  {'Saldo':<44} {fmt_eur(net):>11} {fmt_eur(net * 12):>13}")
     print(f"\nDa classificare: {len(result.unclassified)}")
+    noted = [t for t in result.transactions if t.note]
+    if noted or result.pending_notes:
+        print(f"Causali: {len(noted)} abbinate a un movimento, {len(result.pending_notes)} in attesa dell'estratto")
+        for n in result.pending_notes:
+            print(f"  in attesa: {n.day:%d/%m/%Y} [{n.bank}] {fmt_eur(n.amount)} — {n.causale}")
     uncertain = sum(t.sign_uncertain for t in result.transactions)
     if uncertain:
         print(f"Segno incerto (layout non riconosciuto): {uncertain}")
