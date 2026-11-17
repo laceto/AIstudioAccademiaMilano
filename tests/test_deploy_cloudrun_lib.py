@@ -62,9 +62,11 @@ gcloud() {
       esac ;;
     "firestore databases")
       case "$3" in
-        describe) [ -f "$STORE/describe_fails" ] && return 1
+        describe) [ "$4" = "--database=causali" ] && [ ! -f "$STORE/db_created" ] && return 1
+                  [ -f "$STORE/describe_fails" ] && return 1
                   if [ -f "$STORE/delete_protection" ]; then echo DELETE_PROTECTION_ENABLED; else echo DELETE_PROTECTION_DISABLED; fi ;;
         update)   : > "$STORE/delete_protection" ;;
+        create)   : > "$STORE/db_created" ;;
       esac ;;
   esac
 }
@@ -406,3 +408,33 @@ def test_worker_env_vars_carry_the_chiara_engine_settings(tmp_path):
 def test_deploy_builds_the_worker_with_the_engine_only_when_enabled():
     script = (Path(__file__).resolve().parent.parent / "scripts" / "deploy_cloudrun.sh").read_text(encoding="utf-8")
     assert "_CHIARA_CLAUDE_CODE=" in script and "CHIARA_ENGINE" in script
+
+
+# ── A named database (the causali bot keeps its data apart from the job store) ───────────────
+
+
+def test_ttl_and_protection_follow_the_database_argument(tmp_path):
+    (tmp_path / "db_created").write_text("")
+    res, log = _run(tmp_path, "ensure_firestore_ttl causali expire_at causali; ensure_delete_protection causali")
+    assert res.returncode == 0, res.stderr
+    assert "--collection-group=causali" in log and log.count("--database=causali") >= 3
+    assert "--database=(default)" not in log
+
+
+def test_default_database_is_still_the_default(tmp_path):
+    _, log = _run(tmp_path, "ensure_firestore_ttl; ensure_delete_protection")
+    assert "--database=(default)" in log and "--database=causali" not in log
+
+
+def test_named_database_is_created_when_missing(tmp_path):
+    res, log = _run(tmp_path, "ensure_firestore_database causali europe-west8")
+    assert res.returncode == 0, res.stderr
+    assert "databases create" in log and "--database=causali" in log and "--location=europe-west8" in log
+    assert "created" in res.stdout
+
+
+def test_named_database_already_there_is_left_alone(tmp_path):
+    (tmp_path / "db_created").write_text("")
+    res, log = _run(tmp_path, "ensure_firestore_database causali europe-west8")
+    assert res.returncode == 0, res.stderr
+    assert "already" in res.stdout and "databases create" not in log

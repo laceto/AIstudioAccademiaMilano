@@ -133,44 +133,58 @@ resolve_webhook_secret() {
   resolve_secret TELEGRAM_WEBHOOK_SECRET
 }
 
-# ensure_firestore_ttl [COLLECTION_GROUP] [FIELD]
+# ensure_firestore_ttl [COLLECTION_GROUP] [FIELD] [DATABASE]
 #
 # Make Firestore delete a document once the timestamp in FIELD has passed (defaults: jobs,
-# expire_at). Looks at the TTL fields first and does nothing if FIELD is already one. Firestore
+# expire_at, database (default)). Looks at the TTL fields first and does nothing if FIELD is already one. Firestore
 # deletes expired documents in the background, typically within about 24 hours of expiry.
 # Prints "GROUP.FIELD — TTL enabled | TTL already enabled".
 ensure_firestore_ttl() {
-  local group="${1:-jobs}" field="${2:-expire_at}" ttl_fields
+  local group="${1:-jobs}" field="${2:-expire_at}" db="${3:-(default)}" ttl_fields
   # Capture first, grep after: `gcloud | grep -q` under pipefail can report a failure (SIGPIPE
   # when grep quits early) and fall through to a needless update. A failing list counts as "not set".
-  ttl_fields="$(gcloud firestore fields ttls list --collection-group="$group" --database='(default)' \
+  ttl_fields="$(gcloud firestore fields ttls list --collection-group="$group" --database="$db" \
     --format='value(name)' 2>/dev/null)" || ttl_fields=""
   if grep -q "/fields/$field\$" <<<"$ttl_fields"; then  # here-string: no second pipe to break
     echo "  $group.$field — TTL already enabled"
   else
     gcloud firestore fields ttls update "$field" --collection-group="$group" \
-      --database='(default)' --enable-ttl >/dev/null
+      --database="$db" --enable-ttl >/dev/null
     echo "  $group.$field — TTL enabled"
   fi
 }
 
-# ensure_delete_protection
+# ensure_delete_protection [DATABASE]
 #
-# Turn on delete protection for the (default) database, so that neither a stray command nor a
-# console click can delete the jobs. Skips the update when it is already on. To delete the
+# Turn on delete protection for the (default) database, or the named one, so that neither a stray
+# command nor a console click can delete it. Skips the update when it is already on. To delete the
 # database on purpose, turn it off first (docs/cloud-run-setup.md).
-# Prints "(default) — delete protection enabled | already enabled".
+# Prints "<db> — delete protection enabled | already enabled".
 ensure_delete_protection() {
-  local state
+  local db="${1:-(default)}" state
   # Under `set -e` a failing describe (permissions, API) must not abort the deploy silently.
-  state="$(gcloud firestore databases describe --database='(default)' \
+  state="$(gcloud firestore databases describe --database="$db" \
     --format='value(deleteProtectionState)')" || state=""
-  [ -n "$state" ] || echo "  WARN: could not read the delete protection state of (default); trying to enable it" >&2
+  [ -n "$state" ] || echo "  WARN: could not read the delete protection state of $db; trying to enable it" >&2
   if [ "$state" = "DELETE_PROTECTION_ENABLED" ]; then
-    echo "  (default) — delete protection already enabled"
+    echo "  $db — delete protection already enabled"
   else
-    gcloud firestore databases update --database='(default)' --delete-protection >/dev/null
-    echo "  (default) — delete protection enabled"
+    gcloud firestore databases update --database="$db" --delete-protection >/dev/null
+    echo "  $db — delete protection enabled"
+  fi
+}
+
+# ensure_firestore_database NAME LOCATION
+#
+# Create the named Firestore database (Native mode) if it does not exist. The location of a database
+# cannot be changed afterwards. Prints "NAME — created | already exists".
+ensure_firestore_database() {
+  local name="$1" location="$2"
+  if gcloud firestore databases describe --database="$name" >/dev/null 2>&1; then
+    echo "  $name — already exists"
+  else
+    gcloud firestore databases create --database="$name" --location="$location" --type=firestore-native >/dev/null
+    echo "  $name — created"
   fi
 }
 

@@ -18,6 +18,9 @@ and then checks the combination against how this repo is wired:
                             at POST /webhook/telegram. Needs a webhook.
   TELEGRAM_ADMIN_BOT_TOKEN → Luigi's admin bot (optional), answered by gateway.api
                             at POST /webhook/telegram-admin. Needs a webhook.
+  TELEGRAM_CAUSALI_BOT_TOKEN → causali bot (optional), answered by the Cloud Run
+                            service causali-bot at POST /webhook/telegram-causali.
+                            Needs a webhook; `--only causali` checks just this one.
 
 Usage:
     python scripts/check_telegram.py
@@ -53,8 +56,15 @@ BOTS = {
     "pipeline": ("TELEGRAM_BOT_TOKEN", "gateway.bot_telegram (polling)", False),
     "rag": ("TELEGRAM_RAG_BOT_TOKEN", "scripts.rag.api_server /webhook/telegram", True),
     "admin": ("TELEGRAM_ADMIN_BOT_TOKEN", "gateway.api /webhook/telegram-admin", True),
+    "causali": ("TELEGRAM_CAUSALI_BOT_TOKEN", "causalibot.app /webhook/telegram-causali (Cloud Run causali-bot)", True),
 }
-OPTIONAL = {"admin"}  # without a token the customer bot still carries Luigi's approvals
+# Optional bots: without a token the check says so and moves on.
+OPTIONAL = {
+    "admin": "Luigi's approvals use the pipeline bot",
+    "causali": "causali are written by hand in the personal rules file",
+}
+# A webhook must end with this path, or Telegram talks to the wrong service.
+EXPECTED_PATH = {"causali": "/webhook/telegram-causali"}
 
 
 def _call(token: str, method: str) -> dict:
@@ -92,7 +102,7 @@ def check(role: str, expect_webhook: set[str], errors: list[str], warnings: list
     print(f"   consumed by: {consumer}")
 
     if role in OPTIONAL and (not token or token.startswith("your-")):
-        print("   token:       not set (optional) — Luigi's approvals use the pipeline bot")
+        print(f"   token:       not set (optional) — {OPTIONAL[role]}")
         return
     if not token or token.startswith("your-"):
         print("   token:       MISSING")
@@ -128,6 +138,9 @@ def check(role: str, expect_webhook: set[str], errors: list[str], warnings: list
             f"{role}: no webhook registered, but its consumer only answers over a "
             f"webhook. Run scripts/rag/register_telegram_webhook.py."
         )
+    path = EXPECTED_PATH.get(role)
+    if path and url and not url.endswith(path):
+        errors.append(f"{role}: the webhook is {url}, expected a URL ending in {path} (the {role} service).")
     if not wants_webhook and url:
         errors.append(
             f"{role}: a webhook is registered ({url}), so Telegram will refuse "
@@ -180,13 +193,20 @@ def main() -> int:
         choices=sorted(BOTS),
         help="Treat this bot as webhook-mode (e.g. the pipeline bot when gateway.api is deployed).",
     )
+    parser.add_argument(
+        "--only",
+        action="append",
+        default=[],
+        choices=sorted(BOTS),
+        help="Check just this bot (repeatable), e.g. right after deploying the causali bot.",
+    )
     args = parser.parse_args()
 
     errors: list[str] = []
     warnings: list[str] = []
 
     print("Telegram channel check")
-    for role in BOTS:
+    for role in args.only or BOTS:
         check(role, set(args.expect_webhook), errors, warnings)
 
     errors.extend(duplicate_token_errors())

@@ -1,0 +1,7 @@
+# Cloud Run image of the causali bot (causalibot/Dockerfile).
+fastapi>=0.111.0
+uvicorn>=0.29.0
+httpx>=0.27.0
+pyyaml>=6.0.1
+google-cloud-firestore>=2.16.0
+tzdata>=2024.1   # python:slim has no zoneinfo files; the bot reads "oggi" in Rome time

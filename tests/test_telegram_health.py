@@ -192,3 +192,50 @@ class TestDuplicateTokens:
         monkeypatch.delenv("TELEGRAM_RAG_BOT_TOKEN", raising=False)
         monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
         assert ct.duplicate_token_errors() == []
+
+
+class TestCausaliBot:
+    """The causali bot (TELEGRAM_CAUSALI_BOT_TOKEN): optional, webhook-only on the causali-bot service."""
+
+    URL = "https://causali-bot-x.a.run.app/webhook/telegram-causali"
+
+    def test_not_configured_is_fine(self, token_env, monkeypatch):
+        monkeypatch.delenv("TELEGRAM_CAUSALI_BOT_TOKEN", raising=False)
+        monkeypatch.setattr(ct, "_call", _stub())
+        errors, warnings = [], []
+        ct.check("causali", set(), errors, warnings)
+        assert errors == []
+
+    def test_with_its_webhook_it_is_healthy(self, token_env, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_CAUSALI_BOT_TOKEN", "444:causali")
+        monkeypatch.setattr(ct, "_call", _stub(webhook_url=self.URL))
+        errors, warnings = [], []
+        ct.check("causali", set(), errors, warnings)
+        assert errors == []
+
+    def test_without_a_webhook_it_is_an_error(self, token_env, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_CAUSALI_BOT_TOKEN", "444:causali")
+        monkeypatch.setattr(ct, "_call", _stub())
+        errors, warnings = [], []
+        ct.check("causali", set(), errors, warnings)
+        assert any("no webhook" in e for e in errors)
+
+    def test_webhook_on_another_path_is_an_error(self, token_env, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_CAUSALI_BOT_TOKEN", "444:causali")
+        monkeypatch.setattr(ct, "_call", _stub(webhook_url="https://gw.example/webhook/telegram"))
+        errors, warnings = [], []
+        ct.check("causali", set(), errors, warnings)
+        assert any("/webhook/telegram-causali" in e for e in errors)
+
+    def test_sharing_a_token_with_another_bot_is_an_error(self, token_env, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_CAUSALI_BOT_TOKEN", "222:rag")
+        errors = ct.duplicate_token_errors()
+        assert len(errors) == 1 and "TELEGRAM_CAUSALI_BOT_TOKEN" in errors[0]
+
+    def test_only_option_checks_just_that_bot(self, token_env, monkeypatch, capsys):
+        monkeypatch.setenv("TELEGRAM_CAUSALI_BOT_TOKEN", "444:causali")
+        monkeypatch.setattr(ct, "_call", _stub(webhook_url=self.URL))
+        monkeypatch.setattr("sys.argv", ["check_telegram.py", "--only", "causali"])
+        ct.main()
+        out = capsys.readouterr().out
+        assert "causali bot" in out and "pipeline bot" not in out and "rag bot" not in out
