@@ -1,5 +1,6 @@
 """python -m bankanalyst <cartella o PDF…> [--out report.xlsx] [--rules regole.yaml]"""
 import argparse
+import os
 from pathlib import Path
 
 from bankanalyst.amounts import fmt_eur
@@ -22,6 +23,36 @@ def _pdfs(inputs: list[str]) -> list[Path]:
     return list(found.values())
 
 
+_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+
+
+def _dotenv_value(name: str) -> str:
+    """One value from the project's .env, read without loading the file into os.environ.
+
+    load_dotenv() here would put every key (OPENAI_API_KEY, ...) into the process, and into every test that
+    runs after a CLI test.
+    """
+    try:
+        from dotenv import dotenv_values
+    except ImportError:
+        return ""
+    return str(dotenv_values(_ENV_FILE).get(name) or "")
+
+
+def _cloud_notes(project: str):
+    from bankanalyst.causali_cloud import fetch_notes
+
+    return fetch_notes(project)
+
+
+def _causali_for_run(no_cloud: bool):
+    """(notes, warning) from the Telegram bot's database, if CAUSALI_FIRESTORE_PROJECT is set and not switched off."""
+    project = (os.environ.get("CAUSALI_FIRESTORE_PROJECT") or _dotenv_value("CAUSALI_FIRESTORE_PROJECT")).strip()
+    if no_cloud or not project:
+        return [], None
+    return _cloud_notes(project)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="bankanalyst", description="Estratti conto Credem / ING / Fineco → movimenti classificati per trimestre")
     ap.add_argument("inputs", nargs="+", help="PDF o cartelle di PDF")
@@ -33,6 +64,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="classifica i 'Da classificare' con OpenAI Batch (kitai); serve OPENAI_API_KEY, invia solo le descrizioni")
     ap.add_argument("--llm-cache", default="llm_categorie.json",
                     help="cache delle categorie LLM (default: llm_categorie.json)")
+    ap.add_argument("--no-causali-cloud", action="store_true",
+                    help="non leggere le causali del bot Telegram dal cloud (CAUSALI_FIRESTORE_PROJECT)")
     args = ap.parse_args(argv)
 
     pdfs = _pdfs(args.inputs)
@@ -40,7 +73,12 @@ def main(argv: list[str] | None = None) -> int:
         print("Nessun PDF trovato.")
         return 1
     statements = [parse_statement(p) for p in pdfs]
-    result = analyze(statements, args.rules)
+    cloud_notes, cloud_warning = _causali_for_run(args.no_causali_cloud)
+    if cloud_warning:
+        print(f"ATTENZIONE: {cloud_warning}")
+    elif cloud_notes:
+        print(f"Causali dal cloud: {len(cloud_notes)}")
+    result = analyze(statements, args.rules, extra_notes=cloud_notes, cloud_warning=cloud_warning)
     if args.llm and result.unclassified:
         from bankanalyst.classify import UNCLASSIFIED, load_rules
         from bankanalyst.llm_classify import classify_with_batch
@@ -54,7 +92,8 @@ def main(argv: list[str] | None = None) -> int:
         allowed = {r.name for r in load_rules(args.rules).categories} - {UNCLASSIFIED}
         print(f"LLM batch: {len(result.unclassified)} movimenti da classificare…")
         labels = classify_with_batch(result.unclassified, allowed, cache_path=args.llm_cache)
-        result = analyze(statements, args.rules, extra_labels=labels)
+        result = analyze(statements, args.rules, extra_labels=labels, extra_notes=cloud_notes,
+                         cloud_warning=cloud_warning)
     base = Path(args.out)
     outputs = [write_excel(r, base.with_name(f"{base.stem}_{bank}{base.suffix}")) for bank, r in split_by_bank(result).items()]
     if args.combined:

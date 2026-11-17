@@ -95,6 +95,10 @@ se ce n'è più di uno, a quello con la data più vicina. Una causale, un movime
 uguali vogliono due righe. Nell'Excel compare nella colonna **Causale** di Movimenti; finché
 l'estratto non c'è, la riga sta nel foglio **Causali in attesa** e a schermo come "in attesa".
 
+### Causali dal telefono (bot Telegram, 054)
+
+Invece di scrivere il YAML, puoi mandare `250 credem pulizie Valeria` al bot causali (la banca va sempre scritta). Con `CAUSALI_FIRESTORE_PROJECT` in `.env`, `bankanalyst` le legge dal cloud a ogni giro e le unisce a quelle del file; `--no-causali-cloud` le salta, e se il cloud non risponde avvisa e va avanti. Guida: `deliverables/2026-11-17_054_causali-bot/`.
+
 ## Limiti (da sapere)
 
 - **Credem: provato su 5 estratti veri** (Q4 2024 – Q4 2025, 471 movimenti), tutti in

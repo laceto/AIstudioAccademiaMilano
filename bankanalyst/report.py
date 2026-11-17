@@ -10,6 +10,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+from bankanalyst.causali_cloud import merge_notes
 from bankanalyst.classify import UNCLASSIFIED, Classifier, Note, apply_notes, load_rules
 from bankanalyst.models import Statement, Transaction
 
@@ -56,8 +57,12 @@ class Result:
 
 
 def analyze(statements: list[Statement], rules_path: str | Path | None = None,
-            extra_labels: dict[str, str] | None = None) -> Result:
-    """`extra_labels`: {normalized description: category} (e.g. from the LLM), used only where the rules found nothing."""
+            extra_labels: dict[str, str] | None = None, extra_notes: list | None = None,
+            cloud_warning: str | None = None) -> Result:
+    """`extra_labels`: {normalized description: category} (e.g. from the LLM), used only where the rules found nothing.
+
+    `extra_notes`: causali from the cloud, added to the ones in the rules file. `cloud_warning`: why they are
+    missing, shown in the Controlli sheet."""
     rules = load_rules(rules_path)
     classifier = Classifier(rules)
     txs = dedupe([t for st in statements for t in st.transactions])
@@ -66,11 +71,14 @@ def analyze(statements: list[Statement], rules_path: str | Path | None = None,
         t.category = classifier.classify(t)
         if t.category == UNCLASSIFIED and extra_labels:
             t.category = extra_labels.get(" ".join(t.description.split()).lower(), UNCLASSIFIED)
-    pending = apply_notes(rules.notes, txs)
+    pending = apply_notes(merge_notes(rules.notes, extra_notes or []), txs)
 
     checks = [{"file": Path(st.path).name, "banca": st.bank, "movimenti": len(st.transactions),
                "saldo_iniziale": st.opening, "saldo_finale": st.closing, "esito": st.reconciliation(),
                "avvisi": "; ".join(st.warnings)} for st in statements]
+    if cloud_warning:
+        checks.append({"file": "causali cloud", "banca": "", "movimenti": 0, "saldo_iniziale": None,
+                       "saldo_finale": None, "esito": "n.d.", "avvisi": cloud_warning})
     result = _summarize(txs, checks, rules.transfers, rules.flags)
     result.pending_notes = pending
     return result

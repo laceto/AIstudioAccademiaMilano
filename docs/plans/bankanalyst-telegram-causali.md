@@ -1,6 +1,6 @@
 # Piano — bot Telegram per le causali degli estratti conto (estensione 045)
 
-Stato: **proposta, niente codice**. Da decidere con Luigi prima di costruire.
+Stato: **decisioni prese il 2026-11-17, costruito** (consegna 054, guida in `deliverables/2026-11-17_054_causali-bot/`). Non ancora deployato.
 Revisione 2: il bot **non gira sul laptop**. Gira su Cloud Run, sempre raggiungibile.
 Revisione 3: il bot **raccoglie e basta**. Le causali le prende `bankanalyst` da solo, ogni volta che
 gira su tutti gli estratti: niente esportazioni a mano, niente passaggi in mezzo.
@@ -57,11 +57,11 @@ Messaggio libero, letto **a regole** (niente modello, niente dati inviati a Open
 | `250 credem pulizie Valeria` | oggi, credem, -250.00, "pulizie Valeria" |
 | `ieri 40 ing parrucchiere` | ieri, ing, -40.00 |
 | `15/11 +120 credem rimborso Marco` | 15/11, credem, **+120.00** (entrata) |
-| `pulizie 250` | banca di default (`CAUSALI_DEFAULT_BANK`, es. credem) |
+| `pulizie 250` | **errore: manca la banca** (nessun default) |
 
 - Importo: il primo numero (`250`, `250,50`, `1.250`). Uscita di default; `+`, "entrata", "ricevuto"
   la rendono entrata.
-- Banca: `credem` / `ing` / `fineco`, se manca quella di default.
+- Banca: `credem` / `ing` / `fineco`, **obbligatoria**.
 - Data: `oggi` (default, ora di Roma), `ieri`, `gg/mm` o `gg/mm/aaaa`.
 - Tutto il resto è la causale.
 - Categoria: le regole di base di `bankanalyst` (`bankanalyst/rules.yaml`, nell'immagine) girano sul
@@ -131,7 +131,16 @@ Comandi: `/ultime` (ultime 10), `/annulla` (toglie l'ultima, entro 10 minuti), `
 
 Prezzo: interno (estensione di 045), 0.00. Costo di esercizio atteso: zero nel free tier.
 
-## Da decidere con Luigi
+## Decisioni di Luigi (2026-11-17)
+
+Le proposte qui sotto sono state decise così:
+
+1. Banca di default: **nessuna**, va sempre scritta (niente `CAUSALI_DEFAULT_BANK`; senza banca il bot non salva).
+2. Database Firestore **separato** (`causali`).
+3. Conservazione: **24 mesi**.
+4. Foto della ricevuta: **non ora**, ma il documento ha già `allegati: []` per aggiungerle e conservarle in futuro.
+
+Testo originale delle domande:
 
 1. Banca di default: credem?
 2. Database Firestore separato (proposto) o una collection nel `(default)` dei job? Separato costa
