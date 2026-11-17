@@ -2,6 +2,8 @@
 
 Stato: **proposta, niente codice**. Da decidere con Luigi prima di costruire.
 Revisione 2: il bot **non gira sul laptop**. Gira su Cloud Run, sempre raggiungibile.
+Revisione 3: il bot **raccoglie e basta**. Le causali le prende `bankanalyst` da solo, ogni volta che
+gira su tutti gli estratti: niente esportazioni a mano, niente passaggi in mezzo.
 
 ## Cosa serve
 
@@ -75,8 +77,7 @@ Categoria: Casa e utenze
 [ Salva ]  [ Categoria ▸ ]  [ Annulla ]
 ```
 
-Comandi: `/ultime` (ultime 10), `/annulla` (toglie l'ultima, entro 10 minuti), `/esporta`
-(manda il file `causali.yaml` come documento), `/help`.
+Comandi: `/ultime` (ultime 10), `/annulla` (toglie l'ultima, entro 10 minuti), `/help`.
 
 ## Dove stanno i dati e come arrivano a bankanalyst
 
@@ -85,14 +86,19 @@ Comandi: `/ultime` (ultime 10), `/annulla` (toglie l'ultima, entro 10 minuti), `
 - **Conservazione:** `expire_at` = data del movimento + 24 mesi, con TTL di Firestore (come i job,
   037). Dopo, la causale si cancella da sola; nel file YAML sul laptop resta.
 - Protezione dalla cancellazione accidentale del database (come per `(default)`).
-- **Verso bankanalyst**, due strade, si può usarne una o tutte e due:
-  1. `/esporta` nel bot: arriva un `causali.yaml` già nel formato giusto, lo salvi in
-     `estratti_conto/`. Sul laptop non serve nessuna credenziale Google.
-  2. `python -m bankanalyst.causali_sync` sul laptop: legge il database con `gcloud auth
-     application-default login` (ruolo di sola lettura per l'account di Luigi) e riscrive
-     `estratti_conto/causali.yaml`.
-- `bankanalyst` legge le `causali` anche da `causali.yaml` accanto al file di regole (o
-  `--causali <file>`), così `mie_regole.yaml` e i suoi commenti non vengono mai riscritti.
+- **Verso bankanalyst: automatico.** Quando gira `python -m bankanalyst estratti_conto/ …`, come
+  primo passo legge **tutte** le causali dal database `causali` e le unisce a quelle del file
+  personale (se ce ne sono). Nessun file da scaricare, nessun comando in più. Il bot non deve
+  sapere nulla degli estratti: raccoglie, e basta.
+  - Credenziali sul laptop: una volta `gcloud auth application-default login`; l'account di Luigi
+    ha un ruolo di **sola lettura** sul database `causali`.
+  - Attivo se c'è `CAUSALI_FIRESTORE_PROJECT=aistudio-milano` in `.env`; senza, `bankanalyst`
+    lavora come oggi.
+  - Se il cloud non risponde (offline, credenziali scadute) `bankanalyst` non si ferma: avvisa a
+    schermo e nel foglio Controlli, e va avanti con le causali locali.
+  - `--no-causali-cloud` per un giro senza.
+- Le causali si abbinano a qualunque estratto passi, vecchio o nuovo: il bot non ha bisogno degli
+  estratti e il cloud non ne vede nessuno.
 - Le causali "in attesa" (senza movimento) restano dove sono già: foglio **Causali in attesa**
   dell'Excel. Il cloud non vede gli estratti, quindi non può saperlo.
 
@@ -113,13 +119,15 @@ Comandi: `/ultime` (ultime 10), `/annulla` (toglie l'ultima, entro 10 minuti), `
 - `causalibot/`: `parser.py` (messaggio → causale), `store.py` (Firestore, database `causali`),
   `app.py` (FastAPI: webhook, scheda, bottoni, comandi), `Dockerfile` (include
   `bankanalyst/rules.yaml` per indovinare la categoria).
-- `bankanalyst`: `causali.yaml` accanto alle regole + `--causali`; `causali_sync.py`.
+- `bankanalyst/causali_cloud.py`: lettura del database `causali` all'avvio, unione con le causali
+  del file personale, avviso (non errore) se il cloud non risponde; `--no-causali-cloud`.
 - `scripts/deploy_causali_bot.sh` sul modello di `deploy_cloudrun.sh`: database con nome + TTL +
   protezione, service account con condizione IAM, secret, build, deploy, `setWebhook` con
   `secret_token`, verifica; `--dry-run` per vedere i comandi prima.
 - Test offline: parser (date, segno, banca, importi italiani), ID non autorizzato ignorato, header
-  del webhook sbagliato → 403, salvataggio solo dopo Salva, `/annulla` entro 10 minuti, `/esporta`
-  in formato leggibile da `load_rules`, sync con Firestore finto. Nessuna rete nei test.
+  del webhook sbagliato → 403, salvataggio solo dopo Salva, `/annulla` entro 10 minuti, causali lette
+  da `bankanalyst` con Firestore finto, cloud irraggiungibile → avviso e si va avanti.
+  Nessuna rete nei test.
 
 Prezzo: interno (estensione di 045), 0.00. Costo di esercizio atteso: zero nel free tier.
 
@@ -129,8 +137,7 @@ Prezzo: interno (estensione di 045), 0.00. Costo di esercizio atteso: zero nel f
 2. Database Firestore separato (proposto) o una collection nel `(default)` dei job? Separato costa
    uguale e tiene i dati bancari lontani dai service account del gateway.
 3. Conservazione nel cloud: 24 mesi (proposto), meno, o per sempre?
-4. Verso bankanalyst: solo `/esporta`, solo sync, o tutte e due?
-5. Foto della ricevuta: per ora no (vorrebbe dire un bucket con immagini personali); da aggiungere
+4. Foto della ricevuta: per ora no (vorrebbe dire un bucket con immagini personali); da aggiungere
    dopo se serve.
 
 ## Prima di accenderlo (Luigi)
