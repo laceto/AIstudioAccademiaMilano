@@ -1,6 +1,7 @@
 """Rule-based classification: ordered regex rules from YAML, first match wins, overrides beat everything."""
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -33,9 +34,27 @@ class Rule:
 
 
 @dataclass
+class Note:
+    """A causale for one movement: same bank, same signed amount, booked within `NOTE_DAYS` of `day`.
+
+    For what the statement cannot say (cash withdrawn to pay someone). `category`, when given, replaces the
+    rule's category for that movement only.
+    """
+    day: date
+    bank: str
+    amount: Decimal
+    causale: str
+    category: str | None = None
+
+
+NOTE_DAYS = 5  # the bank may book a withdrawal a few days later (weekends, holidays)
+
+
+@dataclass
 class Rules:
     categories: list[Rule]
     overrides: dict[str, str]
+    notes: list[Note] = field(default_factory=list)
 
     @property
     def transfers(self) -> set[str]:
@@ -53,7 +72,11 @@ def _read(path: Path) -> Rules:
                  amount=Decimal(str(c["amount"])) if c.get("amount") is not None else None,
                  bank=str(c["bank"]).lower() if c.get("bank") else None, flag=bool(c.get("flag", False)))
             for c in data.get("categories") or []]
-    return Rules(categories=cats, overrides=dict(data.get("overrides") or {}))
+    notes = [Note(day=n["data"] if isinstance(n["data"], date) else date.fromisoformat(str(n["data"])),
+                  bank=str(n["banca"]).lower(), amount=Decimal(str(n["importo"])), causale=str(n["causale"]),
+                  category=n.get("categoria"))
+             for n in data.get("causali") or []]
+    return Rules(categories=cats, overrides=dict(data.get("overrides") or {}), notes=notes)
 
 
 def load_rules(path: str | Path | None = None) -> Rules:
@@ -69,7 +92,27 @@ def load_rules(path: str | Path | None = None) -> Rules:
     flags = {r.name: r.transfer for r in base.categories}
     for r in own.categories:
         r.transfer = r.transfer or flags.get(r.name, False)
-    return Rules(categories=own.categories + base.categories, overrides={**base.overrides, **own.overrides})
+    return Rules(categories=own.categories + base.categories, overrides={**base.overrides, **own.overrides},
+                 notes=base.notes + own.notes)
+
+
+def apply_notes(notes: list[Note], txs: list[Transaction]) -> list[Note]:
+    """Attach each causale to the nearest-dated movement with the same bank and amount; return the unmatched.
+
+    One note, one movement: two withdrawals of the same amount need two notes. Notes are matched in date order.
+    """
+    pending = []
+    for n in sorted(notes, key=lambda n: n.day):
+        candidates = [t for t in txs if not t.note and t.bank.lower() == n.bank and t.amount == n.amount
+                      and abs((t.booking_date - n.day).days) <= NOTE_DAYS]
+        if not candidates:
+            pending.append(n)
+            continue
+        t = min(candidates, key=lambda t: (abs((t.booking_date - n.day).days), t.booking_date))
+        t.note = n.causale
+        if n.category:
+            t.category = n.category
+    return pending
 
 
 class Classifier:

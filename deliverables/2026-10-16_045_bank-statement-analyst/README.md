@@ -75,6 +75,26 @@ overrides:
 
 Un frammento di descrizione → una categoria; gli override vincono su tutte le regole.
 
+## Segnare la causale di un movimento
+
+L'estratto non sa perché hai prelevato dei contanti o fatto un bonifico. Lo scrivi tu, nello
+stesso file personale, sotto `causali`:
+
+```yaml
+causali:
+  - data: 2026-11-17          # il giorno in cui l'hai fatto
+    banca: credem             # credem / ing / fineco
+    importo: -250.00          # con il segno: negativo = uscita
+    causale: Pulizie (Valeria), pagate in contanti
+    categoria: Casa e utenze  # facoltativa: sostituisce la categoria solo per questo movimento
+```
+
+Quando arriva l'estratto, la causale si attacca al movimento della stessa banca con lo stesso
+importo, contabilizzato entro 5 giorni dalla data (la banca a volte lo registra dopo il weekend);
+se ce n'è più di uno, a quello con la data più vicina. Una causale, un movimento: due prelievi
+uguali vogliono due righe. Nell'Excel compare nella colonna **Causale** di Movimenti; finché
+l'estratto non c'è, la riga sta nel foglio **Causali in attesa** e a schermo come "in attesa".
+
 ## Limiti (da sapere)
 
 - **Credem: provato su 5 estratti veri** (Q4 2024 – Q4 2025, 471 movimenti), tutti in

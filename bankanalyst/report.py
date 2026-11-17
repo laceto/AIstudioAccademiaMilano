@@ -10,7 +10,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 
-from bankanalyst.classify import UNCLASSIFIED, Classifier, load_rules
+from bankanalyst.classify import UNCLASSIFIED, Classifier, Note, apply_notes, load_rules
 from bankanalyst.models import Statement, Transaction
 
 ZERO = Decimal("0")
@@ -52,6 +52,7 @@ class Result:
     checks: list[dict] = field(default_factory=list)
     transfers: set[str] = field(default_factory=set)
     flags: set[str] = field(default_factory=set)  # flagged categories: apart from totals and budget
+    pending_notes: list[Note] = field(default_factory=list)  # causali with no movement yet (statement not out)
 
 
 def analyze(statements: list[Statement], rules_path: str | Path | None = None,
@@ -65,11 +66,14 @@ def analyze(statements: list[Statement], rules_path: str | Path | None = None,
         t.category = classifier.classify(t)
         if t.category == UNCLASSIFIED and extra_labels:
             t.category = extra_labels.get(" ".join(t.description.split()).lower(), UNCLASSIFIED)
+    pending = apply_notes(rules.notes, txs)
 
     checks = [{"file": Path(st.path).name, "banca": st.bank, "movimenti": len(st.transactions),
                "saldo_iniziale": st.opening, "saldo_finale": st.closing, "esito": st.reconciliation(),
                "avvisi": "; ".join(st.warnings)} for st in statements]
-    return _summarize(txs, checks, rules.transfers, rules.flags)
+    result = _summarize(txs, checks, rules.transfers, rules.flags)
+    result.pending_notes = pending
+    return result
 
 
 def _summarize(txs: list[Transaction], checks: list[dict], transfers: set[str], flags: set[str]) -> Result:
@@ -101,9 +105,13 @@ def _summarize(txs: list[Transaction], checks: list[dict], transfers: set[str], 
 def split_by_bank(result: Result) -> dict[str, Result]:
     """One Result per bank, from the same classified movements (so the rules and the dedupe are shared)."""
     banks = sorted({t.bank for t in result.transactions})
-    return {b: _summarize([t for t in result.transactions if t.bank == b],
-                          [c for c in result.checks if c["banca"] == b], result.transfers, result.flags)
-            for b in banks}
+    out = {}
+    for b in banks:
+        r = _summarize([t for t in result.transactions if t.bank == b],
+                       [c for c in result.checks if c["banca"] == b], result.transfers, result.flags)
+        r.pending_notes = [n for n in result.pending_notes if n.bank == b.lower()]
+        out[b] = r
+    return out
 
 
 CENT = Decimal("0.01")
@@ -216,7 +224,7 @@ def merchant(description: str) -> str:
 
 def _tx_rows(txs, flags=frozenset()):
     return [[t.bank, t.booking_date, t.value_date, quarter_of(t.booking_date), t.description, t.amount, t.category,
-             merchant(t.description), "sì" if t.category in flags else "", "sì" if t.sign_uncertain else "", t.source, t.page] for t in txs]
+             merchant(t.description), t.note, "sì" if t.category in flags else "", "sì" if t.sign_uncertain else "", t.source, t.page] for t in txs]
 
 
 def write_excel(result: Result, out: str | Path) -> Path:
@@ -253,13 +261,18 @@ def write_excel(result: Result, out: str | Path) -> Path:
                 c.font = _BOLD
 
     tx_header = ["Banca", "Data", "Valuta", "Trimestre", "Descrizione", "Importo", "Categoria", "Esercente",
-                 "Flag", "Segno incerto", "File", "Pagina"]
+                 "Causale", "Flag", "Segno incerto", "File", "Pagina"]
     for name, txs in (("Movimenti", result.transactions), ("Da classificare", result.unclassified)):
         ws = _sheet(wb, name, tx_header, _tx_rows(txs, result.flags), money_cols=(6,))
         for col in ("B", "C"):
             for c in ws[col][1:]:
                 c.number_format = "DD/MM/YYYY"
         ws.auto_filter.ref = ws.dimensions
+
+    if result.pending_notes:  # written by hand, the statement with the movement is not in yet
+        _sheet(wb, "Causali in attesa", ["Banca", "Data", "Importo", "Causale", "Categoria"],
+               [[n.bank, n.day.strftime("%d/%m/%Y"), n.amount, n.causale, n.category or ""]
+                for n in result.pending_notes], money_cols=(3,))
 
     _sheet(wb, "Controlli", ["File", "Banca", "Movimenti", "Saldo iniziale", "Saldo finale", "Quadratura", "Avvisi"],
            [[c["file"], c["banca"], c["movimenti"], c["saldo_iniziale"], c["saldo_finale"], c["esito"], c["avvisi"]]
