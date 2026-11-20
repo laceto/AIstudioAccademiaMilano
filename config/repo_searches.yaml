@@ -1,0 +1,48 @@
+# Ricerche di repository GitHub per argomento (055), lanciate da .github/workflows/repo-search.yml.
+# Una ricerca = un nome + una lista di query della ricerca GitHub (sintassi di github.com/search).
+#
+#   queries:    query GitHub; "stars:>N" viene aggiunto da solo se manca (min_stars)
+#   min_stars:  soglia di default per le query che non la scrivono
+#   exclude:    espressioni regolari su nome, descrizione e topic: chi corrisponde viene scartato
+#               (es. le query su "audio-analysis" tirano dentro anche voce e speech)
+#   require:    (facoltativo) almeno una deve corrispondere, sennò il repo viene scartato
+#   focus:      cosa interessa: lo legge il modello quando scrive "Cosa ci puoi fare"
+#
+# Per aggiungere una serie: copia un blocco, cambia nome e query, lancia il workflow con quel nome.
+
+musica-elettronica-audio:
+  focus: >-
+    analizzare file audio di tracce di musica elettronica (techno, house, ecc.): BPM, tonalità,
+    beat e downbeat, struttura (intro/drop/break), separazione degli stem, feature audio,
+    classificazione, strumenti per DJ e librerie di tracce
+  min_stars: 30
+  queries:
+    - topic:music-information-retrieval
+    - topic:audio-analysis
+    - topic:music-analysis
+    - topic:audio-features
+    - topic:beat-tracking stars:>10
+    - topic:bpm-detection stars:>10
+    - topic:key-detection stars:>5
+    - topic:music-structure-analysis stars:>5
+    - topic:music-source-separation stars:>100
+    - topic:dj
+    - topic:electronic-music
+    - topic:audio-fingerprinting stars:>100
+    - librosa in:name stars:>100
+    - demucs in:name stars:>500
+    - spleeter in:name stars:>1000
+  exclude:
+    - 'voice[- ]conversion'
+    - '\bspeech\b'
+    - '\btts\b'
+    - 'text[- ]to[- ]speech'
+    - 'speech[- ]recognition'
+    - '\basr\b'
+    - 'singing[- ]voice[- ]conversion'
+    - 'pipewire'
+    - '\bvideo\b'
+    - '\bsonos\b'
+    - 'downloader'
+    - '\bmidi\b'
+    - 'symbolic'

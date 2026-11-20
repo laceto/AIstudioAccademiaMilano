@@ -1,0 +1,121 @@
+name: Ricerca repo per argomento
+
+# Ricerche GitHub su qualunque argomento (055): lista di repo + "cosa ci puoi fare".
+# Actions → "Ricerca repo per argomento" → Run workflow.
+#   preset:  nome di una ricerca in config/repo_searches.yaml (es. musica-elettronica-audio)
+#   queries: query GitHub separate da ";" — se compilato sostituisce quelle del preset
+# Risultato: nella Summary del run, nell'artifact "repo-search" (md + json) e, con "save",
+# in process/research/searches/ via PR mergiata.
+
+on:
+  workflow_dispatch:
+    inputs:
+      preset:
+        description: 'Ricerca salvata (config/repo_searches.yaml)'
+        required: false
+        default: 'musica-elettronica-audio'
+        type: string
+      queries:
+        description: 'Query libere separate da ";" (es. topic:beat-tracking; techno analysis in:description)'
+        required: false
+        default: ''
+        type: string
+      min_stars:
+        description: 'Stelle minime per le query senza stars: (vuoto = quelle del preset)'
+        required: false
+        default: ''
+        type: string
+      max_per_query:
+        description: 'Repo per query (max 100)'
+        required: false
+        default: '15'
+        type: string
+      describe:
+        description: 'Descrizione "cosa ci puoi fare": auto = modello se c''è OPENAI_API_KEY, off = descrizione GitHub'
+        required: false
+        default: 'auto'
+        type: choice
+        options: [auto, off]
+      save:
+        description: 'Salva il risultato in process/research/searches/ (PR mergiata)'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pyyaml openai
+
+      - name: Search
+        env:
+          RESEARCH_GITHUB_TOKEN: ${{ secrets.RESEARCH_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          IN_PRESET: ${{ inputs.preset }}
+          IN_QUERIES: ${{ inputs.queries }}
+          IN_MIN_STARS: ${{ inputs.min_stars }}
+          IN_MAX: ${{ inputs.max_per_query }}
+          IN_DESCRIBE: ${{ inputs.describe }}
+        run: |
+          args=(--max-per-query "${IN_MAX:-15}" --describe "$IN_DESCRIBE")
+          slug="query-libere"
+          if [ -n "$IN_QUERIES" ]; then
+            IFS=';' read -ra qs <<< "$IN_QUERIES"
+            for q in "${qs[@]}"; do
+              q="$(echo "$q" | xargs)"
+              [ -n "$q" ] && args+=(--query "$q")
+            done
+          fi
+          if [ -n "$IN_PRESET" ] && [ -z "$IN_QUERIES" ]; then
+            args+=(--preset "$IN_PRESET")
+            slug="$(echo "$IN_PRESET" | tr -c 'a-zA-Z0-9-' '-' | sed 's/-*$//')"
+          fi
+          [ -n "$IN_MIN_STARS" ] && args+=(--min-stars "$IN_MIN_STARS")
+          DATE=$(date +%Y-%m-%d)
+          mkdir -p out
+          python -m scripts.github_research.repo_search "${args[@]}" \
+            --output "out/${DATE}_${slug}.md" --json "out/${DATE}_${slug}.json"
+          echo "SLUG=${slug}" >> "$GITHUB_ENV"
+          echo "RUN_DATE=${DATE}" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repo-search
+          path: out/
+
+      - name: Save to repo (PR + merge)
+        if: inputs.save
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p process/research/searches
+          cp out/* process/research/searches/
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add process/research/searches/
+          if git diff --staged --quiet; then
+            echo "Niente di nuovo da salvare."
+            exit 0
+          fi
+          BRANCH="ops/repo-search-${SLUG}-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
+          git commit -m "research: ricerca repo ${SLUG} ${RUN_DATE} [skip ci]"
+          git push origin "$BRANCH"
+          PR_URL=$(gh pr create --base main --head "$BRANCH" \
+            --title "research: ricerca repo ${SLUG} ${RUN_DATE}" \
+            --body "Ricerca repo per argomento, generata dal workflow repo-search.")
+          gh pr merge "$PR_URL" --squash --admin
