@@ -2,11 +2,11 @@
   "_meta": {
     "version": "1.8",
     "description": "AI Studio Accademia Milano — global learned settings.",
-    "last_updated": "2026-11-12",
-    "last_request_id": "051",
-    "total_requests_processed": 38,
+    "last_updated": "2026-11-20",
+    "last_request_id": "055",
+    "total_requests_processed": 40,
     "v1.7_changes": "Added agent_deploy_streamlit pricing (€19.90); registered 5 techa-deploy-related skills; wired intent_to_skill_map.agent_deploy_streamlit",
-    "last_processed_audit_log": "051"
+    "last_processed_audit_log": "055"
   },
   "skills": {
     "html_tailwind_css": {
@@ -1203,6 +1203,16 @@
           "count": 1,
           "avg_sec": 0.0,
           "success_rate": 1.0
+        },
+        "bank_statement_analyst": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
+        },
+        "github_research": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1279,6 +1289,16 @@
           "count": 1,
           "avg_sec": 0.0,
           "success_rate": 1.0
+        },
+        "bank_statement_analyst": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
+        },
+        "github_research": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1347,6 +1367,16 @@
           "success_rate": 1.0
         },
         "drive_semantic_router": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
+        },
+        "bank_statement_analyst": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
+        },
+        "github_research": {
           "count": 1,
           "avg_sec": 0.0,
           "success_rate": 1.0
@@ -1535,6 +1565,11 @@
           "count": 1,
           "avg_sec": 0.0,
           "success_rate": 1.0
+        },
+        "github_research": {
+          "count": 1,
+          "avg_sec": 0.0,
+          "success_rate": 1.0
         }
       }
     },
@@ -1690,11 +1725,11 @@
     "google_calendar_api_v3": 1,
     "langgraph_human_in_the_loop": 1,
     "python_packaging_hatchling": 1,
-    "breakdown": 7,
+    "breakdown": 8,
     "agentic-router": 2,
     "langgraph-fundamentals": 2,
     "google-calendar-api": 1,
-    "telegram-bot-api": 1
+    "telegram-bot-api": 2
   },
   "github_activity_counters": {
     "commit": 0,
@@ -1880,6 +1915,54 @@
       ],
       "intents": [
         "internal_tooling"
+      ],
+      "seen": 1
+    },
+    {
+      "agent": "Chiara",
+      "cue": "Una CLI che legge il .env: chiamare load_dotenv() in main() quando i test la eseguono",
+      "lesson": "Leggere solo la chiave che serve con dotenv_values(), senza toccare os.environ; dopo ogni modifica a una CLI lanciare l'intera suite, non solo i test del modulo",
+      "confidence": "high",
+      "evidence": [
+        "Nel 054 load_dotenv() in bankanalyst.cli.main() ha messo la OPENAI_API_KEY vera nell'ambiente: test_gateway_worker falliva con 401 solo nella suite intera, e passava da solo e su main pulito"
+      ],
+      "requests": [
+        "054"
+      ],
+      "intents": [
+        "bank_statement_analyst"
+      ],
+      "seen": 1
+    },
+    {
+      "agent": "Chiara",
+      "cue": "Script Python che riscrive file con sostituzioni di testo, su Windows",
+      "lesson": "Un SyntaxError nello script (backslash prima di ''') lascia i file intatti: controllare con git diff che le modifiche ci siano prima di andare avanti; per blocchi lunghi usare Edit o Write",
+      "confidence": "medium",
+      "evidence": [
+        "Nel 054 il primo script di patch di cloudrun_lib.sh non è partito e git diff lo ha mostrato"
+      ],
+      "requests": [
+        "054"
+      ],
+      "intents": [
+        "bank_statement_analyst"
+      ],
+      "seen": 1
+    },
+    {
+      "agent": "Gianni",
+      "cue": "Ricerca GitHub per topic su un argomento di nicchia",
+      "lesson": "Unire query per topic e query per nome dei progetti noti, tenere i repo archiviati segnati invece di scartarli, e togliere il rumore con exclude sui topic vicini",
+      "confidence": "medium",
+      "evidence": [
+        "Nel 055 topic:audio-analysis portava voice conversion (39k stelle) in cima; librosa, spleeter e demucs non uscivano dalle query per topic; facebookresearch/demucs è archiviato"
+      ],
+      "requests": [
+        "055"
+      ],
+      "intents": [
+        "github_research"
       ],
       "seen": 1
     }

@@ -9,10 +9,14 @@ Do not edit by hand: add a lesson to the audit log of the delivery that taught i
   _confidence high, seen 1× (requests 048)_. Evidence: 048: python scripts/gateway_deliver.py failed with ModuleNotFoundError: No module named 'gateway'; python -m scripts.gateway_deliver worked.
 - **When a pipeline step runs agent-written or customer-influenced code inside a service that holds secrets** → Run it as a separate unprivileged user with a clean env, not just a clean env: a same-user process can read the parent's secrets from /proc/<pid>/environ.
   _confidence high, seen 1× (requests 050)_. Evidence: 050: as root, cat /proc/<worker pid>/environ showed a test secret; as user builder it returned Permission denied.
+- **Una CLI che legge il .env: chiamare load_dotenv() in main() quando i test la eseguono** → Leggere solo la chiave che serve con dotenv_values(), senza toccare os.environ; dopo ogni modifica a una CLI lanciare l'intera suite, non solo i test del modulo
+  _confidence high, seen 1× (requests 054)_. Evidence: Nel 054 load_dotenv() in bankanalyst.cli.main() ha messo la OPENAI_API_KEY vera nell'ambiente: test_gateway_worker falliva con 401 solo nella suite intera, e passava da solo e su main pulito
 - **When a feature reads a github.com HTML page (not api.github.com) from the cloud container** → Expect 403 from the container proxy; write the tests on a saved HTML fixture and say in the guide that the live page was not tried.
   _confidence medium, seen 1× (requests 049)_. Evidence: 049: curl https://github.com/trending?since=weekly returned 403 from the container.
 - **When running the repo's test suite in the cloud container** → The pytest on PATH is a uv tool without the repo's packages: pip install -r gateway/requirements.txt -r gateway/requirements.worker.txt pytest, then python -m pytest.
   _confidence medium, seen 1× (requests 050)_. Evidence: 050: /root/.local/bin/pytest failed collection with ModuleNotFoundError: httpx; python -m pytest after installing the requirements collected 1372 tests.
+- **Script Python che riscrive file con sostituzioni di testo, su Windows** → Un SyntaxError nello script (backslash prima di ''') lascia i file intatti: controllare con git diff che le modifiche ci siano prima di andare avanti; per blocchi lunghi usare Edit o Write
+  _confidence medium, seen 1× (requests 054)_. Evidence: Nel 054 il primo script di patch di cloudrun_lib.sh non è partito e git diff lo ha mostrato
 
 ## Gianni
 
@@ -22,3 +26,5 @@ Do not edit by hand: add a lesson to the audit log of the delivery that taught i
   _confidence high, seen 1× (requests 047)_. Evidence: 047: the showcase page at / called /submit and /status from the browser on every product card.
 - **When code builds the command line for an external CLI (claude, gcloud, ...)** → Run the real CLI once with a dummy credential to check every flag parses and the output shape matches what the code reads; --help may not list every flag.
   _confidence high, seen 1× (requests 050)_. Evidence: 050: claude 2.1.318 with sk-ant-dummy accepted all flags and returned {is_error: true, result: 'Invalid API key', total_cost_usd: 0}; --max-turns is not in its --help, so the engine uses --max-budget-usd and a timeout instead.
+- **Ricerca GitHub per topic su un argomento di nicchia** → Unire query per topic e query per nome dei progetti noti, tenere i repo archiviati segnati invece di scartarli, e togliere il rumore con exclude sui topic vicini
+  _confidence medium, seen 1× (requests 055)_. Evidence: Nel 055 topic:audio-analysis portava voice conversion (39k stelle) in cima; librosa, spleeter e demucs non uscivano dalle query per topic; facebookresearch/demucs è archiviato

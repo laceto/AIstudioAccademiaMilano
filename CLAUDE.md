@@ -229,6 +229,7 @@ Hook in `.claude/settings.json` girano in entrambi gli ambienti:
 | `scripts/rag/inject_context.py` | Hook UserPromptSubmit — inietta top-5 chunk prima di ogni risposta |
 | `scripts/rag/synthesize.py` | Sintesi async via kitai.batch (50% più economico, output Pydantic) |
 | `scripts/github_research/main.py` | GitHub AI Research CLI (Scout→Analyst→Curator→Reporter); lo Scout legge anche github.com/trending (`trending.py`, 049) |
+| `scripts/github_research/repo_search.py`, `config/repo_searches.yaml`, `.github/workflows/repo-search.yml` | Ricerca repo per argomento (055): preset o query libere → lista + "cosa ci puoi fare"; guida in `deliverables/2026-11-20_055_repo-search/` |
 | `process/intent_registry.yaml` | Tutti gli intent noti → skills → opzioni di delivery |
 | `process/audit/` | Un file Markdown con YAML frontmatter per ogni request completata |
 | `agents/README.md` | Definizioni dei ruoli agente + spec attuariali |
@@ -418,6 +419,7 @@ Scout → Analyst → Curator → Reporter. Vedi `agents/research/README.md`.
 | 052 | 2026-06-06 | MoR Evaluation — Lemon Squeezy vs Payhip (ISS-025): raccomandazione Payhip Free + tabelle commissioni (consegnata a giugno come 030, rinumerata: 030 era già usato) | 4.90 |
 | 053 | 2026-10-16 | Downloads agent — LangGraph: scansione di Downloads, piano per tipo, approvazione (interrupt), spostamento senza cancellare, undo, checkpoint SQLite, pianificabile con Task Scheduler; riassunto di ogni documento con Ollama locale (gemma2:2b) e report HTML; cartella `data/Download`; 34 test offline (consegnato come 040, rinumerato: 040 era già usato dalla pipeline v2) | 0.00 (internal) |
 | 054 | 2026-11-17 | Bot Telegram per le causali (estensione di 045) — `causalibot`: messaggio libero letto a regole (`250 credem pulizie Valeria`), scheda di conferma, salva solo dopo Salva, `/ultime` `/annulla` `/help`; **nessuna banca di default**, va sempre scritta; servizio Cloud Run `causali-bot` e database Firestore `causali` separati (service account con IAM condizionale, solo Luigi risponde), conservazione 24 mesi, campo `allegati` pronto per le foto future; `bankanalyst` legge le causali dal cloud a ogni giro (`CAUSALI_FIRESTORE_PROJECT`, `--no-causali-cloud`, avviso e non errore se offline); `deploy_causali_bot.sh`, `check_telegram.py --only causali`; 58 test offline; non deployato, non provato con Telegram/Firestore veri | 0.00 (internal) |
+| 055 | 2026-11-20 | Ricerca repo per argomento (GitHub Actions) — `repo-search.yml` manuale: preset in `config/repo_searches.yaml` (primo `musica-elettronica-audio`, 15 query) o query libere separate da `;`; dedup per repo, exclude/require a regex, archiviati tenuti e segnati; "cosa ci puoi fare" in italiano da gpt-4o-mini su descrizione + topic + inizio README (README trattato come dato), fallback alla descrizione GitHub; Summary + artifact + `process/research/searches/` via PR; 10 test offline; provato su GitHub vero senza modello | 0.00 (internal) |
 
 ---
 

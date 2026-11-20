@@ -1,7 +1,7 @@
 # Deliverables Catalogue
 
 Every shipped product. Auto-updated by `scripts/learning_loop.py` after each delivery.
-Last updated: 2026-11-12
+Last updated: 2026-11-20
 
 | ID | Date | Product | Stack | Price | Path |
 |----|------|---------|-------|-------|------|
@@ -60,6 +60,8 @@ Last updated: 2026-11-12
 | 051 | 2026-11-11 | Calendar Sentinel — `calendarsentinel`: polling di un Google Calendar con syncToken (scope read-only), avviso Telegram quando compare un evento nuovo (modifiche ignorate, cancellazioni dimenticate), primo giro come baseline silenzioso, retry se Telegram fallisce, `--dry-run`/`--test-message`; 17 test offline; non provato su calendario e bot veri | — | €14.90 | `deliverables/2026-11-11_051_calendar-sentinel/` |
 | 052 | 2026-06-06 | MoR Evaluation — Lemon Squeezy vs Payhip (ISS-025): raccomandazione Payhip Free + tabelle commissioni (consegnata a giugno come 030, rinumerata: 030 era già usato) | — | €4.90 | `deliverables/2026-06-06_052_merchant-of-record-evaluation/` |
 | 053 | 2026-10-16 | Downloads agent — LangGraph: scansione di Downloads, piano per tipo, approvazione (interrupt), spostamento senza cancellare, undo, checkpoint SQLite, pianificabile con Task Scheduler; riassunto di ogni documento con Ollama locale (gemma2:2b) e report HTML; cartella `data/Download`; 34 test offline (consegnato come 040, rinumerato: 040 era già usato dalla pipeline v2) | — | 0.00 (internal) | `deliverables/2026-10-16_053_downloads-agent/` |
+| 054 | 2026-11-17 | Bot Telegram per le causali degli estratti conto, lette da bankanalyst | Cloud Run, Firestore, Telegram | 0.00 (internal) | `deliverables/2026-11-17_054_causali-bot/` |
+| 055 | 2026-11-20 | Ricerca repo per argomento via GitHub Actions: lista + "cosa ci puoi fare" | GitHub Actions, GitHub Search API, OpenAI | 0.00 (internal) | `deliverables/2026-11-20_055_repo-search/` |
 
 ## Revenue Summary
 
