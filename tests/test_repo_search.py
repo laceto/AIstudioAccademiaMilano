@@ -124,3 +124,18 @@ def test_main_end_to_end_offline(tmp_path, monkeypatch):
     out = tmp_path / "out.md"
     assert rs.main(["--query", "topic:dj", "--min-stars", "1", "--output", str(out), "--pause", "0"]) == 0
     assert "x/mixxx" in out.read_text() and "x/mixxx" in summary.read_text()
+
+
+def test_describe_stops_calling_model_after_auth_error(capsys):
+    calls = []
+
+    def bad_key(system, user):
+        calls.append(user)
+        raise RuntimeError("Error code: 401 - Incorrect API key provided")
+
+    repos = [rs.Found(**rs._fields(_item(f"x/r{i}", 10, f"desc {i}")), found_by=["q"]) for i in range(5)]
+    rs.describe(repos, FakeGitHub({}), focus="", mode="auto", llm=bad_key)
+    assert len(calls) == 1  # one 401 is enough: the key is wrong for every repo
+    assert all(r.described_by == "github" for r in repos)
+    out = capsys.readouterr().out
+    assert "OPENAI_API_KEY" in out and out.count("401") == 1

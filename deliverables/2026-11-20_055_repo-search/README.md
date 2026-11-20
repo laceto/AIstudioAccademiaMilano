@@ -10,7 +10,7 @@ GitHub → Actions → **Ricerca repo per argomento** → Run workflow.
 
 | Campo | Cosa mettere |
 |---|---|
-| preset | nome di una ricerca salvata in `config/repo_searches.yaml` (default `musica-elettronica-audio`) |
+| preset | nome di una ricerca salvata in `config/repo_searches.yaml`: `musica-elettronica-audio` (default) o `api-metadati-tracce` (client di MusicBrainz, Discogs, Last.fm, Spotify, Deezer, Beatport, riconoscimento AcoustID/Shazam, tagger) |
 | queries | in alternativa, query libere separate da `;` — es. `topic:beat-tracking; techno in:description` |
 | min_stars | soglia per le query che non scrivono `stars:` (vuoto = quella del preset) |
 | max_per_query | quanti repo per query (default 15) |
@@ -58,6 +58,8 @@ sintetizzatori-software:
    caratteri del README e scrive 1-2 frasi in italiano. Il README è trattato come dato, non come
    istruzioni. Senza chiave, o se il modello sbaglia, resta la descrizione GitHub; il report dice
    quante descrizioni vengono da ciascuna fonte.
+   Se la chiave viene rifiutata (401) il modello non viene più chiamato per gli altri repo: un
+   solo avviso nel log, e si aggiorna il secret `OPENAI_API_KEY`.
 
 ## Limiti
 

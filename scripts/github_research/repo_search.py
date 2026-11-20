@@ -175,7 +175,12 @@ def describe(repos: list[Found], gh, focus: str, mode: str = "auto", llm=None) -
             try:
                 text = _clean(llm(SYSTEM_PROMPT, user))
             except Exception as exc:
-                print(f"[describe] {r.full_name}: modello fallito ({exc}), uso la descrizione GitHub")
+                if getattr(exc, "status_code", None) == 401 or "401" in str(exc):
+                    print("[describe] OPENAI_API_KEY rifiutata (401): chiave sbagliata o revocata. "
+                          "Uso le descrizioni GitHub per tutti i repo; aggiorna il secret e rilancia.")
+                    llm = None
+                else:
+                    print(f"[describe] {r.full_name}: modello fallito ({exc}), uso la descrizione GitHub")
         if text:
             r.what, r.described_by = text, "modello"
         else:

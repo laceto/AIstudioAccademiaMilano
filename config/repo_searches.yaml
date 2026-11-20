@@ -41,8 +41,49 @@ musica-elettronica-audio:
     - '\basr\b'
     - 'singing[- ]voice[- ]conversion'
     - 'pipewire'
+    - 'browser privacy'
+    - 'browser fingerprint'
     - '\bvideo\b'
     - '\bsonos\b'
     - 'downloader'
     - '\bmidi\b'
     - 'symbolic'
+
+api-metadati-tracce:
+  focus: >-
+    servizi e API che restituiscono informazioni su una traccia musicale (artista, titolo, album,
+    etichetta, anno, ISRC, BPM, tonalità, genere, copertina) a partire da un nome, un ID o un file
+    audio: client delle API (MusicBrainz, Discogs, Last.fm, Spotify, Deezer, Beatport), riconoscimento
+    da impronta audio (AcoustID, Shazam), tagger automatici di librerie di tracce
+  min_stars: 50
+  queries:
+    - topic:musicbrainz
+    - topic:discogs
+    - topic:acoustid stars:>10
+    - topic:lastfm-api stars:>30
+    - topic:spotify-api stars:>300
+    - topic:deezer-api stars:>30
+    - topic:beatport stars:>10
+    - topic:music-metadata stars:>20
+    - topic:shazam stars:>100
+    - musicbrainz in:name stars:>50
+    - discogs in:name stars:>50
+    - spotipy in:name stars:>100
+    - pylast in:name
+    - audd in:name stars:>10
+    - beets in:name stars:>100
+  exclude:
+    - 'download'
+    - '\bripper\b'
+    - 'browser fingerprint'
+    - 'visitor identifier'
+    - '\bmusic player\b'
+    - '\bterminal\b'
+    - 'screensaver'
+    - 'discord bot'
+    - 'streaming server'
+    - 'subsonic'
+    - 'radio station'
+    - 'tinder'
+    - 'audiobook'
+    - '\bsonos\b'
