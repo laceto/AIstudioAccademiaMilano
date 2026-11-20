@@ -1,0 +1,2498 @@
+[
+  {
+    "full_name": "beetbox/beets",
+    "description": "music library manager and MusicBrainz tagger",
+    "stars": 15960,
+    "language": "Python",
+    "topics": [
+      "cli",
+      "hacktoberfest",
+      "music",
+      "music-library",
+      "musicbrainz",
+      "python"
+    ],
+    "url": "https://github.com/beetbox/beets",
+    "pushed_at": "2026-11-19",
+    "archived": false,
+    "found_by": [
+      "topic:musicbrainz stars:>50",
+      "beets in:name stars:>100"
+    ],
+    "what": "music library manager and MusicBrainz tagger",
+    "described_by": "github"
+  },
+  {
+    "full_name": "cgzirim/seek-tune",
+    "description": "An implementation of Shazam's song recognition algorithm.",
+    "stars": 5606,
+    "language": "Go",
+    "topics": [
+      "audio-fingerprinting",
+      "audio-processing",
+      "go",
+      "golang",
+      "not-shazam",
+      "shazam",
+      "song",
+      "song-recognition-algorithm"
+    ],
+    "url": "https://github.com/cgzirim/seek-tune",
+    "pushed_at": "2025-11-19",
+    "archived": false,
+    "found_by": [
+      "topic:shazam stars:>100"
+    ],
+    "what": "An implementation of Shazam's song recognition algorithm.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "spotipy-dev/spotipy",
+    "description": "A light weight Python library for the Spotify Web API",
+    "stars": 5486,
+    "language": "Python",
+    "topics": [],
+    "url": "https://github.com/spotipy-dev/spotipy",
+    "pushed_at": "2026-06-29",
+    "archived": false,
+    "found_by": [
+      "spotipy in:name stars:>100"
+    ],
+    "what": "A light weight Python library for the Spotify Web API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "metabrainz/picard",
+    "description": "Picard is a cross-platform music tagger powered by the MusicBrainz database",
+    "stars": 5393,
+    "language": "Python",
+    "topics": [
+      "acoustid",
+      "audio",
+      "id3",
+      "music",
+      "music-tagger",
+      "musicbrainz",
+      "musicbrainz-picard",
+      "picard",
+      "python",
+      "tagger"
+    ],
+    "url": "https://github.com/metabrainz/picard",
+    "pushed_at": "2026-11-19",
+    "archived": false,
+    "found_by": [
+      "topic:musicbrainz stars:>50",
+      "topic:acoustid stars:>10"
+    ],
+    "what": "Picard is a cross-platform music tagger powered by the MusicBrainz database",
+    "described_by": "github"
+  },
+  {
+    "full_name": "watsonbox/exportify",
+    "description": "Export/Backup Spotify playlists using the Web API",
+    "stars": 4318,
+    "language": "TypeScript",
+    "topics": [
+      "playlists",
+      "spotify",
+      "spotify-api",
+      "spotify-web-api"
+    ],
+    "url": "https://github.com/watsonbox/exportify",
+    "pushed_at": "2026-10-20",
+    "archived": false,
+    "found_by": [
+      "topic:spotify-api stars:>300"
+    ],
+    "what": "Export/Backup Spotify playlists using the Web API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "staniel359/muffon",
+    "description": "Advanced multi-source music streaming + discovery client for desktop. Free, clean, no login, no ads.",
+    "stars": 2270,
+    "language": "Vue",
+    "topics": [
+      "bandcamp",
+      "discogs",
+      "electron",
+      "genius",
+      "javascript",
+      "lastfm",
+      "linux",
+      "macos",
+      "music",
+      "music-streaming",
+      "odnoklassniki",
+      "soundcloud",
+      "spotify",
+      "streaming",
+      "vk",
+      "vue",
+      "windows",
+      "yandexmusic",
+      "youtube",
+      "youtubemusic"
+    ],
+    "url": "https://github.com/staniel359/muffon",
+    "pushed_at": "2026-11-07",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50"
+    ],
+    "what": "Advanced multi-source music streaming + discovery client for desktop. Free, clean, no login, no ads.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "marin-m/SongRec",
+    "description": "An open-source Shazam client for Linux, written in Rust.",
+    "stars": 2058,
+    "language": "Rust",
+    "topics": [
+      "audio-fingerprinting",
+      "flatpak",
+      "rust",
+      "shazam",
+      "songrec"
+    ],
+    "url": "https://github.com/marin-m/SongRec",
+    "pushed_at": "2026-11-17",
+    "archived": false,
+    "found_by": [
+      "topic:shazam stars:>100"
+    ],
+    "what": "An open-source Shazam client for Linux, written in Rust.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "JMPerez/spotify-web-api-js",
+    "description": "A client-side JS wrapper for the Spotify Web API",
+    "stars": 1893,
+    "language": "TypeScript",
+    "topics": [
+      "api",
+      "spotify",
+      "spotify-api",
+      "spotify-library",
+      "spotify-sdk",
+      "spotify-web-api",
+      "spotify-webapi",
+      "wrapper"
+    ],
+    "url": "https://github.com/JMPerez/spotify-web-api-js",
+    "pushed_at": "2024-05-17",
+    "archived": false,
+    "found_by": [
+      "topic:spotify-api stars:>300"
+    ],
+    "what": "A client-side JS wrapper for the Spotify Web API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "JohnnyCrazy/SpotifyAPI-NET",
+    "description": ":sound: A Client for the Spotify Web API, written in C#/.NET",
+    "stars": 1614,
+    "language": "C#",
+    "topics": [
+      "c-sharp",
+      "csharp",
+      "dotnet",
+      "dotnet-core",
+      "music",
+      "spotify",
+      "spotify-api",
+      "spotify-sdk",
+      "spotify-web",
+      "spotify-web-api",
+      "spotifyapi",
+      "spotifyapi-net"
+    ],
+    "url": "https://github.com/JohnnyCrazy/SpotifyAPI-NET",
+    "pushed_at": "2026-05-06",
+    "archived": false,
+    "found_by": [
+      "topic:spotify-api stars:>300"
+    ],
+    "what": ":sound: A Client for the Spotify Web API, written in C#/.NET",
+    "described_by": "github"
+  },
+  {
+    "full_name": "DroppedNeedle/DroppedNeedle",
+    "description": "",
+    "stars": 1580,
+    "language": "Rust",
+    "topics": [
+      "homelab",
+      "listenbrainz",
+      "music",
+      "musicbrainz",
+      "selfhosted"
+    ],
+    "url": "https://github.com/DroppedNeedle/DroppedNeedle",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:musicbrainz stars:>50"
+    ],
+    "what": "(nessuna descrizione)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "kraxarn/spotify-qt",
+    "description": "Lightweight Spotify client using Qt",
+    "stars": 1498,
+    "language": "C++",
+    "topics": [
+      "cpp",
+      "qt",
+      "spotify",
+      "spotify-api"
+    ],
+    "url": "https://github.com/kraxarn/spotify-qt",
+    "pushed_at": "2026-10-31",
+    "archived": false,
+    "found_by": [
+      "topic:spotify-api stars:>300"
+    ],
+    "what": "Lightweight Spotify client using Qt",
+    "described_by": "github"
+  },
+  {
+    "full_name": "adblockradio/adblockradio",
+    "description": "An adblocker for live radio streams and podcasts. Machine learning meets Shazam.",
+    "stars": 1484,
+    "language": "JavaScript",
+    "topics": [
+      "adblock",
+      "adblockradio",
+      "ai",
+      "keras",
+      "machine-learning",
+      "shazam",
+      "signal-processing",
+      "tensorflow"
+    ],
+    "url": "https://github.com/adblockradio/adblockradio",
+    "pushed_at": "2021-04-10",
+    "archived": true,
+    "found_by": [
+      "topic:shazam stars:>100"
+    ],
+    "what": "An adblocker for live radio streams and podcasts. Machine learning meets Shazam.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "acoustid/chromaprint",
+    "description": "C library for generating audio fingerprints used by AcoustID",
+    "stars": 1428,
+    "language": "C++",
+    "topics": [
+      "acoustid",
+      "audio",
+      "audio-analysis",
+      "audio-fingerprinting",
+      "audio-processing",
+      "chromaprint"
+    ],
+    "url": "https://github.com/acoustid/chromaprint",
+    "pushed_at": "2026-10-15",
+    "archived": false,
+    "found_by": [
+      "topic:acoustid stars:>10"
+    ],
+    "what": "C library for generating audio fingerprints used by AcoustID",
+    "described_by": "github"
+  },
+  {
+    "full_name": "AudileTeam/Audile",
+    "description": "An open-source Android app for music recognition that integrates AudD, ACRCloud, and Shazam to perform song identification.",
+    "stars": 1423,
+    "language": "Kotlin",
+    "topics": [
+      "acrcloud",
+      "android",
+      "android-application",
+      "android-widget",
+      "audd",
+      "foss",
+      "jetpack-compose",
+      "kotlin-android",
+      "music",
+      "music-recognition",
+      "shazam",
+      "shazam-like"
+    ],
+    "url": "https://github.com/AudileTeam/Audile",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:shazam stars:>100"
+    ],
+    "what": "An open-source Android app for music recognition that integrates AudD, ACRCloud, and Shazam to perform song identification.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Borewit/music-metadata",
+    "description": "Audio and video metadata parser and editor for Node.js and browsers. Read, write, and edit tags, artwork, and metadata. Extract technical format details and duration from files and streams.",
+    "stars": 1337,
+    "language": "TypeScript",
+    "topics": [
+      "aiff",
+      "ape",
+      "asf",
+      "audio",
+      "dsd",
+      "flac",
+      "id3",
+      "m4a",
+      "metadata",
+      "mp3",
+      "mp4",
+      "musepack",
+      "musicbrainz",
+      "ogg",
+      "opus",
+      "picard",
+      "tag",
+      "tags",
+      "vorbis",
+      "wav"
+    ],
+    "url": "https://github.com/Borewit/music-metadata",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:musicbrainz stars:>50"
+    ],
+    "what": "Audio and video metadata parser and editor for Node.js and browsers. Read, write, and edit tags, artwork, and metadata. Extract technical format details and duration from files and streams.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Pau1fitz/react-spotify",
+    "description": "Spotify React / Redux   🎤🎺🎸🎷  ",
+    "stars": 1292,
+    "language": "JavaScript",
+    "topics": [
+      "music",
+      "react",
+      "redux",
+      "spotify-api"
+    ],
+    "url": "https://github.com/Pau1fitz/react-spotify",
+    "pushed_at": "2023-02-01",
+    "archived": false,
+    "found_by": [
+      "topic:spotify-api stars:>300"
+    ],
+    "what": "Spotify React / Redux 🎤🎺🎸🎷",
+    "described_by": "github"
+  },
+  {
+    "full_name": "metabrainz/musicbrainz-server",
+    "description": "Server for the MusicBrainz project (website, API, database tools)",
+    "stars": 1115,
+    "language": "Perl",
+    "topics": [
+      "catalyst",
+      "javascript",
+      "musicbrainz",
+      "perl",
+      "react"
+    ],
+    "url": "https://github.com/metabrainz/musicbrainz-server",
+    "pushed_at": "2026-11-19",
+    "archived": false,
+    "found_by": [
+      "topic:musicbrainz stars:>50",
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "Server for the MusicBrainz project (website, API, database tools)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "vdesabou/alfred-spotify-mini-player",
+    "description": "🎵🎩 Alfred workflow to control your Spotify library at your fingertips",
+    "stars": 1109,
+    "language": "PHP",
+    "topics": [
+      "alfred",
+      "alfred-workflow",
+      "spotify",
+      "spotify-api",
+      "spotify-connect"
+    ],
+    "url": "https://github.com/vdesabou/alfred-spotify-mini-player",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:spotify-api stars:>300"
+    ],
+    "what": "🎵🎩 Alfred workflow to control your Spotify library at your fingertips",
+    "described_by": "github"
+  },
+  {
+    "full_name": "AddictedCS/soundfingerprinting",
+    "description": "Open source audio fingerprinting in .NET. An efficient algorithm for acoustic fingerprinting written purely in C#.  ",
+    "stars": 1045,
+    "language": "C#",
+    "topics": [
+      "acoustic-fingerprints",
+      "algorithm",
+      "audio",
+      "audio-processing",
+      "c-sharp",
+      "fingerprints",
+      "locality-sensitive-hashing",
+      "nearest-neighbor-search",
+      "recognition",
+      "shazam"
+    ],
+    "url": "https://github.com/AddictedCS/soundfingerprinting",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:shazam stars:>100"
+    ],
+    "what": "Open source audio fingerprinting in .NET. An efficient algorithm for acoustic fingerprinting written purely in C#.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "shazamio/ShazamIO",
+    "description": "🎵 Is a free asynchronous library from reverse engineered Shazam API written in Python 3.10+ with asyncio and aiohttp.",
+    "stars": 1019,
+    "language": "Python",
+    "topics": [
+      "aiohttp",
+      "api",
+      "async",
+      "asyncio",
+      "identification",
+      "music",
+      "python",
+      "python3",
+      "shazam"
+    ],
+    "url": "https://github.com/shazamio/ShazamIO",
+    "pushed_at": "2026-11-18",
+    "archived": false,
+    "found_by": [
+      "topic:shazam stars:>100"
+    ],
+    "what": "🎵 Is a free asynchronous library from reverse engineered Shazam API written in Python 3.10+ with asyncio and aiohttp.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "adblockradio/stream-audio-fingerprint",
+    "description": "Audio landmark fingerprinting as a Node Stream module",
+    "stars": 780,
+    "language": "TypeScript",
+    "topics": [
+      "adblockradio",
+      "fingerprinting",
+      "shazam"
+    ],
+    "url": "https://github.com/adblockradio/stream-audio-fingerprint",
+    "pushed_at": "2021-11-05",
+    "archived": true,
+    "found_by": [
+      "topic:shazam stars:>100"
+    ],
+    "what": "Audio landmark fingerprinting as a Node Stream module",
+    "described_by": "github"
+  },
+  {
+    "full_name": "pylast/pylast",
+    "description": "A Python interface to Last.fm and Libre.fm",
+    "stars": 776,
+    "language": "Python",
+    "topics": [
+      "last-fm",
+      "lastfm",
+      "libre",
+      "libre-fm",
+      "librefm",
+      "music",
+      "pylast",
+      "python",
+      "scrobble",
+      "scrobbler",
+      "scrobbling"
+    ],
+    "url": "https://github.com/pylast/pylast",
+    "pushed_at": "2026-11-19",
+    "archived": false,
+    "found_by": [
+      "pylast in:name stars:>50"
+    ],
+    "what": "A Python interface to Last.fm and Libre.fm",
+    "described_by": "github"
+  },
+  {
+    "full_name": "pavelkomarov/exportify",
+    "description": "Export Spotify playlists using the Web API. Analyze them in the Jupyter notebook.",
+    "stars": 774,
+    "language": "Jupyter Notebook",
+    "topics": [
+      "data-analysis",
+      "github-pages-website",
+      "javascript",
+      "javascript-promise",
+      "jupyter-notebook",
+      "spotify",
+      "spotify-api",
+      "spotify-web-api"
+    ],
+    "url": "https://github.com/pavelkomarov/exportify",
+    "pushed_at": "2026-10-20",
+    "archived": false,
+    "found_by": [
+      "topic:spotify-api stars:>300"
+    ],
+    "what": "Export Spotify playlists using the Web API. Analyze them in the Jupyter notebook.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "murdos/musicbrainz-userscripts",
+    "description": "Collection of userscripts for MusicBrainz, by various authors",
+    "stars": 764,
+    "language": "JavaScript",
+    "topics": [
+      "hacktoberfest",
+      "musicbrainz",
+      "userscripts"
+    ],
+    "url": "https://github.com/murdos/musicbrainz-userscripts",
+    "pushed_at": "2026-11-16",
+    "archived": false,
+    "found_by": [
+      "topic:musicbrainz stars:>50",
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "Collection of userscripts for MusicBrainz, by various authors",
+    "described_by": "github"
+  },
+  {
+    "full_name": "metabrainz/musicbrainz-docker",
+    "description": "Docker Compose project for the MusicBrainz Server with replication, search, and development setup",
+    "stars": 569,
+    "language": "Shell",
+    "topics": [
+      "docker",
+      "docker-compose",
+      "musicbrainz"
+    ],
+    "url": "https://github.com/metabrainz/musicbrainz-docker",
+    "pushed_at": "2026-11-12",
+    "archived": false,
+    "found_by": [
+      "topic:musicbrainz stars:>50",
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "Docker Compose project for the MusicBrainz Server with replication, search, and development setup",
+    "described_by": "github"
+  },
+  {
+    "full_name": "gix/foo_scrobble",
+    "description": "foobar2000 component for last.fm scrobbling",
+    "stars": 490,
+    "language": "C++",
+    "topics": [
+      "foobar2000",
+      "lastfm-api",
+      "scrobbling"
+    ],
+    "url": "https://github.com/gix/foo_scrobble",
+    "pushed_at": "2022-09-05",
+    "archived": false,
+    "found_by": [
+      "topic:lastfm-api stars:>30"
+    ],
+    "what": "foobar2000 component for last.fm scrobbling",
+    "described_by": "github"
+  },
+  {
+    "full_name": "discogs/discogs_client",
+    "description": "DEPRECATED - Official Python Client for the Discogs API",
+    "stars": 476,
+    "language": "Python",
+    "topics": [],
+    "url": "https://github.com/discogs/discogs_client",
+    "pushed_at": "2020-06-01",
+    "archived": true,
+    "found_by": [
+      "discogs in:name stars:>50"
+    ],
+    "what": "DEPRECATED - Official Python Client for the Discogs API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "metasauce/beets-flask",
+    "description": "An opinionated docker container for a web-interface around the music organizer beets",
+    "stars": 464,
+    "language": "TypeScript",
+    "topics": [],
+    "url": "https://github.com/metasauce/beets-flask",
+    "pushed_at": "2026-11-15",
+    "archived": false,
+    "found_by": [
+      "beets in:name stars:>100"
+    ],
+    "what": "An opinionated docker container for a web-interface around the music organizer beets",
+    "described_by": "github"
+  },
+  {
+    "full_name": "sentriz/wrtag",
+    "description": "fast automated music tagging and organisation based on MusicBrainz",
+    "stars": 457,
+    "language": "Go",
+    "topics": [
+      "beets",
+      "betanin",
+      "cli",
+      "gazelle",
+      "golang",
+      "music-library",
+      "music-tagging",
+      "music-tools",
+      "musicbrainz",
+      "musicbrainz-picard",
+      "taglib",
+      "web"
+    ],
+    "url": "https://github.com/sentriz/wrtag",
+    "pushed_at": "2026-11-17",
+    "archived": false,
+    "found_by": [
+      "topic:musicbrainz stars:>50"
+    ],
+    "what": "fast automated music tagging and organisation based on MusicBrainz",
+    "described_by": "github"
+  },
+  {
+    "full_name": "sfluor/musig",
+    "description": "A shazam like tool to store fingerprints and retrieve them",
+    "stars": 443,
+    "language": "Go",
+    "topics": [
+      "audio",
+      "audio-processing",
+      "digital-signal-processing",
+      "go",
+      "golang",
+      "microphone",
+      "musig",
+      "shazam",
+      "song"
+    ],
+    "url": "https://github.com/sfluor/musig",
+    "pushed_at": "2023-02-25",
+    "archived": false,
+    "found_by": [
+      "topic:shazam stars:>100"
+    ],
+    "what": "A shazam like tool to store fingerprints and retrieve them",
+    "described_by": "github"
+  },
+  {
+    "full_name": "joalla/discogs_client",
+    "description": "Continuation of the \"Official Python Client for the Discogs API\"",
+    "stars": 424,
+    "language": "Python",
+    "topics": [],
+    "url": "https://github.com/joalla/discogs_client",
+    "pushed_at": "2026-09-29",
+    "archived": false,
+    "found_by": [
+      "discogs in:name stars:>50"
+    ],
+    "what": "Continuation of the \"Official Python Client for the Discogs API\"",
+    "described_by": "github"
+  },
+  {
+    "full_name": "jesseward/jellyfin-plugin-lastfm",
+    "description": "LastFM plugin for the Jellyfin media system. Fork of the Emby Last.FM plug-in",
+    "stars": 328,
+    "language": "C#",
+    "topics": [
+      "audioscrobbler",
+      "csharp",
+      "dotnet-core",
+      "htpc",
+      "jellyfin",
+      "lastfm",
+      "lastfm-api",
+      "mediacenter",
+      "plugin"
+    ],
+    "url": "https://github.com/jesseward/jellyfin-plugin-lastfm",
+    "pushed_at": "2026-02-01",
+    "archived": true,
+    "found_by": [
+      "topic:lastfm-api stars:>30"
+    ],
+    "what": "LastFM plugin for the Jellyfin media system. Fork of the Emby Last.FM plug-in",
+    "described_by": "github"
+  },
+  {
+    "full_name": "alastair/python-musicbrainzngs",
+    "description": "Python bindings for Musicbrainz' NGS webservice",
+    "stars": 295,
+    "language": "Python",
+    "topics": [],
+    "url": "https://github.com/alastair/python-musicbrainzngs",
+    "pushed_at": "2024-06-01",
+    "archived": false,
+    "found_by": [
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "Python bindings for Musicbrainz' NGS webservice",
+    "described_by": "github"
+  },
+  {
+    "full_name": "philipmat/discogs-xml2db",
+    "description": "Imports the discogs.com monthly XML dumps into databases",
+    "stars": 258,
+    "language": "C#",
+    "topics": [
+      "discogs",
+      "python"
+    ],
+    "url": "https://github.com/philipmat/discogs-xml2db",
+    "pushed_at": "2026-09-29",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50",
+      "discogs in:name stars:>50"
+    ],
+    "what": "Imports the discogs.com monthly XML dumps into databases",
+    "described_by": "github"
+  },
+  {
+    "full_name": "buntine/discogs",
+    "description": "A Ruby wrapper of the Discogs.com API",
+    "stars": 232,
+    "language": "Ruby",
+    "topics": [
+      "api-client",
+      "api-wrapper",
+      "discogs",
+      "discogs-api",
+      "ruby-gem"
+    ],
+    "url": "https://github.com/buntine/discogs",
+    "pushed_at": "2025-03-20",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50",
+      "discogs in:name stars:>50"
+    ],
+    "what": "A Ruby wrapper of the Discogs.com API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Borewit/musicbrainz-api",
+    "description": "JavaScript MusicBrainz API client for reading and submitting metadata",
+    "stars": 232,
+    "language": "TypeScript",
+    "topics": [
+      "api",
+      "meta",
+      "metadata",
+      "musicbrainz",
+      "picard",
+      "tags"
+    ],
+    "url": "https://github.com/Borewit/musicbrainz-api",
+    "pushed_at": "2026-11-13",
+    "archived": false,
+    "found_by": [
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "JavaScript MusicBrainz API client for reading and submitting metadata",
+    "described_by": "github"
+  },
+  {
+    "full_name": "feross/last-fm",
+    "description": "Simple, robust LastFM API client (for public data)",
+    "stars": 200,
+    "language": "JavaScript",
+    "topics": [
+      "javascript",
+      "last-fm",
+      "lastfm",
+      "lastfm-api",
+      "music",
+      "musicbrainz",
+      "nodejs"
+    ],
+    "url": "https://github.com/feross/last-fm",
+    "pushed_at": "2021-07-30",
+    "archived": false,
+    "found_by": [
+      "topic:lastfm-api stars:>30"
+    ],
+    "what": "Simple, robust LastFM API client (for public data)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "ishwi/Chuu",
+    "description": "Last.fm bot for discord",
+    "stars": 196,
+    "language": "Java",
+    "topics": [
+      "discord",
+      "discord-bot",
+      "discord-server",
+      "java",
+      "java-17",
+      "jda",
+      "jda-bot",
+      "jda-discord-bot",
+      "last-fm",
+      "lastfm",
+      "lastfm-api",
+      "mariadb",
+      "musicbrainz",
+      "stats"
+    ],
+    "url": "https://github.com/ishwi/Chuu",
+    "pushed_at": "2024-08-22",
+    "archived": false,
+    "found_by": [
+      "topic:lastfm-api stars:>30"
+    ],
+    "what": "Last.fm bot for discord",
+    "described_by": "github"
+  },
+  {
+    "full_name": "linuxserver/docker-beets",
+    "description": "",
+    "stars": 192,
+    "language": "Dockerfile",
+    "topics": [
+      "hacktoberfest"
+    ],
+    "url": "https://github.com/linuxserver/docker-beets",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "beets in:name stars:>100"
+    ],
+    "what": "(nessuna descrizione)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "alexk218/tagify",
+    "description": "Music tagging and playlist organizer for Spotify: custom tags, ratings, smart playlists and filters inside the Spotify desktop app (Spicetify). Also in the browser for Spotify and Apple Music at tagify.fm",
+    "stars": 172,
+    "language": "TypeScript",
+    "topics": [
+      "apple-music",
+      "music-library",
+      "music-metadata",
+      "music-organization",
+      "music-organizer",
+      "music-tagger",
+      "music-tagging",
+      "playlist-manager",
+      "playlist-organizer",
+      "smart-playlists",
+      "song-organization",
+      "song-tagger",
+      "spicetify",
+      "spicetify-apps",
+      "spicetify-cli",
+      "spicetify-custom-apps",
+      "spotify",
+      "spotify-api",
+      "spotify-playlist",
+      "tagging"
+    ],
+    "url": "https://github.com/alexk218/tagify",
+    "pushed_at": "2026-11-18",
+    "archived": false,
+    "found_by": [
+      "topic:music-metadata stars:>20"
+    ],
+    "what": "Music tagging and playlist organizer for Spotify: custom tags, ratings, smart playlists and filters inside the Spotify desktop app (Spicetify). Also in the browser for Spotify and Apple Music at tagify.fm",
+    "described_by": "github"
+  },
+  {
+    "full_name": "aquantumofdonuts/mixarr",
+    "description": "Self-hosted music discovery for Lidarr",
+    "stars": 165,
+    "language": "TypeScript",
+    "topics": [
+      "arrs",
+      "arrstack",
+      "deezer",
+      "discogs",
+      "docker",
+      "docker-compose",
+      "jellyfin",
+      "lastfm",
+      "lidarr",
+      "listenbrainz",
+      "music-automation",
+      "music-discovery",
+      "musicbrainz",
+      "plex",
+      "self-hosted",
+      "selfhosted",
+      "spotify",
+      "tidal"
+    ],
+    "url": "https://github.com/aquantumofdonuts/mixarr",
+    "pushed_at": "2026-11-18",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50"
+    ],
+    "what": "Self-hosted music discovery for Lidarr",
+    "described_by": "github"
+  },
+  {
+    "full_name": "metabrainz/musicbrainz-android",
+    "description": "The Official App of MusicBrainz",
+    "stars": 163,
+    "language": "Kotlin",
+    "topics": [
+      "android",
+      "dagger-hilt",
+      "jetpack",
+      "kotlin",
+      "metabrainz",
+      "musicbrainz"
+    ],
+    "url": "https://github.com/metabrainz/musicbrainz-android",
+    "pushed_at": "2026-08-31",
+    "archived": false,
+    "found_by": [
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "The Official App of MusicBrainz",
+    "described_by": "github"
+  },
+  {
+    "full_name": "peacecwz/shazam-demo",
+    "description": "Experimental Audio Search Algorithm Implementation (Shazam demo)",
+    "stars": 154,
+    "language": "Python",
+    "topics": [
+      "audio",
+      "audio-processing",
+      "audio-search",
+      "python",
+      "search-algorithm",
+      "search-musics",
+      "shazam"
+    ],
+    "url": "https://github.com/peacecwz/shazam-demo",
+    "pushed_at": "2021-12-31",
+    "archived": false,
+    "found_by": [
+      "topic:shazam stars:>100"
+    ],
+    "what": "Experimental Audio Search Algorithm Implementation (Shazam demo)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "ricbra/php-discogs-api",
+    "description": "PHP 5.4 Implementation of the Discogs API",
+    "stars": 154,
+    "language": "PHP",
+    "topics": [],
+    "url": "https://github.com/ricbra/php-discogs-api",
+    "pushed_at": "2023-10-25",
+    "archived": true,
+    "found_by": [
+      "discogs in:name stars:>50"
+    ],
+    "what": "PHP 5.4 Implementation of the Discogs API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "0xf4b1/traktor-streaming-proxy",
+    "description": "Allow Traktor DJ to stream music from YouTube, Spotify, and Tidal by faking Beatport's API",
+    "stars": 151,
+    "language": "Kotlin",
+    "topics": [
+      "beatport",
+      "dj",
+      "pro",
+      "spotify",
+      "streaming",
+      "tidal",
+      "traktor",
+      "traktor-pro",
+      "youtube"
+    ],
+    "url": "https://github.com/0xf4b1/traktor-streaming-proxy",
+    "pushed_at": "2025-11-25",
+    "archived": false,
+    "found_by": [
+      "topic:beatport stars:>10"
+    ],
+    "what": "Allow Traktor DJ to stream music from YouTube, Spotify, and Tidal by faking Beatport's API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "KRTirtho/spotube-plugin-musicbrainz-listenbrainz",
+    "description": "Spotube metadata provider plugin for Musicbrainz and Listenbrainz",
+    "stars": 145,
+    "language": "Dart",
+    "topics": [
+      "spotube",
+      "spotube-metadata-plugin",
+      "spotube-plugin"
+    ],
+    "url": "https://github.com/KRTirtho/spotube-plugin-musicbrainz-listenbrainz",
+    "pushed_at": "2025-11-14",
+    "archived": false,
+    "found_by": [
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "Spotube metadata provider plugin for Musicbrainz and Listenbrainz",
+    "described_by": "github"
+  },
+  {
+    "full_name": "geigerzaehler/beets-alternatives",
+    "description": "Beets plugin to manage external files",
+    "stars": 140,
+    "language": "Python",
+    "topics": [],
+    "url": "https://github.com/geigerzaehler/beets-alternatives",
+    "pushed_at": "2026-11-16",
+    "archived": false,
+    "found_by": [
+      "beets in:name stars:>100"
+    ],
+    "what": "Beets plugin to manage external files",
+    "described_by": "github"
+  },
+  {
+    "full_name": "salcido/discogs-enhancer",
+    "description": "100% vanilla JS Chrome / Firefox extension that adds useful features and functionality to Discogs.com",
+    "stars": 138,
+    "language": "JavaScript",
+    "topics": [
+      "chrome-extension",
+      "discogs",
+      "firefox-addon"
+    ],
+    "url": "https://github.com/salcido/discogs-enhancer",
+    "pushed_at": "2026-04-19",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50",
+      "discogs in:name stars:>50"
+    ],
+    "what": "100% vanilla JS Chrome / Firefox extension that adds useful features and functionality to Discogs.com",
+    "described_by": "github"
+  },
+  {
+    "full_name": "cswkim/discogs-mcp-server",
+    "description": "MCP Server for Discogs",
+    "stars": 135,
+    "language": "TypeScript",
+    "topics": [],
+    "url": "https://github.com/cswkim/discogs-mcp-server",
+    "pushed_at": "2026-11-02",
+    "archived": false,
+    "found_by": [
+      "discogs in:name stars:>50"
+    ],
+    "what": "MCP Server for Discogs",
+    "described_by": "github"
+  },
+  {
+    "full_name": "ShazamScrobbler/macos-app",
+    "description": "Last.fm scrobbler for the Shazam Mac app",
+    "stars": 134,
+    "language": "Objective-C",
+    "topics": [
+      "lastfm",
+      "macos",
+      "menubar-app",
+      "music",
+      "objective-c",
+      "shazam",
+      "shazam-mac"
+    ],
+    "url": "https://github.com/ShazamScrobbler/macos-app",
+    "pushed_at": "2026-10-08",
+    "archived": false,
+    "found_by": [
+      "topic:shazam stars:>100"
+    ],
+    "what": "Last.fm scrobbler for the Shazam Mac app",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Kither12/shezem-rs",
+    "description": "Audio recognition CLI written in Rust",
+    "stars": 132,
+    "language": "Rust",
+    "topics": [
+      "audio",
+      "audio-fingerprint",
+      "audio-processing",
+      "audio-recognition",
+      "rust",
+      "shazam",
+      "song",
+      "song-recognition"
+    ],
+    "url": "https://github.com/Kither12/shezem-rs",
+    "pushed_at": "2025-03-31",
+    "archived": false,
+    "found_by": [
+      "topic:shazam stars:>100"
+    ],
+    "what": "Audio recognition CLI written in Rust",
+    "described_by": "github"
+  },
+  {
+    "full_name": "lastfm/musicbrainz-data",
+    "description": "MusicBrainz Java data bindings using Hibernate",
+    "stars": 128,
+    "language": "Java",
+    "topics": [],
+    "url": "https://github.com/lastfm/musicbrainz-data",
+    "pushed_at": "2024-06-27",
+    "archived": false,
+    "found_by": [
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "MusicBrainz Java data bindings using Hibernate",
+    "described_by": "github"
+  },
+  {
+    "full_name": "jlesage/docker-musicbrainz-picard",
+    "description": "Docker container for MusicBrainz Picard",
+    "stars": 119,
+    "language": "Shell",
+    "topics": [],
+    "url": "https://github.com/jlesage/docker-musicbrainz-picard",
+    "pushed_at": "2026-11-04",
+    "archived": false,
+    "found_by": [
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "Docker container for MusicBrainz Picard",
+    "described_by": "github"
+  },
+  {
+    "full_name": "linus/discogs",
+    "description": "A simple JavaScript wrapper for the Discogs API",
+    "stars": 118,
+    "language": "CSS",
+    "topics": [],
+    "url": "https://github.com/linus/discogs",
+    "pushed_at": "2014-05-15",
+    "archived": false,
+    "found_by": [
+      "discogs in:name stars:>50"
+    ],
+    "what": "A simple JavaScript wrapper for the Discogs API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "bbye98/minim",
+    "description": "A collection of music service (Deezer, Discogs, iTunes, Musixmatch, Qobuz, Spotify, TIDAL) APIs for media information retrieval and semi-automated music tagging.",
+    "stars": 110,
+    "language": "Python",
+    "topics": [
+      "audio",
+      "audio-metadata",
+      "deezer",
+      "deezer-api",
+      "itunes",
+      "itunes-api",
+      "itunes-search-api",
+      "musixmatch",
+      "musixmatch-api",
+      "musixmatch-lyrics",
+      "python",
+      "python3",
+      "qobuz",
+      "qobuz-api",
+      "spotify",
+      "spotify-api",
+      "spotify-web-api",
+      "tidal",
+      "tidal-api"
+    ],
+    "url": "https://github.com/bbye98/minim",
+    "pushed_at": "2026-11-11",
+    "archived": false,
+    "found_by": [
+      "topic:deezer-api stars:>30"
+    ],
+    "what": "A collection of music service (Deezer, Discogs, iTunes, Musixmatch, Qobuz, Spotify, TIDAL) APIs for media information retrieval and semi-automated music tagging.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "acoustid/acoustid-index",
+    "description": "Minimalistic search engine searching in audio fingerprints from Chromaprint",
+    "stars": 105,
+    "language": "Zig",
+    "topics": [
+      "acoustid",
+      "audio-fingerprinting",
+      "search"
+    ],
+    "url": "https://github.com/acoustid/acoustid-index",
+    "pushed_at": "2026-10-11",
+    "archived": false,
+    "found_by": [
+      "topic:acoustid stars:>10"
+    ],
+    "what": "Minimalistic search engine searching in audio fingerprints from Chromaprint",
+    "described_by": "github"
+  },
+  {
+    "full_name": "cxapython/discogs_aio_spider",
+    "description": "基于httpx的一个大型项目 ，爬取黑胶唱片网站 Discogs",
+    "stars": 102,
+    "language": "Python",
+    "topics": [
+      "aio-pika",
+      "asyncio",
+      "discogs",
+      "httpx",
+      "motor",
+      "python"
+    ],
+    "url": "https://github.com/cxapython/discogs_aio_spider",
+    "pushed_at": "2025-07-14",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50",
+      "discogs in:name stars:>50"
+    ],
+    "what": "基于httpx的一个大型项目 ，爬取黑胶唱片网站 Discogs",
+    "described_by": "github"
+  },
+  {
+    "full_name": "sergree/whatbpm",
+    "description": "💓 Today's Trending Values for EDM Production",
+    "stars": 101,
+    "language": "Rust",
+    "topics": [
+      "analytics",
+      "beatport",
+      "bpm",
+      "daily",
+      "dance",
+      "dj",
+      "dubstep",
+      "edm",
+      "faq",
+      "house",
+      "key",
+      "mir",
+      "music",
+      "music-information-retrieval",
+      "rust",
+      "statistics",
+      "tempo",
+      "trance",
+      "trends",
+      "website"
+    ],
+    "url": "https://github.com/sergree/whatbpm",
+    "pushed_at": "2023-07-22",
+    "archived": false,
+    "found_by": [
+      "topic:beatport stars:>10"
+    ],
+    "what": "💓 Today's Trending Values for EDM Production",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Adam-Jimenez/auddit",
+    "description": "Tired of those Reddit text-to-speech videos on Youtube? Now you can make your own!",
+    "stars": 96,
+    "language": "Python",
+    "topics": [],
+    "url": "https://github.com/Adam-Jimenez/auddit",
+    "pushed_at": "2020-01-25",
+    "archived": false,
+    "found_by": [
+      "audd in:name stars:>10"
+    ],
+    "what": "Tired of those Reddit text-to-speech videos on Youtube? Now you can make your own!",
+    "described_by": "github"
+  },
+  {
+    "full_name": "jesseward/plex-lastfm-scrobbler",
+    "description": "Scrobble played audio items Last.FM from the Plex Media Server application.",
+    "stars": 95,
+    "language": "Python",
+    "topics": [
+      "audioscrobbler",
+      "lastfm",
+      "lastfm-api",
+      "plex",
+      "plex-media-server",
+      "plex-scrobble",
+      "python"
+    ],
+    "url": "https://github.com/jesseward/plex-lastfm-scrobbler",
+    "pushed_at": "2017-11-19",
+    "archived": true,
+    "found_by": [
+      "topic:lastfm-api stars:>30"
+    ],
+    "what": "Scrobble played audio items Last.FM from the Plex Media Server application.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "RustyNova016/musicbrainz_rs",
+    "description": "A wrapper around the musicbrainz API",
+    "stars": 94,
+    "language": "Rust",
+    "topics": [
+      "music",
+      "music-library",
+      "musicbrainz",
+      "musicbrainz-api",
+      "rust"
+    ],
+    "url": "https://github.com/RustyNova016/musicbrainz_rs",
+    "pushed_at": "2026-11-18",
+    "archived": false,
+    "found_by": [
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "A wrapper around the musicbrainz API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "jdamcd/musicbrainz-android",
+    "description": "Official Android client for the MusicBrainz API",
+    "stars": 93,
+    "language": "Java",
+    "topics": [],
+    "url": "https://github.com/jdamcd/musicbrainz-android",
+    "pushed_at": "2022-05-20",
+    "archived": true,
+    "found_by": [
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "Official Android client for the MusicBrainz API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "acoustid/acoustid-server",
+    "description": "AcoustID's web site and API",
+    "stars": 91,
+    "language": "Python",
+    "topics": [
+      "acoustid",
+      "audio-fingerprinting"
+    ],
+    "url": "https://github.com/acoustid/acoustid-server",
+    "pushed_at": "2026-11-19",
+    "archived": false,
+    "found_by": [
+      "topic:acoustid stars:>10"
+    ],
+    "what": "AcoustID's web site and API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "maxkueng/node-musicbrainz",
+    "description": "A MusicBrainz API V2 client for node.js",
+    "stars": 91,
+    "language": "JavaScript",
+    "topics": [],
+    "url": "https://github.com/maxkueng/node-musicbrainz",
+    "pushed_at": "2020-05-21",
+    "archived": false,
+    "found_by": [
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "A MusicBrainz API V2 client for node.js",
+    "described_by": "github"
+  },
+  {
+    "full_name": "JOJ0/discodos",
+    "description": "DJ and record collector's toolbox for Discogs",
+    "stars": 88,
+    "language": "Python",
+    "topics": [
+      "acousticbrainz",
+      "discogs",
+      "discogs-api",
+      "discogs-client",
+      "discogs-search",
+      "dj-tools",
+      "music-management",
+      "music-manager",
+      "musicbrainz",
+      "playlist",
+      "playlist-manager",
+      "record",
+      "vinyl"
+    ],
+    "url": "https://github.com/JOJ0/discodos",
+    "pushed_at": "2025-08-27",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50"
+    ],
+    "what": "DJ and record collector's toolbox for Discogs",
+    "described_by": "github"
+  },
+  {
+    "full_name": "mgdigital/Chromaprint.scala",
+    "description": "Chromaprint/AcoustID audio fingerprinting for the JVM",
+    "stars": 88,
+    "language": "Scala",
+    "topics": [
+      "acoustid",
+      "audio-analysis",
+      "audio-processing",
+      "cats-effect",
+      "chromaprint",
+      "fourier-transform",
+      "fs2",
+      "jvm",
+      "music",
+      "musicbrainz",
+      "scala"
+    ],
+    "url": "https://github.com/mgdigital/Chromaprint.scala",
+    "pushed_at": "2019-07-04",
+    "archived": false,
+    "found_by": [
+      "topic:acoustid stars:>10"
+    ],
+    "what": "Chromaprint/AcoustID audio fingerprinting for the JVM",
+    "described_by": "github"
+  },
+  {
+    "full_name": "jesseward/discogstagger",
+    "description": "Console based audio-file metadata tagger that uses the Discogs.com API v2 (JSON based).  Relies on the Mutagen and discogs-client libraries. Currently supports FLAC and MP3 file types.",
+    "stars": 80,
+    "language": "Python",
+    "topics": [
+      "audio",
+      "audio-tag",
+      "discogs",
+      "discogs-client",
+      "flac",
+      "metadata",
+      "mp3",
+      "mutagen",
+      "python"
+    ],
+    "url": "https://github.com/jesseward/discogstagger",
+    "pushed_at": "2019-01-29",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50",
+      "discogs in:name stars:>50"
+    ],
+    "what": "Console based audio-file metadata tagger that uses the Discogs.com API v2 (JSON based). Relies on the Mutagen and discogs-client libraries. Currently supports FLAC and MP3 file types.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "gomgon/UserCSS",
+    "description": "Customizable stylesheets",
+    "stars": 79,
+    "language": "CSS",
+    "topics": [
+      "css",
+      "discogs",
+      "lastfm",
+      "usercss",
+      "userstyle"
+    ],
+    "url": "https://github.com/gomgon/UserCSS",
+    "pushed_at": "2026-06-04",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50"
+    ],
+    "what": "Customizable stylesheets",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Mai-icy/MusicTagger",
+    "description": "一个可以补全mp3，flac文件元数据的图形化界面。还可以下载歌词",
+    "stars": 78,
+    "language": "Python",
+    "topics": [
+      "crawler",
+      "music-metadata",
+      "python",
+      "python3"
+    ],
+    "url": "https://github.com/Mai-icy/MusicTagger",
+    "pushed_at": "2026-04-05",
+    "archived": false,
+    "found_by": [
+      "topic:music-metadata stars:>20"
+    ],
+    "what": "一个可以补全mp3，flac文件元数据的图形化界面。还可以下载歌词",
+    "described_by": "github"
+  },
+  {
+    "full_name": "moonwave99/playa-old",
+    "description": "The OS X Audio Player that thinks in albums.",
+    "stars": 76,
+    "language": "JavaScript",
+    "topics": [
+      "audio-player",
+      "discogs",
+      "electron",
+      "lastfm",
+      "osx",
+      "react"
+    ],
+    "url": "https://github.com/moonwave99/playa-old",
+    "pushed_at": "2020-03-05",
+    "archived": true,
+    "found_by": [
+      "topic:discogs stars:>50"
+    ],
+    "what": "The OS X Audio Player that thinks in albums.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "barthap/expo-music-picker",
+    "description": " A music picker library for React Native. Provides access to the system's UI for selecting songs from the phone's music library.",
+    "stars": 75,
+    "language": "Kotlin",
+    "topics": [
+      "android",
+      "expo",
+      "ios",
+      "music-metadata",
+      "react-native"
+    ],
+    "url": "https://github.com/barthap/expo-music-picker",
+    "pushed_at": "2026-01-24",
+    "archived": false,
+    "found_by": [
+      "topic:music-metadata stars:>20"
+    ],
+    "what": "A music picker library for React Native. Provides access to the system's UI for selecting songs from the phone's music library.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "localhots/musicbrainz",
+    "description": "MusicBrainz Web Service client",
+    "stars": 72,
+    "language": "Ruby",
+    "topics": [
+      "musicbrainz",
+      "musicbrainz-api"
+    ],
+    "url": "https://github.com/localhots/musicbrainz",
+    "pushed_at": "2025-02-25",
+    "archived": false,
+    "found_by": [
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "MusicBrainz Web Service client",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Wellenline/auddly",
+    "description": "Self hosted music streaming app",
+    "stars": 72,
+    "language": "TypeScript",
+    "topics": [
+      "auddly",
+      "music-player",
+      "pwa",
+      "self-hosted",
+      "waveline"
+    ],
+    "url": "https://github.com/Wellenline/auddly",
+    "pushed_at": "2023-09-08",
+    "archived": false,
+    "found_by": [
+      "audd in:name stars:>10"
+    ],
+    "what": "Self hosted music streaming app",
+    "described_by": "github"
+  },
+  {
+    "full_name": "avatar29A/MusicBrainz",
+    "description": "Implementation MusicBrainz API 2.0 (C#)",
+    "stars": 71,
+    "language": "C#",
+    "topics": [
+      "musicbrainz",
+      "musicbrainz-api"
+    ],
+    "url": "https://github.com/avatar29A/MusicBrainz",
+    "pushed_at": "2025-12-12",
+    "archived": false,
+    "found_by": [
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "Implementation MusicBrainz API 2.0 (C#)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Jackysi/PawTunes",
+    "description": "Discover PawTunes, The Ultimate HTML5 Internet Radio Player with Purrfect Visuals, Customizable Templates, and Clean Code. Built for Pros, Loved by Cats!",
+    "stars": 70,
+    "language": "PHP",
+    "topics": [
+      "centovacast",
+      "fanarttv",
+      "html5-player",
+      "icecast",
+      "internet-radio-player",
+      "itunes",
+      "lastfm",
+      "lastfm-api",
+      "radio-player",
+      "radio-station-player",
+      "sam-broadcaster",
+      "shoutcast",
+      "spotify",
+      "web-player",
+      "web-radio",
+      "webradio"
+    ],
+    "url": "https://github.com/Jackysi/PawTunes",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:lastfm-api stars:>30"
+    ],
+    "what": "Discover PawTunes, The Ultimate HTML5 Internet Radio Player with Purrfect Visuals, Customizable Templates, and Clean Code. Built for Pros, Loved by Cats!",
+    "described_by": "github"
+  },
+  {
+    "full_name": "androidWG/Discord.fm",
+    "description": "Show what you're scrobbling on Discord at all times!",
+    "stars": 70,
+    "language": "Python",
+    "topics": [
+      "discord",
+      "lastfm",
+      "lastfm-api",
+      "linux",
+      "macos",
+      "pyinstaller",
+      "python",
+      "tkinter",
+      "windows"
+    ],
+    "url": "https://github.com/androidWG/Discord.fm",
+    "pushed_at": "2025-12-30",
+    "archived": false,
+    "found_by": [
+      "topic:lastfm-api stars:>30"
+    ],
+    "what": "Show what you're scrobbling on Discord at all times!",
+    "described_by": "github"
+  },
+  {
+    "full_name": "hyphmongo/deepcurator",
+    "description": "A convolutional neural network trained to recognize good* electronic music",
+    "stars": 69,
+    "language": "Python",
+    "topics": [
+      "audio-analysis",
+      "convolutional-neural-network",
+      "discogs",
+      "keras"
+    ],
+    "url": "https://github.com/hyphmongo/deepcurator",
+    "pushed_at": "2018-05-12",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50"
+    ],
+    "what": "A convolutional neural network trained to recognize good* electronic music",
+    "described_by": "github"
+  },
+  {
+    "full_name": "aknorw/discojs",
+    "description": "Easiest way to use the Discogs API in Javascript/Typescript :musical_note:",
+    "stars": 69,
+    "language": "TypeScript",
+    "topics": [
+      "api",
+      "client",
+      "discogs",
+      "javascript",
+      "typescript"
+    ],
+    "url": "https://github.com/aknorw/discojs",
+    "pushed_at": "2024-08-26",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50"
+    ],
+    "what": "Easiest way to use the Discogs API in Javascript/Typescript :musical_note:",
+    "described_by": "github"
+  },
+  {
+    "full_name": "lim93/DiscogsToSpotify",
+    "description": "A web application that creates a Spotify playlist based on a user's personal collection on Discogs.",
+    "stars": 66,
+    "language": "JavaScript",
+    "topics": [],
+    "url": "https://github.com/lim93/DiscogsToSpotify",
+    "pushed_at": "2021-05-17",
+    "archived": false,
+    "found_by": [
+      "discogs in:name stars:>50"
+    ],
+    "what": "A web application that creates a Spotify playlist based on a user's personal collection on Discogs.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "loujine/musicbrainz-scripts",
+    "description": "Collection of greasemonkey scripts for MusicBrainz",
+    "stars": 64,
+    "language": "JavaScript",
+    "topics": [
+      "acousticbrainz",
+      "acoustid",
+      "greasemonkey",
+      "musicbrainz",
+      "userscripts"
+    ],
+    "url": "https://github.com/loujine/musicbrainz-scripts",
+    "pushed_at": "2024-11-26",
+    "archived": false,
+    "found_by": [
+      "topic:acoustid stars:>10",
+      "musicbrainz in:name stars:>50"
+    ],
+    "what": "Collection of greasemonkey scripts for MusicBrainz",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Samik081/beets-beatport4",
+    "description": "Beatport API v4 compatible beets plugin",
+    "stars": 64,
+    "language": "Python",
+    "topics": [
+      "beatport",
+      "beets",
+      "beets-plugin",
+      "music-information-retrieval",
+      "music-library"
+    ],
+    "url": "https://github.com/Samik081/beets-beatport4",
+    "pushed_at": "2026-10-22",
+    "archived": false,
+    "found_by": [
+      "topic:beatport stars:>10"
+    ],
+    "what": "Beatport API v4 compatible beets plugin",
+    "described_by": "github"
+  },
+  {
+    "full_name": "valentingalea/vinyl-shelf-finder",
+    "description": "app that manages a Discogs.com user records collection",
+    "stars": 62,
+    "language": "JavaScript",
+    "topics": [
+      "discogs",
+      "discogs-api",
+      "lastfm",
+      "lastfm-api",
+      "nodejs",
+      "raspberry-pi",
+      "raspberry-pi-gpio",
+      "raspberry-pi-iot",
+      "sqlite",
+      "webapp"
+    ],
+    "url": "https://github.com/valentingalea/vinyl-shelf-finder",
+    "pushed_at": "2018-08-17",
+    "archived": false,
+    "found_by": [
+      "topic:discogs stars:>50",
+      "topic:lastfm-api stars:>30"
+    ],
+    "what": "app that manages a Discogs.com user records collection",
+    "described_by": "github"
+  },
+  {
+    "full_name": "rfgamaral/PlexMusicRatingsSync",
+    "description": "PlexMusicRatingsSync keeps your Plex music ratings in sync with your audio files.",
+    "stars": 62,
+    "language": "Python",
+    "topics": [
+      "flac",
+      "flac-tags",
+      "id3",
+      "id3-tags",
+      "id3v2",
+      "metadata",
+      "metadata-management",
+      "mp3",
+      "mp3-tags",
+      "music",
+      "music-library",
+      "music-metadata",
+      "music-ratings",
+      "plex",
+      "plex-media-server",
+      "plexamp",
+      "ratings"
+    ],
+    "url": "https://github.com/rfgamaral/PlexMusicRatingsSync",
+    "pushed_at": "2026-03-18",
+    "archived": false,
+    "found_by": [
+      "topic:music-metadata stars:>20"
+    ],
+    "what": "PlexMusicRatingsSync keeps your Plex music ratings in sync with your audio files.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "leopuleo/Discogs-Postman",
+    "description": "A Postman collection for Discogs public API. ",
+    "stars": 57,
+    "language": "",
+    "topics": [],
+    "url": "https://github.com/leopuleo/Discogs-Postman",
+    "pushed_at": "2024-07-31",
+    "archived": false,
+    "found_by": [
+      "discogs in:name stars:>50"
+    ],
+    "what": "A Postman collection for Discogs public API.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Brugarolas/bruga-music",
+    "description": "Music app made with Vue, Vuex and Vue Router",
+    "stars": 56,
+    "language": "Vue",
+    "topics": [
+      "bing-image",
+      "bing-image-search-api",
+      "javascript",
+      "lastfm",
+      "lastfm-api",
+      "music",
+      "music-player",
+      "vue",
+      "vue-router",
+      "vuex",
+      "youtube",
+      "youtube-music",
+      "youtube-music-player",
+      "youtube-player",
+      "ytmusic"
+    ],
+    "url": "https://github.com/Brugarolas/bruga-music",
+    "pushed_at": "2023-04-16",
+    "archived": false,
+    "found_by": [
+      "topic:lastfm-api stars:>30"
+    ],
+    "what": "Music app made with Vue, Vuex and Vue Router",
+    "described_by": "github"
+  },
+  {
+    "full_name": "arukaraz/synthseek",
+    "description": "Self-hosted music discovery library manager with modern web UI, MCP tools and more...",
+    "stars": 55,
+    "language": "TypeScript",
+    "topics": [
+      "acoustid",
+      "connector",
+      "homelab",
+      "import",
+      "jspf",
+      "library-management",
+      "lidarr",
+      "mcp",
+      "mcp-server",
+      "mcp-tools",
+      "music",
+      "musicbrainz",
+      "plex",
+      "self-hosted",
+      "slskd",
+      "soulseek"
+    ],
+    "url": "https://github.com/arukaraz/synthseek",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:acoustid stars:>10"
+    ],
+    "what": "Self-hosted music discovery library manager with modern web UI, MCP tools and more...",
+    "described_by": "github"
+  },
+  {
+    "full_name": "AudDMusic/audd-go",
+    "description": "AudD Golang API Library",
+    "stars": 55,
+    "language": "Go",
+    "topics": [
+      "api",
+      "audd",
+      "go",
+      "golang",
+      "music",
+      "music-recognition",
+      "music-recognition-api",
+      "recognition",
+      "sdk",
+      "shazam",
+      "shazam-api"
+    ],
+    "url": "https://github.com/AudDMusic/audd-go",
+    "pushed_at": "2026-10-13",
+    "archived": false,
+    "found_by": [
+      "audd in:name stars:>10"
+    ],
+    "what": "AudD Golang API Library",
+    "described_by": "github"
+  },
+  {
+    "full_name": "irlndts/go-discogs",
+    "description": "Discogs Rest API 2.0 client",
+    "stars": 53,
+    "language": "Go",
+    "topics": [
+      "discogs",
+      "golang"
+    ],
+    "url": "https://github.com/irlndts/go-discogs",
+    "pushed_at": "2025-03-06",
+    "archived": false,
+    "found_by": [
+      "discogs in:name stars:>50"
+    ],
+    "what": "Discogs Rest API 2.0 client",
+    "described_by": "github"
+  },
+  {
+    "full_name": "dimdenGD/LastFMRichPresence",
+    "description": "A BetterDiscord plugin for showing what you're listening from Last.fm.",
+    "stars": 49,
+    "language": "JavaScript",
+    "topics": [
+      "betterdiscord",
+      "betterdiscord-plugin",
+      "discord",
+      "lastfm",
+      "lastfm-api",
+      "soundcloud",
+      "youtube",
+      "youtube-music"
+    ],
+    "url": "https://github.com/dimdenGD/LastFMRichPresence",
+    "pushed_at": "2026-03-21",
+    "archived": false,
+    "found_by": [
+      "topic:lastfm-api stars:>30"
+    ],
+    "what": "A BetterDiscord plugin for showing what you're listening from Last.fm.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "helpsterTee/spotify-playlists-2-deezer",
+    "description": "Upload your Spotify Playlists to Deezer with this Python3 application.",
+    "stars": 48,
+    "language": "Python",
+    "topics": [
+      "deezer",
+      "deezer-api",
+      "deezer-playlist",
+      "playlist",
+      "spotify",
+      "spotify-playlist"
+    ],
+    "url": "https://github.com/helpsterTee/spotify-playlists-2-deezer",
+    "pushed_at": "2021-02-14",
+    "archived": true,
+    "found_by": [
+      "topic:deezer-api stars:>30"
+    ],
+    "what": "Upload your Spotify Playlists to Deezer with this Python3 application.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "paurieraf/musicbucket-bot-old",
+    "description": "A Telegram bot that helps chat users sharing and keeping track music",
+    "stars": 45,
+    "language": "Python",
+    "topics": [
+      "deezer",
+      "last-fm",
+      "lastfm",
+      "lastfm-api",
+      "music",
+      "music-bot",
+      "music-information-retrieval",
+      "musicbrainz",
+      "peewee",
+      "python",
+      "python3",
+      "spotify",
+      "spotify-api",
+      "spotify-connect",
+      "sqlite",
+      "telegram",
+      "telegram-bot",
+      "telegram-bot-api",
+      "telegram-bots",
+      "telegrambot"
+    ],
+    "url": "https://github.com/paurieraf/musicbucket-bot-old",
+    "pushed_at": "2025-08-04",
+    "archived": false,
+    "found_by": [
+      "topic:lastfm-api stars:>30"
+    ],
+    "what": "A Telegram bot that helps chat users sharing and keeping track music",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Marekkon5/beatporttagger",
+    "description": "Simple Python app to automatically update your audio tags & cover with data from Beatport using scrapping (no paid API).",
+    "stars": 42,
+    "language": "Python",
+    "topics": [
+      "audio",
+      "beatport",
+      "python"
+    ],
+    "url": "https://github.com/Marekkon5/beatporttagger",
+    "pushed_at": "2021-05-22",
+    "archived": true,
+    "found_by": [
+      "topic:beatport stars:>10"
+    ],
+    "what": "Simple Python app to automatically update your audio tags & cover with data from Beatport using scrapping (no paid API).",
+    "described_by": "github"
+  },
+  {
+    "full_name": "zsxink/MusicTag",
+    "description": "逐首为本地 FLAC/MP3 补全元数据（歌名/专辑/封面/歌词）的跨平台桌面工具：选中即自动联网搜索候选，点选填入，直接写盘。",
+    "stars": 41,
+    "language": "Rust",
+    "topics": [
+      "cover-art",
+      "desktop-app",
+      "flac",
+      "lyrics",
+      "mp3",
+      "music-metadata",
+      "rust",
+      "tauri",
+      "typescript",
+      "vue"
+    ],
+    "url": "https://github.com/zsxink/MusicTag",
+    "pushed_at": "2026-11-17",
+    "archived": false,
+    "found_by": [
+      "topic:music-metadata stars:>20"
+    ],
+    "what": "逐首为本地 FLAC/MP3 补全元数据（歌名/专辑/封面/歌词）的跨平台桌面工具：选中即自动联网搜索候选，点选填入，直接写盘。",
+    "described_by": "github"
+  },
+  {
+    "full_name": "MuSAELab/AUDDT",
+    "description": "A toolkit for benchmarking on a wide variety of audio deepfake datasets.",
+    "stars": 40,
+    "language": "Python",
+    "topics": [],
+    "url": "https://github.com/MuSAELab/AUDDT",
+    "pushed_at": "2026-05-22",
+    "archived": false,
+    "found_by": [
+      "audd in:name stars:>10"
+    ],
+    "what": "A toolkit for benchmarking on a wide variety of audio deepfake datasets.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "iammordaty/key-tools",
+    "description": ":musical_note: KeyTools is a library that allows you to convert musical keys between notations. In addition, KeyTools allows you to calculate matching keys for harmonic mixing.",
+    "stars": 39,
+    "language": "PHP",
+    "topics": [
+      "automation",
+      "beatport",
+      "camelot-wheel",
+      "dj",
+      "harmonic-mixing",
+      "music-library",
+      "rekordbox",
+      "traktor"
+    ],
+    "url": "https://github.com/iammordaty/key-tools",
+    "pushed_at": "2020-03-03",
+    "archived": false,
+    "found_by": [
+      "topic:beatport stars:>10"
+    ],
+    "what": ":musical_note: KeyTools is a library that allows you to convert musical keys between notations. In addition, KeyTools allows you to calculate matching keys for harmonic mixing.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "blackccpie/deezzy",
+    "description": "Lightweight Qml/C++ Deezer Player using Native SDK",
+    "stars": 38,
+    "language": "C++",
+    "topics": [
+      "cmake",
+      "cplusplus",
+      "deezer",
+      "deezer-api",
+      "deezer-desktop",
+      "docker",
+      "music-player",
+      "qml",
+      "raspberrypi"
+    ],
+    "url": "https://github.com/blackccpie/deezzy",
+    "pushed_at": "2019-02-07",
+    "archived": false,
+    "found_by": [
+      "topic:deezer-api stars:>30"
+    ],
+    "what": "Lightweight Qml/C++ Deezer Player using Native SDK",
+    "described_by": "github"
+  },
+  {
+    "full_name": "TheHamkerCat/python-arq",
+    "description": "Asynchronous Python Wrapper For A.R.Q API.",
+    "stars": 35,
+    "language": "Python",
+    "topics": [
+      "api",
+      "api-wrapper",
+      "arq",
+      "chatbot-api",
+      "deezer",
+      "deezer-api",
+      "fastapi",
+      "natural-language-processing",
+      "nlp",
+      "pornhub-api",
+      "python-arq",
+      "saavn",
+      "spam-classification",
+      "spam-detection",
+      "spellcheck",
+      "torrent-api",
+      "wallpaper-api",
+      "youtube-api"
+    ],
+    "url": "https://github.com/TheHamkerCat/python-arq",
+    "pushed_at": "2025-06-28",
+    "archived": false,
+    "found_by": [
+      "topic:deezer-api stars:>30"
+    ],
+    "what": "Asynchronous Python Wrapper For A.R.Q API.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "BLCK-B/MusicReleaseTracker",
+    "description": "Finds latest songs from your favourite artists. No accounts needed.",
+    "stars": 33,
+    "language": "Java",
+    "topics": [
+      "beatport",
+      "music",
+      "music-release",
+      "music-tracker",
+      "musicbrainz",
+      "scraper",
+      "youtube"
+    ],
+    "url": "https://github.com/BLCK-B/MusicReleaseTracker",
+    "pushed_at": "2026-11-14",
+    "archived": false,
+    "found_by": [
+      "topic:beatport stars:>10"
+    ],
+    "what": "Finds latest songs from your favourite artists. No accounts needed.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "averatec0773/beatos",
+    "description": "Local-first beat library built for producers — catalog, BPM/key analysis, license tiers & PDFs, tagged-MP3 + loopkit export, and assisted multi-platform publishing. Chat with your catalog via a built-in AI Agent (Claude · ChatGPT · DeepSeek), or wire it to any MCP client. Desktop + web.",
+    "stars": 32,
+    "language": "TypeScript",
+    "topics": [
+      "ai-tools",
+      "anthropic",
+      "beat-maker",
+      "beatstars",
+      "bpm-detection",
+      "claude-code",
+      "claude-mcp",
+      "desktop-app",
+      "electron",
+      "fastapi",
+      "key-detection",
+      "local-first",
+      "mcp",
+      "mcp-server",
+      "model-context-protocol",
+      "music-library",
+      "music-metadata",
+      "music-producer",
+      "playlist",
+      "web-app"
+    ],
+    "url": "https://github.com/averatec0773/beatos",
+    "pushed_at": "2026-08-31",
+    "archived": false,
+    "found_by": [
+      "topic:music-metadata stars:>20"
+    ],
+    "what": "Local-first beat library built for producers — catalog, BPM/key analysis, license tiers & PDFs, tagged-MP3 + loopkit export, and assisted multi-platform publishing. Chat with your catalog via a built-in AI Agent (Claude · ChatGPT · DeepSeek), or wire it to any MCP client. Desktop + web.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "wallisch/ChromaSwift",
+    "description": "Swift wrapper for Chromaprint, the audio fingerprint library of the AcoustID project",
+    "stars": 31,
+    "language": "Swift",
+    "topics": [
+      "acoustid",
+      "audio",
+      "audio-analysis",
+      "audio-fingerprinting",
+      "audio-processing",
+      "chromaprint",
+      "music",
+      "spm",
+      "swift"
+    ],
+    "url": "https://github.com/wallisch/ChromaSwift",
+    "pushed_at": "2026-07-20",
+    "archived": false,
+    "found_by": [
+      "topic:acoustid stars:>10"
+    ],
+    "what": "Swift wrapper for Chromaprint, the audio fingerprint library of the AcoustID project",
+    "described_by": "github"
+  },
+  {
+    "full_name": "DOREMUS-ANR/doremus-ontology",
+    "description": "Describing music catalogs",
+    "stars": 26,
+    "language": "",
+    "topics": [
+      "frbroo",
+      "metadata",
+      "music",
+      "music-metadata",
+      "ontology"
+    ],
+    "url": "https://github.com/DOREMUS-ANR/doremus-ontology",
+    "pushed_at": "2024-07-09",
+    "archived": false,
+    "found_by": [
+      "topic:music-metadata stars:>20"
+    ],
+    "what": "Describing music catalogs",
+    "described_by": "github"
+  },
+  {
+    "full_name": "polifonia-project/music-meta-ontology",
+    "description": "A flexible ontology for the interoperability of music metadata",
+    "stars": 26,
+    "language": "HTML",
+    "topics": [
+      "meta",
+      "music-information-retrieval",
+      "music-metadata",
+      "music-ontology",
+      "ontology"
+    ],
+    "url": "https://github.com/polifonia-project/music-meta-ontology",
+    "pushed_at": "2024-03-22",
+    "archived": false,
+    "found_by": [
+      "topic:music-metadata stars:>20"
+    ],
+    "what": "A flexible ontology for the interoperability of music metadata",
+    "described_by": "github"
+  },
+  {
+    "full_name": "AdrienPensart/musicbot",
+    "description": "Music swiss army knife",
+    "stars": 22,
+    "language": "Python",
+    "topics": [
+      "acoustid",
+      "cli",
+      "click",
+      "docker",
+      "docker-compose",
+      "edgedb",
+      "graphql",
+      "music",
+      "music-library",
+      "music-player",
+      "playlist-generator",
+      "poetry",
+      "postgresql",
+      "pylint",
+      "pytest",
+      "spotify",
+      "vlc",
+      "youtube"
+    ],
+    "url": "https://github.com/AdrienPensart/musicbot",
+    "pushed_at": "2025-03-30",
+    "archived": false,
+    "found_by": [
+      "topic:acoustid stars:>10"
+    ],
+    "what": "Music swiss army knife",
+    "described_by": "github"
+  },
+  {
+    "full_name": "cantti/tagselecta",
+    "description": "TagSelecta is a cross-platform vim inspired tool for managing audio file metadata (tags).",
+    "stars": 22,
+    "language": "C#",
+    "topics": [
+      "csharp",
+      "id3v3",
+      "metadata-management",
+      "music",
+      "music-metadata",
+      "spectre-console"
+    ],
+    "url": "https://github.com/cantti/tagselecta",
+    "pushed_at": "2026-11-17",
+    "archived": false,
+    "found_by": [
+      "topic:music-metadata stars:>20"
+    ],
+    "what": "TagSelecta is a cross-platform vim inspired tool for managing audio file metadata (tags).",
+    "described_by": "github"
+  },
+  {
+    "full_name": "ddman1101/EDM-subgenre-classifier",
+    "description": "Code for \"Deep Learning Based EDM Subgenre Classification using Mel-Spectrogram and Tempogram Features\" arXiv:2110.08862, 2021.",
+    "stars": 20,
+    "language": "Python",
+    "topics": [
+      "beatport",
+      "cnn-pytorch",
+      "deep-learning",
+      "edm",
+      "genres-classification",
+      "mel-spectrogram",
+      "music-information-retrieval",
+      "python",
+      "pytorch",
+      "tempogram"
+    ],
+    "url": "https://github.com/ddman1101/EDM-subgenre-classifier",
+    "pushed_at": "2021-10-29",
+    "archived": false,
+    "found_by": [
+      "topic:beatport stars:>10"
+    ],
+    "what": "Code for \"Deep Learning Based EDM Subgenre Classification using Mel-Spectrogram and Tempogram Features\" arXiv:2110.08862, 2021.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "zas/dupsonic",
+    "description": "Find duplicate audio files using acoustic fingerprinting (chromaprint/AcoustID)",
+    "stars": 17,
+    "language": "Rust",
+    "topics": [
+      "acoustid",
+      "audio",
+      "chromaprint",
+      "deduplication",
+      "duplicate-detection",
+      "fingerprint",
+      "music",
+      "musicbrainz",
+      "picard",
+      "rust"
+    ],
+    "url": "https://github.com/zas/dupsonic",
+    "pushed_at": "2026-10-27",
+    "archived": false,
+    "found_by": [
+      "topic:acoustid stars:>10"
+    ],
+    "what": "Find duplicate audio files using acoustic fingerprinting (chromaprint/AcoustID)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "acoustid/pg_acoustid",
+    "description": "PostgreSQL extension for working with AcoustID fingerprints",
+    "stars": 16,
+    "language": "C",
+    "topics": [
+      "acoustid",
+      "audio-fingerprinting",
+      "postgresql",
+      "postgresql-extension"
+    ],
+    "url": "https://github.com/acoustid/pg_acoustid",
+    "pushed_at": "2026-10-16",
+    "archived": false,
+    "found_by": [
+      "topic:acoustid stars:>10"
+    ],
+    "what": "PostgreSQL extension for working with AcoustID fingerprints",
+    "described_by": "github"
+  },
+  {
+    "full_name": "stuchain/CuePoint",
+    "description": "Free open source desktop app for DJs: clean up your Rekordbox library with Beatport. Fix missing or wrong keys, BPM, genres and labels, find duplicates, discover new music and plan sets. Windows, macOS, Linux.",
+    "stars": 13,
+    "language": "Python",
+    "topics": [
+      "beatport",
+      "bpm",
+      "camelot-wheel",
+      "cross-platform",
+      "desktop-app",
+      "dj",
+      "dj-set",
+      "dj-software",
+      "dj-tools",
+      "electron",
+      "harmonic-mixing",
+      "music-discovery",
+      "music-library",
+      "music-metadata",
+      "music-tagging",
+      "playlist-manager",
+      "python",
+      "react",
+      "rekordbox",
+      "rekordbox-xml"
+    ],
+    "url": "https://github.com/stuchain/CuePoint",
+    "pushed_at": "2026-11-18",
+    "archived": false,
+    "found_by": [
+      "topic:beatport stars:>10"
+    ],
+    "what": "Free open source desktop app for DJs: clean up your Rekordbox library with Beatport. Fix missing or wrong keys, BPM, genres and labels, find duplicates, discover new music and plan sets. Windows, macOS, Linux.",
+    "described_by": "github"
+  }
+]
