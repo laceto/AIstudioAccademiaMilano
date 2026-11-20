@@ -1,0 +1,2652 @@
+[
+  {
+    "full_name": "fingerprintjs/fingerprintjs",
+    "description": "The most advanced free and open-source browser fingerprinting library",
+    "stars": 28780,
+    "language": "TypeScript",
+    "topics": [
+      "audio-fingerprinting",
+      "browser",
+      "browser-fingerprint",
+      "browser-fingerprinting",
+      "detection",
+      "fingerprint",
+      "fingerprinting",
+      "fingerprintjs",
+      "fraud",
+      "fraud-detection",
+      "identification",
+      "javascript",
+      "visitor-identifier"
+    ],
+    "url": "https://github.com/fingerprintjs/fingerprintjs",
+    "pushed_at": "2026-11-05",
+    "archived": false,
+    "found_by": [
+      "topic:audio-fingerprinting stars:>100"
+    ],
+    "what": "The most advanced free and open-source browser fingerprinting library",
+    "described_by": "github"
+  },
+  {
+    "full_name": "deezer/spleeter",
+    "description": "Deezer source separation library including pretrained models.",
+    "stars": 28539,
+    "language": "Python",
+    "topics": [
+      "audio-processing",
+      "bass",
+      "deep-learning",
+      "deezer",
+      "drums",
+      "model",
+      "pretrained-models",
+      "python",
+      "tensorflow",
+      "vocals"
+    ],
+    "url": "https://github.com/deezer/spleeter",
+    "pushed_at": "2026-10-28",
+    "archived": false,
+    "found_by": [
+      "spleeter in:name stars:>1000"
+    ],
+    "what": "Deezer source separation library including pretrained models.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "facebookresearch/demucs",
+    "description": "Code for the paper Hybrid Spectrogram and Waveform Source Separation",
+    "stars": 10417,
+    "language": "Python",
+    "topics": [],
+    "url": "https://github.com/facebookresearch/demucs",
+    "pushed_at": "2024-04-24",
+    "archived": true,
+    "found_by": [
+      "demucs in:name stars:>500"
+    ],
+    "what": "Code for the paper Hybrid Spectrogram and Waveform Source Separation",
+    "described_by": "github"
+  },
+  {
+    "full_name": "librosa/librosa",
+    "description": "Python library for audio and music analysis",
+    "stars": 9052,
+    "language": "Python",
+    "topics": [
+      "audio",
+      "dsp",
+      "librosa",
+      "music",
+      "python",
+      "scipy"
+    ],
+    "url": "https://github.com/librosa/librosa",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "librosa in:name stars:>100"
+    ],
+    "what": "Python library for audio and music analysis",
+    "described_by": "github"
+  },
+  {
+    "full_name": "supercollider/supercollider",
+    "description": "An audio server, programming language, and IDE for sound synthesis and algorithmic composition.",
+    "stars": 6844,
+    "language": "C++",
+    "topics": [
+      "algorithmic-composition",
+      "audio",
+      "c-plus-plus",
+      "computer-music",
+      "electronic-music",
+      "hacktoberfest",
+      "livecoding",
+      "music",
+      "programming-language",
+      "sclang",
+      "scsynth",
+      "sonification",
+      "sound",
+      "supercollider",
+      "synthesis"
+    ],
+    "url": "https://github.com/supercollider/supercollider",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "An audio server, programming language, and IDE for sound synthesis and algorithmic composition.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "cgzirim/seek-tune",
+    "description": "An implementation of Shazam's song recognition algorithm.",
+    "stars": 5606,
+    "language": "Go",
+    "topics": [
+      "audio-fingerprinting",
+      "audio-processing",
+      "go",
+      "golang",
+      "not-shazam",
+      "shazam",
+      "song",
+      "song-recognition-algorithm"
+    ],
+    "url": "https://github.com/cgzirim/seek-tune",
+    "pushed_at": "2025-11-19",
+    "archived": false,
+    "found_by": [
+      "topic:audio-fingerprinting stars:>100"
+    ],
+    "what": "An implementation of Shazam's song recognition algorithm.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "MTG/essentia",
+    "description": "C++ library for audio and music analysis, description and synthesis, including Python bindings",
+    "stars": 3811,
+    "language": "C++",
+    "topics": [
+      "audio",
+      "audio-analysis",
+      "c-plus-plus",
+      "dsp",
+      "essentia",
+      "music",
+      "music-information-retrieval",
+      "python",
+      "sound-processing"
+    ],
+    "url": "https://github.com/MTG/essentia",
+    "pushed_at": "2026-11-18",
+    "archived": false,
+    "found_by": [
+      "topic:music-information-retrieval stars:>30",
+      "topic:audio-analysis stars:>30"
+    ],
+    "what": "C++ library for audio and music analysis, description and synthesis, including Python bindings",
+    "described_by": "github"
+  },
+  {
+    "full_name": "libAudioFlux/audioFlux",
+    "description": "A library for audio and music analysis, feature extraction.",
+    "stars": 3386,
+    "language": "C",
+    "topics": [
+      "audio",
+      "audio-analysis",
+      "audio-features",
+      "audio-processing",
+      "deep-learning",
+      "machine-learning",
+      "mfcc",
+      "mir",
+      "music",
+      "music-analysis",
+      "music-information-retrieval",
+      "pitch",
+      "python",
+      "signal-processing",
+      "spectral-analysis",
+      "spectrogram",
+      "time-frequency-analysis",
+      "wavelet-analysis",
+      "wavelet-transform"
+    ],
+    "url": "https://github.com/libAudioFlux/audioFlux",
+    "pushed_at": "2026-03-06",
+    "archived": false,
+    "found_by": [
+      "topic:music-information-retrieval stars:>30",
+      "topic:audio-analysis stars:>30",
+      "topic:music-analysis stars:>30",
+      "topic:audio-features stars:>30"
+    ],
+    "what": "A library for audio and music analysis, feature extraction.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "ybayle/awesome-deep-learning-music",
+    "description": "List of articles related to deep learning applied to music",
+    "stars": 3005,
+    "language": "TeX",
+    "topics": [
+      "article",
+      "audio",
+      "audio-processing",
+      "awesome",
+      "awesome-list",
+      "bib",
+      "deep-learning",
+      "deep-neural-networks",
+      "deeplearning",
+      "list",
+      "lists",
+      "machine-learning",
+      "music",
+      "music-genre-classification",
+      "music-information-retrieval",
+      "neural-network",
+      "neural-networks",
+      "research",
+      "resources",
+      "unicorns"
+    ],
+    "url": "https://github.com/ybayle/awesome-deep-learning-music",
+    "pushed_at": "2023-12-15",
+    "archived": false,
+    "found_by": [
+      "topic:music-information-retrieval stars:>30"
+    ],
+    "what": "List of articles related to deep learning applied to music",
+    "described_by": "github"
+  },
+  {
+    "full_name": "boy1dr/SpleeterGui",
+    "description": "Windows desktop front end for Spleeter - AI source separation",
+    "stars": 2751,
+    "language": "C#",
+    "topics": [
+      "gui",
+      "python",
+      "source-separation",
+      "spleeter"
+    ],
+    "url": "https://github.com/boy1dr/SpleeterGui",
+    "pushed_at": "2023-10-07",
+    "archived": false,
+    "found_by": [
+      "spleeter in:name stars:>1000"
+    ],
+    "what": "Windows desktop front end for Spleeter - AI source separation",
+    "described_by": "github"
+  },
+  {
+    "full_name": "mdeff/fma",
+    "description": "FMA: A Dataset For Music Analysis",
+    "stars": 2688,
+    "language": "Jupyter Notebook",
+    "topics": [
+      "dataset",
+      "deep-learning",
+      "music-analysis",
+      "music-information-retrieval",
+      "open-data",
+      "open-science",
+      "reproducible-research"
+    ],
+    "url": "https://github.com/mdeff/fma",
+    "pushed_at": "2023-01-05",
+    "archived": false,
+    "found_by": [
+      "topic:music-information-retrieval stars:>30",
+      "topic:music-analysis stars:>30"
+    ],
+    "what": "FMA: A Dataset For Music Analysis",
+    "described_by": "github"
+  },
+  {
+    "full_name": "vpavlenko/study-music",
+    "description": "An \"awesome music theory\" kinda wiki with books, resources and courses for studying everything about music and sound",
+    "stars": 2358,
+    "language": "",
+    "topics": [
+      "ableton",
+      "art",
+      "classical-music",
+      "composition",
+      "ear-training",
+      "edm",
+      "electronic-music",
+      "instrument",
+      "jazz",
+      "livecoding",
+      "microtonality",
+      "music",
+      "music-education",
+      "music-history",
+      "music-theory",
+      "musicology",
+      "piano",
+      "sound",
+      "sound-design",
+      "synth"
+    ],
+    "url": "https://github.com/vpavlenko/study-music",
+    "pushed_at": "2026-10-31",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "An \"awesome music theory\" kinda wiki with books, resources and courses for studying everything about music and sound",
+    "described_by": "github"
+  },
+  {
+    "full_name": "marin-m/SongRec",
+    "description": "An open-source Shazam client for Linux, written in Rust.",
+    "stars": 2058,
+    "language": "Rust",
+    "topics": [
+      "audio-fingerprinting",
+      "flatpak",
+      "rust",
+      "shazam",
+      "songrec"
+    ],
+    "url": "https://github.com/marin-m/SongRec",
+    "pushed_at": "2026-11-17",
+    "archived": false,
+    "found_by": [
+      "topic:audio-fingerprinting stars:>100"
+    ],
+    "what": "An open-source Shazam client for Linux, written in Rust.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Music-and-Culture-Technology-Lab/omnizart",
+    "description": "Omniscient Mozart, being able to transcribe everything in the music, including vocal, drum, chord, beat, instruments, and more.",
+    "stars": 2003,
+    "language": "Python",
+    "topics": [
+      "beat-tracking",
+      "chord",
+      "drum-transcription",
+      "music-information-retrieval",
+      "music-transcription",
+      "vocal"
+    ],
+    "url": "https://github.com/Music-and-Culture-Technology-Lab/omnizart",
+    "pushed_at": "2026-05-31",
+    "archived": false,
+    "found_by": [
+      "topic:music-information-retrieval stars:>30",
+      "topic:beat-tracking stars:>10"
+    ],
+    "what": "Omniscient Mozart, being able to transcribe everything in the music, including vocal, drum, chord, beat, instruments, and more.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "CPJKU/madmom",
+    "description": "Python audio and music signal processing library",
+    "stars": 1741,
+    "language": "Python",
+    "topics": [
+      "audio-analysis",
+      "cython",
+      "machine-learning",
+      "music-information-retrieval",
+      "numpy",
+      "python",
+      "scipy",
+      "signal-processing"
+    ],
+    "url": "https://github.com/CPJKU/madmom",
+    "pushed_at": "2026-03-20",
+    "archived": false,
+    "found_by": [
+      "topic:music-information-retrieval stars:>30",
+      "topic:audio-analysis stars:>30"
+    ],
+    "what": "Python audio and music signal processing library",
+    "described_by": "github"
+  },
+  {
+    "full_name": "meyda/meyda",
+    "description": "Audio feature extraction for JavaScript.",
+    "stars": 1673,
+    "language": "TypeScript",
+    "topics": [
+      "audio-features",
+      "feature-extraction",
+      "hacktoberfest",
+      "javascript",
+      "mir",
+      "music-information-retrieval",
+      "spectral-centroid",
+      "zero-cross"
+    ],
+    "url": "https://github.com/meyda/meyda",
+    "pushed_at": "2024-07-15",
+    "archived": false,
+    "found_by": [
+      "topic:music-information-retrieval stars:>30",
+      "topic:audio-features stars:>30"
+    ],
+    "what": "Audio feature extraction for JavaScript.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "BillyDM/awesome-audio-dsp",
+    "description": "My curated list of audio DSP and plugin development resources (Github fork)",
+    "stars": 1476,
+    "language": "",
+    "topics": [
+      "algorithms",
+      "audio",
+      "audio-analysis",
+      "audio-applications",
+      "audio-effect",
+      "audio-library",
+      "audio-processing",
+      "awesome",
+      "awesome-list",
+      "c",
+      "clap",
+      "cpp",
+      "d",
+      "dsp",
+      "lv2",
+      "math",
+      "rust",
+      "vst",
+      "vst3"
+    ],
+    "url": "https://github.com/BillyDM/awesome-audio-dsp",
+    "pushed_at": "2026-10-08",
+    "archived": false,
+    "found_by": [
+      "topic:audio-analysis stars:>30"
+    ],
+    "what": "My curated list of audio DSP and plugin development resources (Github fork)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "marl/crepe",
+    "description": "CREPE: A Convolutional REpresentation for Pitch Estimation -- pre-trained model (ICASSP 2018)",
+    "stars": 1428,
+    "language": "Python",
+    "topics": [
+      "keras",
+      "music-information-retrieval",
+      "pitch-estimation",
+      "tensorflow"
+    ],
+    "url": "https://github.com/marl/crepe",
+    "pushed_at": "2024-08-19",
+    "archived": false,
+    "found_by": [
+      "topic:music-information-retrieval stars:>30"
+    ],
+    "what": "CREPE: A Convolutional REpresentation for Pitch Estimation -- pre-trained model (ICASSP 2018)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "acoustid/chromaprint",
+    "description": "C library for generating audio fingerprints used by AcoustID",
+    "stars": 1428,
+    "language": "C++",
+    "topics": [
+      "acoustid",
+      "audio",
+      "audio-analysis",
+      "audio-fingerprinting",
+      "audio-processing",
+      "chromaprint"
+    ],
+    "url": "https://github.com/acoustid/chromaprint",
+    "pushed_at": "2026-10-15",
+    "archived": false,
+    "found_by": [
+      "topic:audio-analysis stars:>30",
+      "topic:audio-fingerprinting stars:>100"
+    ],
+    "what": "C library for generating audio fingerprints used by AcoustID",
+    "described_by": "github"
+  },
+  {
+    "full_name": "musicinformationretrieval/musicinformationretrieval.com",
+    "description": "Instructional notebooks on music information retrieval.",
+    "stars": 1309,
+    "language": "Jupyter Notebook",
+    "topics": [
+      "ipython-notebook",
+      "jupyter-notebook",
+      "machine-learning",
+      "music",
+      "music-information-retrieval",
+      "python"
+    ],
+    "url": "https://github.com/musicinformationretrieval/musicinformationretrieval.com",
+    "pushed_at": "2026-05-19",
+    "archived": false,
+    "found_by": [
+      "topic:music-information-retrieval stars:>30"
+    ],
+    "what": "Instructional notebooks on music information retrieval.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "dmrschmidt/DSWaveformImage",
+    "description": "Generate waveform images from audio files on iOS, macOS & visionOS in Swift. Native SwiftUI & UIKit views.",
+    "stars": 1267,
+    "language": "Swift",
+    "topics": [
+      "audio-analysis",
+      "audio-files",
+      "audio-visualizer",
+      "catalyst",
+      "fft",
+      "fourier-transform",
+      "ios",
+      "ipad",
+      "ipados",
+      "mac-catalyst",
+      "macos",
+      "macosx",
+      "swift",
+      "swiftui",
+      "vision-os",
+      "visionos",
+      "waveform",
+      "waveform-images"
+    ],
+    "url": "https://github.com/dmrschmidt/DSWaveformImage",
+    "pushed_at": "2026-05-17",
+    "archived": false,
+    "found_by": [
+      "topic:audio-analysis stars:>30"
+    ],
+    "what": "Generate waveform images from audio files on iOS, macOS & visionOS in Swift. Native SwiftUI & UIKit views.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "CarlGao4/Demucs-Gui",
+    "description": "A GUI for music separation AI demucs",
+    "stars": 1215,
+    "language": "Python",
+    "topics": [],
+    "url": "https://github.com/CarlGao4/Demucs-Gui",
+    "pushed_at": "2025-06-20",
+    "archived": false,
+    "found_by": [
+      "demucs in:name stars:>500"
+    ],
+    "what": "A GUI for music separation AI demucs",
+    "described_by": "github"
+  },
+  {
+    "full_name": "thumbmarkjs/thumbmarkjs",
+    "description": "A free, open-source javascript fingerprinting library",
+    "stars": 1189,
+    "language": "TypeScript",
+    "topics": [
+      "audio-fingerprinting",
+      "bot-detection",
+      "browser",
+      "browser-fingerprint",
+      "browser-fingerprinting",
+      "canvas-fingerprinting",
+      "detection",
+      "fingerprint",
+      "fingerprinting",
+      "fraud-detection",
+      "identification",
+      "javascript",
+      "thumbmarkjs",
+      "typescript",
+      "visitor-identifier",
+      "webgl-fingerprinting"
+    ],
+    "url": "https://github.com/thumbmarkjs/thumbmarkjs",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:audio-fingerprinting stars:>100"
+    ],
+    "what": "A free, open-source javascript fingerprinting library",
+    "described_by": "github"
+  },
+  {
+    "full_name": "tlecomte/friture",
+    "description": "Real-time audio visualizations (spectrum, spectrogram, etc.)",
+    "stars": 1138,
+    "language": "Python",
+    "topics": [
+      "audio",
+      "audio-analysis",
+      "python",
+      "spectrogram",
+      "spectrum",
+      "spectrum-analyzer"
+    ],
+    "url": "https://github.com/tlecomte/friture",
+    "pushed_at": "2026-11-03",
+    "archived": false,
+    "found_by": [
+      "topic:audio-analysis stars:>30"
+    ],
+    "what": "Real-time audio visualizations (spectrum, spectrogram, etc.)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "aiXander/Realtime_PyAudio_FFT",
+    "description": "Realtime audio analysis in Python to extract audio features from streaming audio and send them over OSC to any client app.",
+    "stars": 1094,
+    "language": "Python",
+    "topics": [
+      "audio-analysis",
+      "audio-visualizer",
+      "beat-detection",
+      "fft",
+      "osc",
+      "pyaudio",
+      "realtime-audio",
+      "sounddevice",
+      "spectral-analysis"
+    ],
+    "url": "https://github.com/aiXander/Realtime_PyAudio_FFT",
+    "pushed_at": "2026-11-19",
+    "archived": false,
+    "found_by": [
+      "topic:audio-analysis stars:>30"
+    ],
+    "what": "Realtime audio analysis in Python to extract audio features from streaming audio and send them over OSC to any client app.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Marekkon5/onetagger",
+    "description": "Music tagger for Windows, MacOS and Linux with Beatport, Discogs, Musicbrainz, Spotify, Traxsource and many other platforms support. ",
+    "stars": 1085,
+    "language": "Rust",
+    "topics": [
+      "dj",
+      "music",
+      "music-tagger",
+      "music-tagging",
+      "rust"
+    ],
+    "url": "https://github.com/Marekkon5/onetagger",
+    "pushed_at": "2026-02-13",
+    "archived": false,
+    "found_by": [
+      "topic:dj stars:>30"
+    ],
+    "what": "Music tagger for Windows, MacOS and Linux with Beatport, Discogs, Musicbrainz, Spotify, Traxsource and many other platforms support.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "lucidrains/BS-RoFormer",
+    "description": "Implementation of Band Split Roformer, SOTA Attention network for music source separation out of ByteDance AI Labs",
+    "stars": 1029,
+    "language": "Python",
+    "topics": [
+      "artificial-intelligence",
+      "attention-mechanisms",
+      "deep-learning",
+      "music-source-separation",
+      "transformers"
+    ],
+    "url": "https://github.com/lucidrains/BS-RoFormer",
+    "pushed_at": "2026-11-04",
+    "archived": false,
+    "found_by": [
+      "topic:music-source-separation stars:>100"
+    ],
+    "what": "Implementation of Band Split Roformer, SOTA Attention network for music source separation out of ByteDance AI Labs",
+    "described_by": "github"
+  },
+  {
+    "full_name": "hvianna/audioMotion-analyzer",
+    "description": "High-resolution real-time graphic audio spectrum analyzer JavaScript module with no dependencies.",
+    "stars": 982,
+    "language": "JavaScript",
+    "topics": [
+      "audio-analysis",
+      "audio-visualizer",
+      "javascript",
+      "spectrum-analyser",
+      "spectrum-analyzer",
+      "web-audio"
+    ],
+    "url": "https://github.com/hvianna/audioMotion-analyzer",
+    "pushed_at": "2026-07-19",
+    "archived": false,
+    "found_by": [
+      "topic:audio-analysis stars:>30"
+    ],
+    "what": "High-resolution real-time graphic audio spectrum analyzer JavaScript module with no dependencies.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "mir-aidj/all-in-one",
+    "description": "All-In-One Music Structure Analyzer",
+    "stars": 893,
+    "language": "Python",
+    "topics": [
+      "allin1",
+      "beat-tracking",
+      "music-structure-analysis",
+      "pytorch"
+    ],
+    "url": "https://github.com/mir-aidj/all-in-one",
+    "pushed_at": "2024-05-09",
+    "archived": false,
+    "found_by": [
+      "topic:beat-tracking stars:>10",
+      "topic:music-structure-analysis stars:>5"
+    ],
+    "what": "All-In-One Music Structure Analyzer",
+    "described_by": "github"
+  },
+  {
+    "full_name": "stargatedaw/stargate",
+    "description": "Innovation-first digital audio workstation (DAW), instrument and effect plugins, wave editor",
+    "stars": 891,
+    "language": "Python",
+    "topics": [
+      "audio-dsp",
+      "audio-effect",
+      "audio-plugin",
+      "c17",
+      "computer-music",
+      "daw",
+      "digital-audio-workstation",
+      "drum-machine",
+      "drums",
+      "edm",
+      "electronic-music",
+      "music-creation",
+      "pyqt",
+      "pyqt6",
+      "sampler",
+      "sequencer",
+      "songs",
+      "synth",
+      "synthesis",
+      "synthesizer"
+    ],
+    "url": "https://github.com/stargatedaw/stargate",
+    "pushed_at": "2025-04-21",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "Innovation-first digital audio workstation (DAW), instrument and effect plugins, wave editor",
+    "described_by": "github"
+  },
+  {
+    "full_name": "MTG/essentia.js",
+    "description": "JavaScript library for music/audio analysis and processing powered by Essentia WebAssembly",
+    "stars": 874,
+    "language": "TypeScript",
+    "topics": [
+      "audio-analysis",
+      "audio-signal-processing",
+      "emscripten",
+      "essentia",
+      "javascript",
+      "music-information-retrieval",
+      "webassembly",
+      "webaudio"
+    ],
+    "url": "https://github.com/MTG/essentia.js",
+    "pushed_at": "2025-12-10",
+    "archived": false,
+    "found_by": [
+      "topic:music-information-retrieval stars:>30"
+    ],
+    "what": "JavaScript library for music/audio analysis and processing powered by Essentia WebAssembly",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Rajesh-Royal/Broprint.js",
+    "description": "The world's easiest, smallest and powerful visitor identifier for browsers.",
+    "stars": 608,
+    "language": "TypeScript",
+    "topics": [
+      "audio-fingerprinting",
+      "browserfingerprint",
+      "canvas-fingerprinting",
+      "cryptography",
+      "fingerprinting",
+      "frauddetection",
+      "identification",
+      "javascript",
+      "jsfingerprint",
+      "reactjs",
+      "typescript",
+      "uniquebrowserid",
+      "visitor-identifier"
+    ],
+    "url": "https://github.com/Rajesh-Royal/Broprint.js",
+    "pushed_at": "2026-04-25",
+    "archived": false,
+    "found_by": [
+      "topic:audio-fingerprinting stars:>100"
+    ],
+    "what": "The world's easiest, smallest and powerful visitor identifier for browsers.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "urinieto/msaf",
+    "description": "Music Structure Analysis Framework",
+    "stars": 561,
+    "language": "Python",
+    "topics": [
+      "music-information-retrieval"
+    ],
+    "url": "https://github.com/urinieto/msaf",
+    "pushed_at": "2026-11-18",
+    "archived": false,
+    "found_by": [
+      "topic:music-information-retrieval stars:>30"
+    ],
+    "what": "Music Structure Analysis Framework",
+    "described_by": "github"
+  },
+  {
+    "full_name": "mjhydri/BeatNet",
+    "description": "BeatNet is state-of-the-art (Real-Time) and Offline joint music beat, downbeat, tempo, and meter tracking system using CRNN and particle filtering.  (ISMIR 2021's paper implementation).",
+    "stars": 537,
+    "language": "Python",
+    "topics": [
+      "beat-tracking",
+      "beatnet",
+      "crnn-network",
+      "dnn-beat-tracking",
+      "downbeat-tracking",
+      "joint-model",
+      "meter-detection",
+      "online-time-signature-detection",
+      "particle-filtering",
+      "pytorch",
+      "real-time",
+      "real-time-beat-tracker",
+      "real-time-downbeat-tracker",
+      "real-time-tempo",
+      "state-of-the-art"
+    ],
+    "url": "https://github.com/mjhydri/BeatNet",
+    "pushed_at": "2026-04-13",
+    "archived": false,
+    "found_by": [
+      "topic:beat-tracking stars:>10"
+    ],
+    "what": "BeatNet is state-of-the-art (Real-Time) and Offline joint music beat, downbeat, tempo, and meter tracking system using CRNN and particle filtering. (ISMIR 2021's paper implementation).",
+    "described_by": "github"
+  },
+  {
+    "full_name": "dylanljones/pyrekordbox",
+    "description": "Inofficial Python package for interacting with the database and other files (XML, ANLZ, MySettings) of Pioneers Rekordbox DJ software",
+    "stars": 519,
+    "language": "Python",
+    "topics": [
+      "anlz",
+      "database",
+      "device-library-plus",
+      "dj",
+      "library",
+      "music",
+      "music-library",
+      "my-settings",
+      "python",
+      "rekordbox",
+      "rekordbox-v5",
+      "rekordbox-v6",
+      "rekordbox-v7"
+    ],
+    "url": "https://github.com/dylanljones/pyrekordbox",
+    "pushed_at": "2026-11-16",
+    "archived": false,
+    "found_by": [
+      "topic:dj stars:>30"
+    ],
+    "what": "Inofficial Python package for interacting with the database and other files (XML, ANLZ, MySettings) of Pioneers Rekordbox DJ software",
+    "described_by": "github"
+  },
+  {
+    "full_name": "CPJKU/beat_this",
+    "description": "Accurate and general beat tracker",
+    "stars": 491,
+    "language": "Python",
+    "topics": [
+      "beat",
+      "beat-tracking",
+      "downbeat",
+      "music-information-retrieval"
+    ],
+    "url": "https://github.com/CPJKU/beat_this",
+    "pushed_at": "2026-05-28",
+    "archived": false,
+    "found_by": [
+      "topic:beat-tracking stars:>10"
+    ],
+    "what": "Accurate and general beat tracker",
+    "described_by": "github"
+  },
+  {
+    "full_name": "billorcutt/i_dropped_my_phone_the_screen_cracked",
+    "description": "web audio, cracked.",
+    "stars": 469,
+    "language": "JavaScript",
+    "topics": [
+      "audio-library",
+      "computer-music",
+      "electronic-music",
+      "html5-audio",
+      "music",
+      "music-library",
+      "synthesis",
+      "web-audio"
+    ],
+    "url": "https://github.com/billorcutt/i_dropped_my_phone_the_screen_cracked",
+    "pushed_at": "2023-06-22",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "web audio, cracked.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "adamstark/BTrack",
+    "description": "A Real-Time Beat Tracker",
+    "stars": 432,
+    "language": "C++",
+    "topics": [
+      "audio",
+      "beat-detection",
+      "beat-tracking",
+      "real-time"
+    ],
+    "url": "https://github.com/adamstark/BTrack",
+    "pushed_at": "2026-02-26",
+    "archived": false,
+    "found_by": [
+      "topic:beat-tracking stars:>10"
+    ],
+    "what": "A Real-Time Beat Tracker",
+    "described_by": "github"
+  },
+  {
+    "full_name": "JorenSix/Olaf",
+    "description": "Olaf: Overly Lightweight Acoustic Fingerprinting is a portable acoustic fingerprinting system.",
+    "stars": 424,
+    "language": "C",
+    "topics": [
+      "acoustic-fingerprinting",
+      "audio-fingerprinting",
+      "esp32",
+      "music-information-retrieval",
+      "wasm"
+    ],
+    "url": "https://github.com/JorenSix/Olaf",
+    "pushed_at": "2026-10-16",
+    "archived": false,
+    "found_by": [
+      "topic:audio-fingerprinting stars:>100"
+    ],
+    "what": "Olaf: Overly Lightweight Acoustic Fingerprinting is a portable acoustic fingerprinting system.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "arkrow/PyMusicLooper",
+    "description": "A python program for repeating music endlessly and creating seamless music loops, with play/export/tagging support.",
+    "stars": 418,
+    "language": "Python",
+    "topics": [
+      "audio",
+      "audio-loops",
+      "loop-points",
+      "music",
+      "music-analysis",
+      "music-loops",
+      "python"
+    ],
+    "url": "https://github.com/arkrow/PyMusicLooper",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:music-analysis stars:>30"
+    ],
+    "what": "A python program for repeating music endlessly and creating seamless music loops, with play/export/tagging support.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "chrisle/rbxport",
+    "description": "A focused music library manager inspired by rekordbox, with USB export and PRO DJ LINK. Built for a faster, simpler workflow.",
+    "stars": 407,
+    "language": "Rust",
+    "topics": [
+      "alphatheta",
+      "dj",
+      "library-management",
+      "music-library",
+      "pioneer-dj",
+      "pro-dj-link",
+      "react",
+      "rekordbox",
+      "rust",
+      "tauri",
+      "typescript",
+      "usb-export"
+    ],
+    "url": "https://github.com/chrisle/rbxport",
+    "pushed_at": "2026-11-16",
+    "archived": false,
+    "found_by": [
+      "topic:dj stars:>30"
+    ],
+    "what": "A focused music library manager inspired by rekordbox, with USB export and PRO DJ LINK. Built for a faster, simpler workflow.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "nsaintot/cdj3k-emu",
+    "description": "An emulator for the Linux based CDJs in QEMU, with emulated SPI controls, jog LCD, USB, PC-LINK and Pro DJ Link network",
+    "stars": 369,
+    "language": "Rust",
+    "topics": [
+      "audio",
+      "dj",
+      "emulation",
+      "qemu"
+    ],
+    "url": "https://github.com/nsaintot/cdj3k-emu",
+    "pushed_at": "2026-11-18",
+    "archived": false,
+    "found_by": [
+      "topic:dj stars:>30"
+    ],
+    "what": "An emulator for the Linux based CDJs in QEMU, with emulated SPI controls, jog LCD, USB, PC-LINK and Pro DJ Link network",
+    "described_by": "github"
+  },
+  {
+    "full_name": "dlepaux/realtime-bpm-analyzer",
+    "description": "Tempo (BPM) detection for the browser with the Web Audio API: files, streams, the microphone or any audio node, live as the audio plays. Also runs in Node, Bun and Deno, from a CLI and an MCP server, and in Python and Java. TypeScript, zero dependencies.",
+    "stars": 337,
+    "language": "TypeScript",
+    "topics": [
+      "analyzer",
+      "audio",
+      "audio-analysis",
+      "audiobuffer",
+      "audiocontext",
+      "audionode",
+      "audioworklet",
+      "beat-detection",
+      "bpm",
+      "bpm-detection",
+      "javascript",
+      "microphone",
+      "music-information-retrieval",
+      "realtime",
+      "realtime-bpm",
+      "stream",
+      "tempo",
+      "typescript",
+      "web-audio",
+      "web-audio-api"
+    ],
+    "url": "https://github.com/dlepaux/realtime-bpm-analyzer",
+    "pushed_at": "2026-11-19",
+    "archived": false,
+    "found_by": [
+      "topic:bpm-detection stars:>10"
+    ],
+    "what": "Tempo (BPM) detection for the browser with the Web Audio API: files, streams, the microphone or any audio node, live as the audio plays. Also runs in Node, Bun and Deno, from a CLI and an MCP server, and in Python and Java. TypeScript, zero dependencies.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "dodiku/AudioOwl",
+    "description": "Fast and simple music and audio analysis using RNN in Python 🕵️‍♀️ 🥁",
+    "stars": 297,
+    "language": "Python",
+    "topics": [
+      "analysis",
+      "audio",
+      "audio-features",
+      "beat-detection",
+      "beats",
+      "data",
+      "feature-extraction",
+      "machine-learning",
+      "mir",
+      "ml",
+      "music",
+      "music-information-retrieval",
+      "pip",
+      "pypi",
+      "python",
+      "rnn",
+      "sample-rate",
+      "tempo"
+    ],
+    "url": "https://github.com/dodiku/AudioOwl",
+    "pushed_at": "2022-06-20",
+    "archived": false,
+    "found_by": [
+      "topic:audio-features stars:>30"
+    ],
+    "what": "Fast and simple music and audio analysis using RNN in Python 🕵️‍♀️ 🥁",
+    "described_by": "github"
+  },
+  {
+    "full_name": "vibertthio/beact",
+    "description": ":guitar::art: DJ and VJ all by yourself in seconds !",
+    "stars": 294,
+    "language": "JavaScript",
+    "topics": [
+      "creative-coding",
+      "dj",
+      "sequencer",
+      "vj",
+      "webaudio"
+    ],
+    "url": "https://github.com/vibertthio/beact",
+    "pushed_at": "2025-07-24",
+    "archived": false,
+    "found_by": [
+      "topic:dj stars:>30"
+    ],
+    "what": ":guitar::art: DJ and VJ all by yourself in seconds !",
+    "described_by": "github"
+  },
+  {
+    "full_name": "kuielab/mdx-net",
+    "description": "KUIELAB-MDX-Net got the 2nd place on the Leaderboard A and the 3rd place on the Leaderboard B in the MDX-Challenge ISMIR 2021",
+    "stars": 252,
+    "language": "Python",
+    "topics": [
+      "hydra",
+      "mdx-challenge",
+      "music-source-separation",
+      "pytorch",
+      "pytorch-lightning",
+      "source-separation",
+      "wandb"
+    ],
+    "url": "https://github.com/kuielab/mdx-net",
+    "pushed_at": "2023-02-27",
+    "archived": false,
+    "found_by": [
+      "topic:music-source-separation stars:>100"
+    ],
+    "what": "KUIELAB-MDX-Net got the 2nd place on the Leaderboard A and the 3rd place on the Leaderboard B in the MDX-Challenge ISMIR 2021",
+    "described_by": "github"
+  },
+  {
+    "full_name": "ewan-xu/LibrosaCpp",
+    "description": "LibrosaCpp is a c++ implemention of librosa to compute short-time fourier transform coefficients,mel spectrogram or mfcc",
+    "stars": 243,
+    "language": "C++",
+    "topics": [
+      "eigen",
+      "librosa",
+      "mfcc"
+    ],
+    "url": "https://github.com/ewan-xu/LibrosaCpp",
+    "pushed_at": "2020-12-28",
+    "archived": false,
+    "found_by": [
+      "librosa in:name stars:>100"
+    ],
+    "what": "LibrosaCpp is a c++ implemention of librosa to compute short-time fourier transform coefficients,mel spectrogram or mfcc",
+    "described_by": "github"
+  },
+  {
+    "full_name": "mandiclab/djc-diy",
+    "description": "DIY DJ controller.",
+    "stars": 223,
+    "language": "C++",
+    "topics": [
+      "diy-electronics",
+      "dj",
+      "mandiclab",
+      "open-source"
+    ],
+    "url": "https://github.com/mandiclab/djc-diy",
+    "pushed_at": "2026-11-10",
+    "archived": false,
+    "found_by": [
+      "topic:dj stars:>30"
+    ],
+    "what": "DIY DJ controller.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "mimbres/neural-audio-fp",
+    "description": "Official implementation of Neural Audio Fingerprint (ICASSP 2021)",
+    "stars": 213,
+    "language": "Python",
+    "topics": [
+      "audio-fingerprinting",
+      "audio-search",
+      "deep-learning",
+      "fingerprint",
+      "music-information-retrieval"
+    ],
+    "url": "https://github.com/mimbres/neural-audio-fp",
+    "pushed_at": "2025-08-21",
+    "archived": false,
+    "found_by": [
+      "topic:audio-fingerprinting stars:>100"
+    ],
+    "what": "Official implementation of Neural Audio Fingerprint (ICASSP 2021)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "sevagh/demucs.cpp",
+    "description": "C++17 port of Demucs v3 (hybrid) and v4 (hybrid transformer) models with ggml and Eigen3",
+    "stars": 181,
+    "language": "C++",
+    "topics": [
+      "blas",
+      "demixing",
+      "demucs",
+      "eigen3",
+      "ggml",
+      "guitar",
+      "music-source-separation",
+      "piano",
+      "pytorch"
+    ],
+    "url": "https://github.com/sevagh/demucs.cpp",
+    "pushed_at": "2026-11-06",
+    "archived": false,
+    "found_by": [
+      "topic:music-source-separation stars:>100"
+    ],
+    "what": "C++17 port of Demucs v3 (hybrid) and v4 (hybrid transformer) models with ggml and Eigen3",
+    "described_by": "github"
+  },
+  {
+    "full_name": "alexanderlerch/pyACA",
+    "description": "Python scripts accompanying the book \"An Introduction to Audio Content Analysis\" (www.AudioContentAnalysis.org)",
+    "stars": 178,
+    "language": "Python",
+    "topics": [
+      "audio-content-analysis",
+      "audio-features",
+      "audio-processing",
+      "music-informatics",
+      "music-information-retrieval",
+      "signal-processing"
+    ],
+    "url": "https://github.com/alexanderlerch/pyACA",
+    "pushed_at": "2025-05-30",
+    "archived": false,
+    "found_by": [
+      "topic:audio-features stars:>30"
+    ],
+    "what": "Python scripts accompanying the book \"An Introduction to Audio Content Analysis\" (www.AudioContentAnalysis.org)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Js-Mim/mss_pytorch",
+    "description": "Singing Voice Separation via Recurrent Inference and Skip-Filtering Connections - PyTorch Implementation.  Demo:",
+    "stars": 171,
+    "language": "Python",
+    "topics": [
+      "deep-learning",
+      "mss-pytorch",
+      "music-source-separation",
+      "pytorch",
+      "recurrent-neural-networks",
+      "skip-filtering-connections"
+    ],
+    "url": "https://github.com/Js-Mim/mss_pytorch",
+    "pushed_at": "2018-11-02",
+    "archived": false,
+    "found_by": [
+      "topic:music-source-separation stars:>100"
+    ],
+    "what": "Singing Voice Separation via Recurrent Inference and Skip-Filtering Connections - PyTorch Implementation. Demo:",
+    "described_by": "github"
+  },
+  {
+    "full_name": "unmade/audiomatch",
+    "description": "Find similar audio files easily",
+    "stars": 165,
+    "language": "Python",
+    "topics": [
+      "audio-fingerprinting",
+      "chromaprint",
+      "command-line",
+      "cython",
+      "duplicate-detection",
+      "python",
+      "sound-analysis"
+    ],
+    "url": "https://github.com/unmade/audiomatch",
+    "pushed_at": "2024-11-19",
+    "archived": false,
+    "found_by": [
+      "topic:audio-fingerprinting stars:>100"
+    ],
+    "what": "Find similar audio files easily",
+    "described_by": "github"
+  },
+  {
+    "full_name": "xwax/xwax",
+    "description": "Please send patches via the mailing list, this GitHub page is not monitored https://sourceforge.net/projects/xwax/lists/xwax-devel",
+    "stars": 161,
+    "language": "C",
+    "topics": [
+      "audio",
+      "c",
+      "digital-vinyl-emulation",
+      "dj",
+      "music",
+      "timecode"
+    ],
+    "url": "https://github.com/xwax/xwax",
+    "pushed_at": "2026-05-03",
+    "archived": false,
+    "found_by": [
+      "topic:dj stars:>30"
+    ],
+    "what": "Please send patches via the mailing list, this GitHub page is not monitored https://sourceforge.net/projects/xwax/lists/xwax-devel",
+    "described_by": "github"
+  },
+  {
+    "full_name": "oguzhan-yilmaz/pyCrossfade",
+    "description": "pyCrossfade is the result of a personal project to use beat matching, gradual bpm shift on bars, and EQ modification to provide smooth and tunable transitions between music files.",
+    "stars": 153,
+    "language": "Python",
+    "topics": [
+      "audio",
+      "audio-processing",
+      "beat-matching",
+      "crossfade",
+      "dj",
+      "music",
+      "python",
+      "python3",
+      "transition"
+    ],
+    "url": "https://github.com/oguzhan-yilmaz/pyCrossfade",
+    "pushed_at": "2026-08-09",
+    "archived": false,
+    "found_by": [
+      "topic:dj stars:>30"
+    ],
+    "what": "pyCrossfade is the result of a personal project to use beat matching, gradual bpm shift on bars, and EQ modification to provide smooth and tunable transitions between music files.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "billorcutt/Cracked",
+    "description": "Mac app for noise making - built w/ \"I Dropped My Phone The Screen Cracked\"",
+    "stars": 152,
+    "language": "JavaScript",
+    "topics": [
+      "audio-library",
+      "electronic-music",
+      "html5-audio",
+      "livecoding",
+      "music",
+      "music-library",
+      "synthesis",
+      "web-audio"
+    ],
+    "url": "https://github.com/billorcutt/Cracked",
+    "pushed_at": "2026-02-01",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "Mac app for noise making - built w/ \"I Dropped My Phone The Screen Cracked\"",
+    "described_by": "github"
+  },
+  {
+    "full_name": "0xf4b1/traktor-streaming-proxy",
+    "description": "Allow Traktor DJ to stream music from YouTube, Spotify, and Tidal by faking Beatport's API",
+    "stars": 151,
+    "language": "Kotlin",
+    "topics": [
+      "beatport",
+      "dj",
+      "pro",
+      "spotify",
+      "streaming",
+      "tidal",
+      "traktor",
+      "traktor-pro",
+      "youtube"
+    ],
+    "url": "https://github.com/0xf4b1/traktor-streaming-proxy",
+    "pushed_at": "2025-11-25",
+    "archived": false,
+    "found_by": [
+      "topic:dj stars:>30"
+    ],
+    "what": "Allow Traktor DJ to stream music from YouTube, Spotify, and Tidal by faking Beatport's API",
+    "described_by": "github"
+  },
+  {
+    "full_name": "hlorenzi/theorytracker",
+    "description": "🎼 HTML5/WebAudio multi-track songwriting app with chord analysis support! -- https://hlorenzi.github.io/theorytracker/",
+    "stars": 143,
+    "language": "TypeScript",
+    "topics": [
+      "file-system-access",
+      "file-system-access-api",
+      "functional-harmony",
+      "harmony",
+      "html5",
+      "html5-application",
+      "music",
+      "music-analysis",
+      "music-composition",
+      "music-notation",
+      "music-theory",
+      "music-theory-apps",
+      "sf2",
+      "song",
+      "soundfont",
+      "tracker",
+      "web-app",
+      "web-application",
+      "webapp",
+      "webaudio"
+    ],
+    "url": "https://github.com/hlorenzi/theorytracker",
+    "pushed_at": "2026-01-01",
+    "archived": false,
+    "found_by": [
+      "topic:music-analysis stars:>30"
+    ],
+    "what": "🎼 HTML5/WebAudio multi-track songwriting app with chord analysis support! -- https://hlorenzi.github.io/theorytracker/",
+    "described_by": "github"
+  },
+  {
+    "full_name": "evanpurkhiser/keyfinder-cli",
+    "description": "A CLI wrapper for libkeyfinder. Making DJs lives easier.",
+    "stars": 141,
+    "language": "C++",
+    "topics": [
+      "audio",
+      "automation",
+      "dj",
+      "key-notations",
+      "keyfinder"
+    ],
+    "url": "https://github.com/evanpurkhiser/keyfinder-cli",
+    "pushed_at": "2026-11-10",
+    "archived": false,
+    "found_by": [
+      "topic:dj stars:>30"
+    ],
+    "what": "A CLI wrapper for libkeyfinder. Making DJs lives easier.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "leonawicz/tabr",
+    "description": "R package: tabr. Notation-based and tidy music data analysis and transcription.",
+    "stars": 136,
+    "language": "R",
+    "topics": [
+      "guitar-tablature",
+      "lilypond",
+      "lilypond-api",
+      "music-analysis",
+      "music-data",
+      "music-notation",
+      "music-programming",
+      "music-syntax",
+      "music-transcription",
+      "r-package",
+      "sheet-music"
+    ],
+    "url": "https://github.com/leonawicz/tabr",
+    "pushed_at": "2026-01-09",
+    "archived": false,
+    "found_by": [
+      "topic:music-analysis stars:>30"
+    ],
+    "what": "R package: tabr. Notation-based and tidy music data analysis and transcription.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Kyle-Hosman/xdj-az-mods",
+    "description": "The first public root/jailbreak for the XDJ-AZ: stems, drum rolls, themes and community mods. Open source, with an SDK for building your own mods.",
+    "stars": 133,
+    "language": "C",
+    "topics": [
+      "alphatheta",
+      "dj",
+      "jailbreak",
+      "mods",
+      "pioneer-dj",
+      "rekordbox",
+      "stems",
+      "xdj-az"
+    ],
+    "url": "https://github.com/Kyle-Hosman/xdj-az-mods",
+    "pushed_at": "2026-11-09",
+    "archived": false,
+    "found_by": [
+      "topic:dj stars:>30"
+    ],
+    "what": "The first public root/jailbreak for the XDJ-AZ: stems, drum rolls, themes and community mods. Open source, with an SDK for building your own mods.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "dodiku/MixingBear",
+    "description": "Package for automatic beat-mixing of music files in Python 🐻🎚",
+    "stars": 131,
+    "language": "Python",
+    "topics": [
+      "algorithm-library",
+      "analysis",
+      "audio",
+      "audio-analysis",
+      "audio-features",
+      "audio-processing",
+      "audioowl",
+      "beat-detection",
+      "beats",
+      "dj",
+      "feature-extraction",
+      "mir",
+      "mixing",
+      "ml",
+      "music",
+      "music-information-retrieval",
+      "pip",
+      "python"
+    ],
+    "url": "https://github.com/dodiku/MixingBear",
+    "pushed_at": "2018-04-26",
+    "archived": false,
+    "found_by": [
+      "topic:audio-features stars:>30",
+      "topic:dj stars:>30"
+    ],
+    "what": "Package for automatic beat-mixing of music files in Python 🐻🎚",
+    "described_by": "github"
+  },
+  {
+    "full_name": "sxiii/keygen-music",
+    "description": "Keygen Music Opensource Radio Repository",
+    "stars": 127,
+    "language": "Shell",
+    "topics": [
+      "8bit-music",
+      "audio",
+      "chiptune",
+      "computer-music",
+      "electronic-music",
+      "keygen",
+      "keygen-music",
+      "music",
+      "sound",
+      "synthesizer",
+      "tracker",
+      "tracker-music"
+    ],
+    "url": "https://github.com/sxiii/keygen-music",
+    "pushed_at": "2020-07-17",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "Keygen Music Opensource Radio Repository",
+    "described_by": "github"
+  },
+  {
+    "full_name": "craiglush/navidrome-mood-plugin",
+    "description": "Navidrome plugin for mood-based playlists using audio analysis (essentia-tensorflow)",
+    "stars": 126,
+    "language": "Go",
+    "topics": [
+      "essentia",
+      "mood-playlists",
+      "music-analysis",
+      "navidrome",
+      "navidrome-plugin"
+    ],
+    "url": "https://github.com/craiglush/navidrome-mood-plugin",
+    "pushed_at": "2026-03-26",
+    "archived": false,
+    "found_by": [
+      "topic:music-analysis stars:>30"
+    ],
+    "what": "Navidrome plugin for mood-based playlists using audio analysis (essentia-tensorflow)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "williamchristian273/Reason-Studio-Rack-Toolkit",
+    "description": "Top Reason Studios Rack DAW Plugins & Workflow Tools 2026",
+    "stars": 118,
+    "language": "HTML",
+    "topics": [
+      "beat-making",
+      "daw-software",
+      "digital-audio-workstation",
+      "electronic-music",
+      "music-production",
+      "music-software",
+      "producer-software",
+      "reason-12",
+      "reason-daw",
+      "reason-music",
+      "reason-rack",
+      "reason-studios",
+      "reason-vst",
+      "recording-software",
+      "synthesizer-rack"
+    ],
+    "url": "https://github.com/williamchristian273/Reason-Studio-Rack-Toolkit",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "Top Reason Studios Rack DAW Plugins & Workflow Tools 2026",
+    "described_by": "github"
+  },
+  {
+    "full_name": "junyuchen-cjy/DTTNet-Pytorch",
+    "description": "An official implementation of the ICASSP 2024 paper: Dual-Path TFC-TDF UNet for Music Source Separation",
+    "stars": 116,
+    "language": "Python",
+    "topics": [
+      "deep-learning",
+      "music-source-separation",
+      "pytorch",
+      "source-separation"
+    ],
+    "url": "https://github.com/junyuchen-cjy/DTTNet-Pytorch",
+    "pushed_at": "2024-03-19",
+    "archived": false,
+    "found_by": [
+      "topic:music-source-separation stars:>100"
+    ],
+    "what": "An official implementation of the ICASSP 2024 paper: Dual-Path TFC-TDF UNet for Music Source Separation",
+    "described_by": "github"
+  },
+  {
+    "full_name": "kwatcharasupat/query-bandit",
+    "description": "Banquet: A Stem-Agnostic Single-Decoder System for Music Source Separation Beyond Four Stems",
+    "stars": 113,
+    "language": "Jupyter Notebook",
+    "topics": [
+      "music-source-separation",
+      "source-separation"
+    ],
+    "url": "https://github.com/kwatcharasupat/query-bandit",
+    "pushed_at": "2025-07-29",
+    "archived": false,
+    "found_by": [
+      "topic:music-source-separation stars:>100"
+    ],
+    "what": "Banquet: A Stem-Agnostic Single-Decoder System for Music Source Separation Beyond Four Stems",
+    "described_by": "github"
+  },
+  {
+    "full_name": "dr-costas/mad-twinnet",
+    "description": "The code for the MaD TwinNet. Demo page: ",
+    "stars": 111,
+    "language": "Python",
+    "topics": [
+      "audio",
+      "audio-processing",
+      "audio-signal-processing",
+      "autoencoders",
+      "deep-learning",
+      "deep-neural-networks",
+      "deeplearning",
+      "denoising-autoencoders",
+      "mad-twinnet",
+      "music-information-retrieval",
+      "music-signal-processing",
+      "music-source-separation",
+      "pytorch",
+      "recurrent-neural-networks",
+      "singing-voice",
+      "source-separation",
+      "twin-networks",
+      "voice",
+      "wav"
+    ],
+    "url": "https://github.com/dr-costas/mad-twinnet",
+    "pushed_at": "2023-02-15",
+    "archived": false,
+    "found_by": [
+      "topic:music-source-separation stars:>100"
+    ],
+    "what": "The code for the MaD TwinNet. Demo page:",
+    "described_by": "github"
+  },
+  {
+    "full_name": "PeyTy/peytys-browser-privacy-extension",
+    "description": "Hopefully improves your privacy by replacing browser fingerprints",
+    "stars": 107,
+    "language": "TypeScript",
+    "topics": [
+      "audio-fingerprinting",
+      "chrome",
+      "detection",
+      "extension",
+      "fingerprint",
+      "firefox",
+      "identification",
+      "javascript",
+      "privacy",
+      "react",
+      "typescript"
+    ],
+    "url": "https://github.com/PeyTy/peytys-browser-privacy-extension",
+    "pushed_at": "2026-09-28",
+    "archived": false,
+    "found_by": [
+      "topic:audio-fingerprinting stars:>100"
+    ],
+    "what": "Hopefully improves your privacy by replacing browser fingerprints",
+    "described_by": "github"
+  },
+  {
+    "full_name": "acoustid/acoustid-index",
+    "description": "Minimalistic search engine searching in audio fingerprints from Chromaprint",
+    "stars": 105,
+    "language": "Zig",
+    "topics": [
+      "acoustid",
+      "audio-fingerprinting",
+      "search"
+    ],
+    "url": "https://github.com/acoustid/acoustid-index",
+    "pushed_at": "2026-10-11",
+    "archived": false,
+    "found_by": [
+      "topic:audio-fingerprinting stars:>100"
+    ],
+    "what": "Minimalistic search engine searching in audio fingerprints from Chromaprint",
+    "described_by": "github"
+  },
+  {
+    "full_name": "iver56/cross-adaptive-audio",
+    "description": "Evolving Artificial Neural Networks for Cross-Adaptive Audio Effects",
+    "stars": 104,
+    "language": "Python",
+    "topics": [
+      "ai",
+      "audio",
+      "audio-effect",
+      "audio-features",
+      "csound",
+      "drums",
+      "dsp",
+      "genetic-algorithm",
+      "neat",
+      "neural-network"
+    ],
+    "url": "https://github.com/iver56/cross-adaptive-audio",
+    "pushed_at": "2022-07-19",
+    "archived": true,
+    "found_by": [
+      "topic:audio-features stars:>30"
+    ],
+    "what": "Evolving Artificial Neural Networks for Cross-Adaptive Audio Effects",
+    "described_by": "github"
+  },
+  {
+    "full_name": "rafaballerini/AnaliseDaPlaylistDeRock",
+    "description": "Uma associação de como o rock foi se modificando desde a década de 50 até os dias de hoje e como isso pode ser observado na prática nas músicas presentes na minha playlist de rock do Spotify, chamada \"For Those About To Rock\"",
+    "stars": 96,
+    "language": "Jupyter Notebook",
+    "topics": [
+      "music-analysis",
+      "pandas",
+      "python",
+      "spotify",
+      "spotify-analysis"
+    ],
+    "url": "https://github.com/rafaballerini/AnaliseDaPlaylistDeRock",
+    "pushed_at": "2022-09-16",
+    "archived": false,
+    "found_by": [
+      "topic:music-analysis stars:>30"
+    ],
+    "what": "Uma associação de como o rock foi se modificando desde a década de 50 até os dias de hoje e como isso pode ser observado na prática nas músicas presentes na minha playlist de rock do Spotify, chamada \"For Those About To Rock\"",
+    "described_by": "github"
+  },
+  {
+    "full_name": "alexanderlerch/ACA-Code",
+    "description": "Matlab scripts accompanying the book \"An Introduction to Audio Content Analysis\" (www.AudioContentAnalysis.org)",
+    "stars": 88,
+    "language": "MATLAB",
+    "topics": [
+      "audio-content-analysis",
+      "audio-features",
+      "audio-processing",
+      "music-informatics",
+      "music-information-retrieval",
+      "signal-processing"
+    ],
+    "url": "https://github.com/alexanderlerch/ACA-Code",
+    "pushed_at": "2025-11-25",
+    "archived": false,
+    "found_by": [
+      "topic:audio-features stars:>30"
+    ],
+    "what": "Matlab scripts accompanying the book \"An Introduction to Audio Content Analysis\" (www.AudioContentAnalysis.org)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "adamjakab/BeetsPluginXtractor",
+    "description": "A beets plugin for obsessive-compulsive music geeks to add low and high level musical information to their songs.",
+    "stars": 85,
+    "language": "Python",
+    "topics": [
+      "beets",
+      "beets-plugin",
+      "music",
+      "music-analysis"
+    ],
+    "url": "https://github.com/adamjakab/BeetsPluginXtractor",
+    "pushed_at": "2026-10-15",
+    "archived": false,
+    "found_by": [
+      "topic:music-analysis stars:>30"
+    ],
+    "what": "A beets plugin for obsessive-compulsive music geeks to add low and high level musical information to their songs.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "alexanderlerch/libACA",
+    "description": "C++ code accompanying the book \"An Introduction to Audio Content Analysis\" (www.AudioContentAnalysis.org) ",
+    "stars": 78,
+    "language": "C++",
+    "topics": [
+      "audio-content-analysis",
+      "audio-features",
+      "audio-processing",
+      "cmake",
+      "cpp",
+      "music-information-retrieval",
+      "signal-processing"
+    ],
+    "url": "https://github.com/alexanderlerch/libACA",
+    "pushed_at": "2025-05-30",
+    "archived": false,
+    "found_by": [
+      "topic:audio-features stars:>30"
+    ],
+    "what": "C++ code accompanying the book \"An Introduction to Audio Content Analysis\" (www.AudioContentAnalysis.org)",
+    "described_by": "github"
+  },
+  {
+    "full_name": "hlorenzi/musicode",
+    "description": "🎶 Markup language for music creation and analysis! -- https://hlorenzi.github.io/musicode/",
+    "stars": 74,
+    "language": "JavaScript",
+    "topics": [
+      "functional-harmony",
+      "harmony",
+      "markup",
+      "markup-language",
+      "music",
+      "music-analysis",
+      "music-composition",
+      "music-notation",
+      "music-theory",
+      "music-visualizer",
+      "programmer-friendly",
+      "programmer-tool",
+      "programming",
+      "roman-numeral",
+      "song",
+      "web",
+      "web-app",
+      "web-application",
+      "webapp"
+    ],
+    "url": "https://github.com/hlorenzi/musicode",
+    "pushed_at": "2017-03-05",
+    "archived": false,
+    "found_by": [
+      "topic:music-analysis stars:>30"
+    ],
+    "what": "🎶 Markup language for music creation and analysis! -- https://hlorenzi.github.io/musicode/",
+    "described_by": "github"
+  },
+  {
+    "full_name": "mjhydri/1D-StateSpace",
+    "description": "This repository contains the implementation of an efficient joint beat, downbeat, tempo, and meter tracking system using a compact 1D probabilistic state space and a jump-back reward technique. ICASSP 2022.",
+    "stars": 74,
+    "language": "Python",
+    "topics": [
+      "1d-statespace",
+      "bar-detection",
+      "beat-detection",
+      "beat-time",
+      "beat-tracking",
+      "beats",
+      "downbeat",
+      "joint-beat-downbeat",
+      "joint-models",
+      "jump-back",
+      "tempo",
+      "tempo-estimation",
+      "tempo-tracking"
+    ],
+    "url": "https://github.com/mjhydri/1D-StateSpace",
+    "pushed_at": "2023-11-28",
+    "archived": false,
+    "found_by": [
+      "topic:beat-tracking stars:>10"
+    ],
+    "what": "This repository contains the implementation of an efficient joint beat, downbeat, tempo, and meter tracking system using a compact 1D probabilistic state space and a jump-back reward technique. ICASSP 2022.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Seank23/MusicAnalyser",
+    "description": "Uses frequency analysis of audio to perform pitch detection and predict musical elements.",
+    "stars": 72,
+    "language": "C#",
+    "topics": [
+      "csharp",
+      "dotnet",
+      "dsp",
+      "music",
+      "music-analysis",
+      "music-player",
+      "music-theory",
+      "naudio",
+      "scottplot",
+      "signal-analysis",
+      "signal-processing",
+      "soundtouch"
+    ],
+    "url": "https://github.com/Seank23/MusicAnalyser",
+    "pushed_at": "2026-11-08",
+    "archived": false,
+    "found_by": [
+      "topic:music-analysis stars:>30"
+    ],
+    "what": "Uses frequency analysis of audio to perform pitch detection and predict musical elements.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "kristijanbartol/Deep-Music-Tagger",
+    "description": "Music genre classification model using CRNN",
+    "stars": 70,
+    "language": "Python",
+    "topics": [
+      "audio-analysis",
+      "convolutional-networks",
+      "deep-learning",
+      "deep-neural-networks",
+      "deeplearning",
+      "fma",
+      "keras",
+      "librosa",
+      "mel-spectrograms",
+      "music",
+      "music-analysis",
+      "music-classification",
+      "music-information-retrieval",
+      "recurrent-networks"
+    ],
+    "url": "https://github.com/kristijanbartol/Deep-Music-Tagger",
+    "pushed_at": "2018-09-27",
+    "archived": false,
+    "found_by": [
+      "topic:music-analysis stars:>30"
+    ],
+    "what": "Music genre classification model using CRNN",
+    "described_by": "github"
+  },
+  {
+    "full_name": "d00mfish/BPM-to-OSC",
+    "description": "Simply sending the detected BPM to Resolume or any other LJ / VJ Software via OSC commands.",
+    "stars": 67,
+    "language": "Python",
+    "topics": [
+      "arena",
+      "beat-detection",
+      "beat-time",
+      "beat-tracking",
+      "bpm",
+      "gui",
+      "gui-application",
+      "lightshow",
+      "osc",
+      "python",
+      "resolume",
+      "tempo-tracking",
+      "waveclock"
+    ],
+    "url": "https://github.com/d00mfish/BPM-to-OSC",
+    "pushed_at": "2023-08-05",
+    "archived": false,
+    "found_by": [
+      "topic:beat-tracking stars:>10"
+    ],
+    "what": "Simply sending the detected BPM to Resolume or any other LJ / VJ Software via OSC commands.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "mileshenrichs/QuiFFT",
+    "description": "Amazingly simple Fourier transform library for Java",
+    "stars": 64,
+    "language": "Java",
+    "topics": [
+      "dft",
+      "dsp",
+      "fft",
+      "fourier-transform",
+      "java",
+      "music-analysis",
+      "signal-processing"
+    ],
+    "url": "https://github.com/mileshenrichs/QuiFFT",
+    "pushed_at": "2019-04-27",
+    "archived": false,
+    "found_by": [
+      "topic:music-analysis stars:>30"
+    ],
+    "what": "Amazingly simple Fourier transform library for Java",
+    "described_by": "github"
+  },
+  {
+    "full_name": "MarieLynneBlock/digital-sound-playground",
+    "description": "Design new algorithmic patterns to generate music samples or build drum machines and on top of it, build user-friendly and beautiful UIs to make the music tools available outside music environments and DAWs.",
+    "stars": 62,
+    "language": "JavaScript",
+    "topics": [
+      "daw",
+      "drum-machine",
+      "electronic-music",
+      "generative-algorithm",
+      "generative-audio",
+      "generative-music",
+      "music",
+      "music-environments",
+      "signal-processing",
+      "sound",
+      "sound-processing",
+      "sound-synthesis",
+      "synthesis",
+      "ui"
+    ],
+    "url": "https://github.com/MarieLynneBlock/digital-sound-playground",
+    "pushed_at": "2024-08-03",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "Design new algorithmic patterns to generate music samples or build drum machines and on top of it, build user-friendly and beautiful UIs to make the music tools available outside music environments and DAWs.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "AudioCommons/ac-audio-extractor",
+    "description": "Audio Commons Audio Extractor",
+    "stars": 61,
+    "language": "JavaScript",
+    "topics": [
+      "audio-features",
+      "music-samples",
+      "musical-pieces",
+      "sound",
+      "timbre-models"
+    ],
+    "url": "https://github.com/AudioCommons/ac-audio-extractor",
+    "pushed_at": "2026-09-15",
+    "archived": false,
+    "found_by": [
+      "topic:audio-features stars:>30"
+    ],
+    "what": "Audio Commons Audio Extractor",
+    "described_by": "github"
+  },
+  {
+    "full_name": "olilarkin/librosa.cpp",
+    "description": "C++17 port of librosa with wasm and SPM package. Done with agents. YMMV.",
+    "stars": 54,
+    "language": "C++",
+    "topics": [
+      "audio-analysis",
+      "audio-analyzer",
+      "beat-tracking",
+      "librosa",
+      "music-information-retrieval",
+      "pitch-detection",
+      "spectrogram",
+      "swift",
+      "wasm"
+    ],
+    "url": "https://github.com/olilarkin/librosa.cpp",
+    "pushed_at": "2026-06-23",
+    "archived": false,
+    "found_by": [
+      "topic:beat-tracking stars:>10"
+    ],
+    "what": "C++17 port of librosa with wasm and SPM package. Done with agents. YMMV.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "arraypress/waveform-player",
+    "description": "Lightweight, customizable audio player with waveform visualization",
+    "stars": 52,
+    "language": "JavaScript",
+    "topics": [
+      "arraypress",
+      "audio",
+      "audio-peaks",
+      "audio-player",
+      "audio-visualization",
+      "bpm-detection",
+      "canvas",
+      "media-session",
+      "music-player",
+      "podcast-player",
+      "typescript",
+      "vanilla-javascript",
+      "waveform",
+      "web-audio-api"
+    ],
+    "url": "https://github.com/arraypress/waveform-player",
+    "pushed_at": "2026-11-12",
+    "archived": false,
+    "found_by": [
+      "topic:bpm-detection stars:>10"
+    ],
+    "what": "Lightweight, customizable audio player with waveform visualization",
+    "described_by": "github"
+  },
+  {
+    "full_name": "aubio/vamp-aubio-plugins",
+    "description": "aubio plugins for Vamp",
+    "stars": 50,
+    "language": "C++",
+    "topics": [
+      "analysis",
+      "aubio",
+      "audio",
+      "beat",
+      "beat-detection",
+      "beat-tracking",
+      "mfcc",
+      "music",
+      "music-information-retrieval",
+      "onset",
+      "onset-detection",
+      "tempo",
+      "tempo-detection",
+      "tempo-tracking",
+      "vamp-plugins"
+    ],
+    "url": "https://github.com/aubio/vamp-aubio-plugins",
+    "pushed_at": "2017-12-04",
+    "archived": false,
+    "found_by": [
+      "topic:beat-tracking stars:>10"
+    ],
+    "what": "aubio plugins for Vamp",
+    "described_by": "github"
+  },
+  {
+    "full_name": "libraz/bpm-detector",
+    "description": "A Python tool for automatic detection of BPM (tempo) and musical key from audio files.",
+    "stars": 50,
+    "language": "Python",
+    "topics": [
+      "audio-analysis",
+      "bpm-detection",
+      "chord-detection",
+      "key-detection",
+      "librosa",
+      "music-information-retrieval",
+      "python"
+    ],
+    "url": "https://github.com/libraz/bpm-detector",
+    "pushed_at": "2026-10-01",
+    "archived": false,
+    "found_by": [
+      "topic:bpm-detection stars:>10",
+      "topic:key-detection stars:>5"
+    ],
+    "what": "A Python tool for automatic detection of BPM (tempo) and musical key from audio files.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "creightonlinza/forever-jukebox",
+    "description": "An end-to-end Infinite Jukebox replacement that analyzes audio, serves it via an API, and plays it with tunable, interactive visualizations via Web and offline PWA.",
+    "stars": 48,
+    "language": "TypeScript",
+    "topics": [
+      "api",
+      "audio-analysis",
+      "autocanonizer",
+      "beat-tracking",
+      "codex",
+      "docker",
+      "essentia",
+      "infinite-jukebox",
+      "madmom",
+      "music",
+      "music-analysis",
+      "music-player",
+      "pwa",
+      "python",
+      "spotify",
+      "typescript",
+      "youtube",
+      "yt-dlp"
+    ],
+    "url": "https://github.com/creightonlinza/forever-jukebox",
+    "pushed_at": "2026-11-18",
+    "archived": false,
+    "found_by": [
+      "topic:beat-tracking stars:>10"
+    ],
+    "what": "An end-to-end Infinite Jukebox replacement that analyzes audio, serves it via an API, and plays it with tunable, interactive visualizations via Web and offline PWA.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "WildHoneyPie/BEAST",
+    "description": "Codes for ICASSP 2024 paper: BEAST: Online Joint Beat and Downbeat Tracking Based on Streaming Transformer. An online beat tracking system based on streaming Transformer",
+    "stars": 48,
+    "language": "Python",
+    "topics": [
+      "beat-tracking",
+      "pytorch",
+      "real-time-beat-tracker"
+    ],
+    "url": "https://github.com/WildHoneyPie/BEAST",
+    "pushed_at": "2024-09-11",
+    "archived": false,
+    "found_by": [
+      "topic:beat-tracking stars:>10"
+    ],
+    "what": "Codes for ICASSP 2024 paper: BEAST: Online Joint Beat and Downbeat Tracking Based on Streaming Transformer. An online beat tracking system based on streaming Transformer",
+    "described_by": "github"
+  },
+  {
+    "full_name": "artfwo/aalink",
+    "description": "Async Python interface for Ableton Link",
+    "stars": 39,
+    "language": "C++",
+    "topics": [
+      "ableton-link",
+      "algorithmic-composition",
+      "computer-music",
+      "creative-coding",
+      "electronic-music",
+      "multimedia",
+      "music",
+      "python"
+    ],
+    "url": "https://github.com/artfwo/aalink",
+    "pushed_at": "2026-10-04",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "Async Python interface for Ableton Link",
+    "described_by": "github"
+  },
+  {
+    "full_name": "odoare/Image-In",
+    "description": "A sort of wave terrain synthesis plugin based on image reading",
+    "stars": 37,
+    "language": "C++",
+    "topics": [
+      "audio",
+      "electronic-music",
+      "juce-plugins",
+      "oscillator",
+      "synthesizer",
+      "vst-plugin",
+      "vst3-plugin",
+      "waveterrain-synthesis"
+    ],
+    "url": "https://github.com/odoare/Image-In",
+    "pushed_at": "2025-11-04",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "A sort of wave terrain synthesis plugin based on image reading",
+    "described_by": "github"
+  },
+  {
+    "full_name": "hjkcvn/adobe-audition-velraven",
+    "description": "Adobe Audition Velraven orchestrates a visual audio editing workflow.",
+    "stars": 36,
+    "language": "TypeScript",
+    "topics": [
+      "adobe-audition",
+      "audio",
+      "audio-editing",
+      "audio-effects",
+      "audio-mixing",
+      "audio-plugin",
+      "audio-plugins",
+      "audio-processing",
+      "audio-recording",
+      "daw",
+      "digital-audio-workstation",
+      "electronic-music",
+      "mastering",
+      "music",
+      "music-production",
+      "recording",
+      "sound",
+      "sound-design",
+      "vst",
+      "vst3"
+    ],
+    "url": "https://github.com/hjkcvn/adobe-audition-velraven",
+    "pushed_at": "2026-11-20",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "Adobe Audition Velraven orchestrates a visual audio editing workflow.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Xon77/Live4Life",
+    "description": "A spatial performance tool for SuperCollider: 8-track interactive sequencer and micro/macro granulator of a collection of syntheses and samples with pre-defined spatial trajectories and algorithms, mixing channel- and object-based paradigms, including a multichannel effect system, controlled by a GUI and a combination of several interfaces.",
+    "stars": 34,
+    "language": "SuperCollider",
+    "topics": [
+      "algorithmic-composition",
+      "computer-music",
+      "controllers",
+      "electronic-music",
+      "gui",
+      "lemur",
+      "patterns",
+      "sound",
+      "space",
+      "spatial-audio",
+      "spatial-improvisation",
+      "spatial-playback-speeds",
+      "spatial-polyrhythms",
+      "supercollider",
+      "supercollider-application",
+      "twister"
+    ],
+    "url": "https://github.com/Xon77/Live4Life",
+    "pushed_at": "2025-11-21",
+    "archived": false,
+    "found_by": [
+      "topic:electronic-music stars:>30"
+    ],
+    "what": "A spatial performance tool for SuperCollider: 8-track interactive sequencer and micro/macro granulator of a collection of syntheses and samples with pre-defined spatial trajectories and algorithms, mixing channel- and object-based paradigms, including a multichannel effect system, controlled by a GUI and a combination of several interfaces.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "averatec0773/beatos",
+    "description": "Local-first beat library built for producers — catalog, BPM/key analysis, license tiers & PDFs, tagged-MP3 + loopkit export, and assisted multi-platform publishing. Chat with your catalog via a built-in AI Agent (Claude · ChatGPT · DeepSeek), or wire it to any MCP client. Desktop + web.",
+    "stars": 32,
+    "language": "TypeScript",
+    "topics": [
+      "ai-tools",
+      "anthropic",
+      "beat-maker",
+      "beatstars",
+      "bpm-detection",
+      "claude-code",
+      "claude-mcp",
+      "desktop-app",
+      "electron",
+      "fastapi",
+      "key-detection",
+      "local-first",
+      "mcp",
+      "mcp-server",
+      "model-context-protocol",
+      "music-library",
+      "music-metadata",
+      "music-producer",
+      "playlist",
+      "web-app"
+    ],
+    "url": "https://github.com/averatec0773/beatos",
+    "pushed_at": "2026-08-31",
+    "archived": false,
+    "found_by": [
+      "topic:bpm-detection stars:>10",
+      "topic:key-detection stars:>5"
+    ],
+    "what": "Local-first beat library built for producers — catalog, BPM/key analysis, license tiers & PDFs, tagged-MP3 + loopkit export, and assisted multi-platform publishing. Chat with your catalog via a built-in AI Agent (Claude · ChatGPT · DeepSeek), or wire it to any MCP client. Desktop + web.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "emuell/AFEC",
+    "description": "Cross platform audio feature extraction and sound classification tool",
+    "stars": 31,
+    "language": "C++",
+    "topics": [
+      "afec",
+      "audio-classification",
+      "audio-feature-extraction",
+      "audio-features",
+      "audio-formats",
+      "classification-model",
+      "lightgbm",
+      "machine-learning"
+    ],
+    "url": "https://github.com/emuell/AFEC",
+    "pushed_at": "2026-03-16",
+    "archived": false,
+    "found_by": [
+      "topic:audio-features stars:>30"
+    ],
+    "what": "Cross platform audio feature extraction and sound classification tool",
+    "described_by": "github"
+  },
+  {
+    "full_name": "deseven/php-bpm-detect",
+    "description": "php class for bpm detection",
+    "stars": 25,
+    "language": "PHP",
+    "topics": [
+      "bpm-detection",
+      "ffmpeg",
+      "php",
+      "soundtouch",
+      "sox"
+    ],
+    "url": "https://github.com/deseven/php-bpm-detect",
+    "pushed_at": "2016-01-24",
+    "archived": false,
+    "found_by": [
+      "topic:bpm-detection stars:>10"
+    ],
+    "what": "php class for bpm detection",
+    "described_by": "github"
+  },
+  {
+    "full_name": "morgan76/LinkSeg",
+    "description": "PyTorch implementation of the paper Using Pairwise Link Prediction and Graph Attention Networks for Music Structure Analysis presented at ISMIR 2024.",
+    "stars": 24,
+    "language": "Python",
+    "topics": [
+      "music-segmentation",
+      "music-structure-analysis"
+    ],
+    "url": "https://github.com/morgan76/LinkSeg",
+    "pushed_at": "2025-04-02",
+    "archived": false,
+    "found_by": [
+      "topic:music-structure-analysis stars:>5"
+    ],
+    "what": "PyTorch implementation of the paper Using Pairwise Link Prediction and Graph Attention Networks for Music Structure Analysis presented at ISMIR 2024.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "Behdad-kanaani/korai-player",
+    "description": "KORAI is a modern, free, and open-source music player for Windows with real-time DSP, smart offline recommendations, BPM detection, gapless playback, and a cinematic mini-player. Fully offline. No cloud. No tracking. Just your music.",
+    "stars": 16,
+    "language": "JavaScript",
+    "topics": [
+      "ai",
+      "ai-recommendations",
+      "ai-widgets",
+      "audio-player",
+      "bpm-detection",
+      "cross-platform",
+      "desktop-app",
+      "electron-app",
+      "free-software",
+      "karaoke-mode",
+      "korai",
+      "linux-music-player",
+      "mac-music-player",
+      "music-analysis",
+      "music-player",
+      "premium",
+      "rtl-support",
+      "windows-music-player"
+    ],
+    "url": "https://github.com/Behdad-kanaani/korai-player",
+    "pushed_at": "2026-11-16",
+    "archived": false,
+    "found_by": [
+      "topic:bpm-detection stars:>10"
+    ],
+    "what": "KORAI is a modern, free, and open-source music player for Windows with real-time DSP, smart offline recommendations, BPM detection, gapless playback, and a cinematic mini-player. Fully offline. No cloud. No tracking. Just your music.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "grazzolini/tuneforge",
+    "description": "Local-first desktop app for musicians learning songs: stem separation, chord/key/tempo and lyrics transcription, pitch shift, retune, transpose/capo, export, tuner, metronome. No cloud, no account.",
+    "stars": 14,
+    "language": "TypeScript",
+    "topics": [
+      "audio",
+      "capo",
+      "chord-detection",
+      "desktop",
+      "fastapi",
+      "key-detection",
+      "local-first",
+      "lyrics",
+      "metronome",
+      "music",
+      "musicians",
+      "open-source",
+      "pitch-shift",
+      "play-along",
+      "practice",
+      "stem-separation",
+      "tauri",
+      "transcription",
+      "transpose",
+      "tuner"
+    ],
+    "url": "https://github.com/grazzolini/tuneforge",
+    "pushed_at": "2026-11-19",
+    "archived": false,
+    "found_by": [
+      "topic:key-detection stars:>5"
+    ],
+    "what": "Local-first desktop app for musicians learning songs: stem separation, chord/key/tempo and lyrics transcription, pitch shift, retune, transpose/capo, export, tuner, metronome. No cloud, no account.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "ssmall256/all-in-one-mlx",
+    "description": "Apple Silicon MLX port of All-In-One music structure analysis (tempo, beats, downbeats, segments).",
+    "stars": 14,
+    "language": "Python",
+    "topics": [
+      "apple-silicon",
+      "audio-analysis",
+      "beat-tracking",
+      "demucs",
+      "downbeat-tracking",
+      "mlx",
+      "music-information-retrieval",
+      "music-structure-analysis",
+      "natten"
+    ],
+    "url": "https://github.com/ssmall256/all-in-one-mlx",
+    "pushed_at": "2026-09-23",
+    "archived": false,
+    "found_by": [
+      "topic:music-structure-analysis stars:>5"
+    ],
+    "what": "Apple Silicon MLX port of All-In-One music structure analysis (tempo, beats, downbeats, segments).",
+    "described_by": "github"
+  },
+  {
+    "full_name": "anime-song/SheetSage2-Refined",
+    "description": "Beats, downbeats and time signatures, melody, chords and keys of whole songs with a fine-tuned SheetSage2",
+    "stars": 8,
+    "language": "Python",
+    "topics": [
+      "beat-tracking",
+      "chord-recognition",
+      "key-detection",
+      "music-transcription",
+      "pytorch",
+      "time-signature"
+    ],
+    "url": "https://github.com/anime-song/SheetSage2-Refined",
+    "pushed_at": "2026-11-19",
+    "archived": false,
+    "found_by": [
+      "topic:key-detection stars:>5"
+    ],
+    "what": "Beats, downbeats and time signatures, melody, chords and keys of whole songs with a fine-tuned SheetSage2",
+    "described_by": "github"
+  },
+  {
+    "full_name": "sebssch/TrackTab",
+    "description": "TrackTab detects fake and upscaled files, edits tags, measures BPM, key, genre and mood, builds editable beatgrids and phrase maps, sets cues with Auto Cue, separates stems, and syncs playlists with Rekordbox and Music.app. Local web UI, runs fully offline.",
+    "stars": 7,
+    "language": "Python",
+    "topics": [
+      "audio-converters",
+      "auto-cue",
+      "beatgrid",
+      "bpm",
+      "genre-analysis",
+      "id3-tag-editor",
+      "key-detection",
+      "music-library-management",
+      "music-player",
+      "phrase",
+      "playlist-builder",
+      "playlist-generator",
+      "rekordbox-dj",
+      "rename-files",
+      "spectral-analysis",
+      "stem-separation"
+    ],
+    "url": "https://github.com/sebssch/TrackTab",
+    "pushed_at": "2026-11-15",
+    "archived": false,
+    "found_by": [
+      "topic:key-detection stars:>5"
+    ],
+    "what": "TrackTab detects fake and upscaled files, edits tags, measures BPM, key, genre and mood, builds editable beatgrids and phrase maps, sets cues with Auto Cue, separates stems, and syncs playlists with Rekordbox and Music.app. Local web UI, runs fully offline.",
+    "described_by": "github"
+  },
+  {
+    "full_name": "atinm/musicpractice",
+    "description": "Music Slow Downer, Pitch Shifter, Stem Splitter, Key & Chord Detector, Bar/Beat Detector for Music Practice",
+    "stars": 6,
+    "language": "Python",
+    "topics": [
+      "chord-detection",
+      "chordino",
+      "demucs",
+      "key-detection",
+      "librosa",
+      "music",
+      "nnls-chroma",
+      "slow-downer",
+      "stems"
+    ],
+    "url": "https://github.com/atinm/musicpractice",
+    "pushed_at": "2026-03-22",
+    "archived": false,
+    "found_by": [
+      "topic:key-detection stars:>5"
+    ],
+    "what": "Music Slow Downer, Pitch Shifter, Stem Splitter, Key & Chord Detector, Bar/Beat Detector for Music Practice",
+    "described_by": "github"
+  }
+]
