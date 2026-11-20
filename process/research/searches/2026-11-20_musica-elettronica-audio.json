@@ -1,34 +1,5 @@
 [
   {
-    "full_name": "fingerprintjs/fingerprintjs",
-    "description": "The most advanced free and open-source browser fingerprinting library",
-    "stars": 28780,
-    "language": "TypeScript",
-    "topics": [
-      "audio-fingerprinting",
-      "browser",
-      "browser-fingerprint",
-      "browser-fingerprinting",
-      "detection",
-      "fingerprint",
-      "fingerprinting",
-      "fingerprintjs",
-      "fraud",
-      "fraud-detection",
-      "identification",
-      "javascript",
-      "visitor-identifier"
-    ],
-    "url": "https://github.com/fingerprintjs/fingerprintjs",
-    "pushed_at": "2026-11-05",
-    "archived": false,
-    "found_by": [
-      "topic:audio-fingerprinting stars:>100"
-    ],
-    "what": "The most advanced free and open-source browser fingerprinting library",
-    "described_by": "github"
-  },
-  {
     "full_name": "deezer/spleeter",
     "description": "Deezer source separation library including pretrained models.",
     "stars": 28539,
@@ -1711,33 +1682,6 @@
       "topic:music-source-separation stars:>100"
     ],
     "what": "The code for the MaD TwinNet. Demo page:",
-    "described_by": "github"
-  },
-  {
-    "full_name": "PeyTy/peytys-browser-privacy-extension",
-    "description": "Hopefully improves your privacy by replacing browser fingerprints",
-    "stars": 107,
-    "language": "TypeScript",
-    "topics": [
-      "audio-fingerprinting",
-      "chrome",
-      "detection",
-      "extension",
-      "fingerprint",
-      "firefox",
-      "identification",
-      "javascript",
-      "privacy",
-      "react",
-      "typescript"
-    ],
-    "url": "https://github.com/PeyTy/peytys-browser-privacy-extension",
-    "pushed_at": "2026-09-28",
-    "archived": false,
-    "found_by": [
-      "topic:audio-fingerprinting stars:>100"
-    ],
-    "what": "Hopefully improves your privacy by replacing browser fingerprints",
     "described_by": "github"
   },
   {
